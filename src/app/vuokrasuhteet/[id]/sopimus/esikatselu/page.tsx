@@ -61,6 +61,18 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/*
+        Poistumisohje sanotaan ääneen.
+
+        Erillinen näkymä on käyttöjärjestelmän oma, eikä sovellus voi lisätä
+        siihen omaa takaisin-painiketta. Jukka joutui kysymään, miten sieltä
+        pääsee pois — ja jos hän joutui, niin joutuu vuokralainenkin.
+      */}
+      <p className="mt-3 text-sm text-ink/60">
+        Erillisestä näkymästä palaat takaisin sen omalla painikkeella: Valmis (iPhone) tai ✕
+        (Android). Selaimessa back-painike toimii tavalliseen tapaan.
+      </p>
+
+      {/*
         `object` eikä `iframe`: jos selain ei osaa näyttää PDF:ää, `object`
         näyttää sisällä olevan varatekstin sen sijaan että jättäisi tyhjän
         laatikon. Silloin linkki on ainoa tie asiakirjaan, ja se on tässä.
@@ -68,7 +80,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
       <object
         data={pdf}
         type="application/pdf"
-        className="mt-6 h-[70vh] w-full rounded-[var(--radius-panel)] border border-line bg-paper"
+        className="mt-6 h-[78vh] w-full rounded-[var(--radius-panel)] border border-line bg-paper"
       >
         <div className="p-5">
           <p className="font-medium">Selain ei näytä asiakirjaa tässä</p>
