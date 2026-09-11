@@ -18,12 +18,20 @@ export default async function HomePage() {
         <div className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <p className="text-sm text-ink/70">Kirjautunut</p>
           <p className="mt-1 font-medium">{user.email}</p>
-          <a
-            href="/auth/logout"
-            className="mt-5 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
-          >
-            Kirjaudu ulos
-          </a>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href="/asunnot"
+              className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
+            >
+              {fi.nav.properties}
+            </Link>
+            <a
+              href="/auth/logout"
+              className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+            >
+              Kirjaudu ulos
+            </a>
+          </div>
         </div>
       ) : (
         <div className="mt-8">

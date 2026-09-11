@@ -55,7 +55,9 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
       rounds, verify, webhookit) — 29 yksikkötestiä. Mock tuottaa aidon
       avautuvan PDF:n, joten vaiheet 0–1 etenevät ilman eSinetti-tunnuksia
 - [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti
-- [ ] Asunnon luonti (`rs_properties`) ja lista
+- [x] Asunnon luonti (`rs_properties`) ja lista: lomake, listaus, asunnon
+      näkymä kohtalistoineen, arkistointi. 6 IDOR-integraatiotestiä ja 9
+      lomaketestiä
 - [x] Oletus-checkpointien generointi asuntotyypin ja huoneluvun mukaan,
       10 yksikkötestiä
 - [x] CI: lint, typecheck, unit, build, e2e, audit + kaksi tarkistusta:

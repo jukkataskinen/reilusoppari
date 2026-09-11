@@ -82,6 +82,17 @@ test("kirjautuminen ohjaa Auth0:aan sähköpostiyhteydellä", async ({ page }) =
   expect(location).not.toContain("connection=Username-Password-Authentication");
 });
 
+test("asuntosivut vaativat kirjautumisen", async ({ page }) => {
+  // Suojaus tehdään sivukohtaisesti eikä middlewaressa (ks. src/middleware.ts),
+  // joten jokainen suojattu reitti on syytä todeta erikseen. Yksi unohdettu
+  // `getCurrentUser()` näkyisi vain tässä.
+  for (const path of ["/asunnot", "/asunnot/uusi", "/asunnot/00000000-0000-4000-8000-000000000000"]) {
+    const response = await page.request.get(path, { maxRedirects: 0 });
+    expect(response.status(), path).toBe(307);
+    expect(response.headers()["location"], path).toContain("/auth/login");
+  }
+});
+
 test("tuntematon polku on 404 eikä paljasta mitään", async ({ page }) => {
   const response = await page.goto("/ei-ole-olemassa");
   expect(response?.status()).toBe(404);
