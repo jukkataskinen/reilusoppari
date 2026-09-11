@@ -752,3 +752,125 @@ Opetus, joka kannattaa muistaa muissakin kohdissa: käyttöjärjestelmän omaan
 näkymään ei voi lisätä omaa takaisin-painiketta, eikä sen olemassaoloon voi
 luottaa. Jos sovelluksesta poistutaan, siitä on päästävä takaisin ilman
 sovelluksen sulkemista.
+
+
+## Katselmus kuvataan huoneittain, ei kohta kerrallaan (2026-09-11, Jukan linjaus)
+
+*"Alkukatselmuksessa sen verran, että voit ohjeistaa ottamaan kuvia
+huoneittain, mutta älä pakota ottamaan kuvia mistään tietystä kohdasta, vaan
+molemmat osapuolet saavat ottaa haluamansa kuvat."*
+
+Ohjeteksti on Jukan sanamuoto ja se näkyy jokaisessa huoneessa:
+
+> Ota yleiskuva huoneesta ja lisäksi niistä kohdista, joiden kunnon haluat
+> muistaa riitojen välttämiseksi.
+
+Ohjeessa on sekä tekeminen että syy. Syy on tärkeämpi: se on ainoa, minkä
+vuoksi kukaan jaksaa kuvata kotiaan.
+
+**Kuva kiinnittyy huoneeseen, ei checkpointiin.** Migraatio 0005 lisää
+`rs_photos.room`-sarakkeen. Huoneluettelo on kulkureitti asunnon läpi, ei
+tarkistuslista: mitään ei voi merkitä tehdyksi, mikään ei laske
+"tekemättömiä", eikä mikään tarkista onko jostakin kuva. Vanha malli olisi
+johtanut siihen, mihin pitkät lomakkeet aina johtavat — loppupää kuitataan
+katsomatta.
+
+Huoneella on **vihjelista** siitä, mitä siinä yleensä kannattaa katsoa. Ne
+ovat tekstiä eivätkä ruutuja. Ne ovat siellä, koska silikonisaumat tulevat
+mieleen vasta kun joku mainitsee ne.
+
+**Itse lisätty tila ei vaadi riviä mihinkään.** Se syntyy siitä, että joku
+kuvaa sen: huoneluettelo on oletushuoneet plus ne, joista on kuvia. Tyhjä
+lisätty huone ei ole mitään, joten sitä ei tarvitse tallentaa.
+
+**Kuvalla on vapaaehtoinen selite** (Jukan lisäys): miksi juuri tämä kohta
+kuvattiin. Kenttä on lomakkeella kameran yläpuolella, koska asunnossa
+seisten kukaan ei palaa kirjoittamaan selitettä jälkikäteen. Pakollinen
+kenttä tuottaisi tekstejä kuten "ok", ja tyhjä selite on rehellisempi kuin
+merkityksetön.
+
+**Pöytäkirjassa ei ole tyhjiä kohtia.** Se kertoo mitä kuvattiin, ei sitä
+mitä jäi kuvaamatta. Lista, jossa on kymmenen "ei kuvia" -riviä, näyttää
+huolimattomalta katselmukselta, vaikka osapuolet olisivat kuvanneet juuri
+sen, mikä heidän mielestään merkitsee.
+
+
+## EXIF poistetaan palvelimella ja ilman kirjastoa (2026-09-12)
+
+Selain poistaa EXIF:n jo pakatessaan kuvan canvasin kautta. Siihen ei
+kuitenkaan luoteta: selaimessa ajettavan koodin voi ohittaa ja kuvan lähettää
+rajapintaan sellaisenaan. Jos poisto olisi vain siellä, GPS-koordinaatit
+olisivat tallessa aina kun joku niin haluaa.
+
+Kuva kodista, jossa on koordinaatit, on eri asia kuin kuva kodista.
+Vuokralainen ei ole antanut kotinsa sijaintia vuokranantajalle sillä, että
+hän kuvasi keittiön lattian.
+
+**Ilman `sharp`ia.** Se osaisi tämän, mutta on iso natiiviriippuvuus ja toisi
+mukanaan kuvankäsittelyn, jota ei tarvita. `strip-metadata.ts` poistaa
+tavutasolla JPEG:n APPn- ja COM-lohkot sekä PNG:n sivulohkot **sallittujen
+listalla** (tuntematon lohkotyyppi on tuntematon eikä siksi luotettava).
+
+Pikselit eivät muutu lainkaan. Se on tarkoitus: tiiviste lasketaan siitä
+tiedostosta, joka tallennetaan, ja sen on oltava sama asiakirjassa ja
+levyllä. Väriprofiili säilytetään — todistekuvassa väri on sisältöä.
+
+**Lataus kulkee oman reitin kautta** eikä signed upload URL:lla, vaikka
+CLAUDE.md mainitsee jälkimmäisen. Signed URL:lla tiedosto menisi suoraan
+Storageen, eikä palvelin voisi poistaa metatietoja. Kuvat pakataan
+selaimessa noin megatavuun, joten Vercelin 4,5 MB:n rungon raja riittää.
+
+
+## Lukituksen ehto on vuokralaisen aito mahdollisuus (2026-09-12)
+
+Vuokranantaja ei voi lukita katselmusta ennen kuin vuokralainen on joko
+merkinnyt olevansa valmis tai hänen ensimmäisestä käynnistään on kulunut 24
+tuntia.
+
+Ilman tätä vuokranantaja voisi kuvata asunnon itse ja lukita sen ennen kuin
+vuokralainen ehtii paikalle. Pöytäkirja kertoisi vain toisen osapuolen
+näkemyksen — ja sellainen pöytäkirja on riidassa arvottomampi kuin ei mitään,
+koska se näyttää yhteiseltä olematta sitä.
+
+24 tunnin ehto ei ole porsaanreikä: laskuri alkaa vasta kun vuokralainen on
+nähnyt näkymän, ja kahden vuokralaisen tapauksessa odotetaan hitainta.
+
+Sääntö on **puhdas funktio** (`inspection/lock.ts`) ilman tietokantaa, jotta
+se on luettavissa ja testattavissa kokonaan. Käyttöliittymä näyttää syyn eikä
+piilota nappia: piilotettu nappi näyttäisi siltä, ettei ominaisuutta ole.
+
+
+## Allekirjoituskierros: molemmat asiakirjat kerralla (2026-09-12)
+
+Sopimus ja alkukatselmuksen pöytäkirja lähtevät samalla kierroksella, yhdellä
+tunnistautumisella. Ne kuuluvat yhteen: sopimus kertoo mistä sovittiin,
+pöytäkirja missä kunnossa koti oli silloin. Erikseen allekirjoitettuina
+jälkimmäinen jäisi tekemättä.
+
+**Kierrosta ei voi lähettää ennen kuin** katselmus on lukittu ja osapuolten
+tiedot ovat kunnossa. Allekirjoituksen jälkeen sopimusta ei voi korjata.
+
+**Tila luetaan eSinetiltä, ei peilata omaan kantaan.** Kuka on avannut, kuka
+tunnistautunut — kaikki haetaan sivua ladattaessa. Vain `round.completed`
+muuttaa omaa tilaa. Kahden totuuden ylläpito olisi pahin mahdollinen asia
+juuri siinä kysymyksessä, kuka on allekirjoittanut.
+
+**Käsittely on idempotentti.** eSinetti toistaa tapahtuman, jos vastauksemme
+ei mennyt perille. Ilman idempotenssia toisto tuottaisi kaksinkertaiset
+vuokrakaudet — eli vuokralaiselle kaksi laskua kuukaudessa. Testattu.
+
+**Vuokrakaudet syntyvät vasta allekirjoituksesta**, ei sopimusta luotaessa:
+ennen allekirjoitusta vuokra ja eräpäivä voivat vielä muuttua.
+
+
+## Puuttuva migraatio näkyy testeissä nimeltä (2026-09-12)
+
+Migraatiot ajetaan Supabasen SQL-editorissa käsin, eikä testiajo voi tehdä
+sitä puolestaan. Ilman apua uuden sarakkeen varassa oleva testi kaatui
+viestiin "kuvien haku epäonnistui", joka ei kerro lukijalle mitään siitä,
+mikä oikeasti puuttuu.
+
+`tests/migration-probe.ts` tarkistaa sarakkeen olemassaolon, ja testi
+ohitetaan **näkyvästi**: konsoliin tulee rivi, joka nimeää migraation. Tämä
+ei ole lupa jättää migraatioita ajamatta vaan tapa kertoa siitä selvästi
+silloin, kun niin on käynyt.
