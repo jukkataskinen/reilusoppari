@@ -29,7 +29,7 @@ Jos jokin niistä projekteista rikkoutuu odottamattomasti, tämä on
 ensimmäinen paikka johon katsoa. Asetus on palautettavissa, mutta silloin
 Reilusopparin passwordless lakkaa toimimasta.
 
-## Auth0-tenant on Yhdysvalloissa (2026-09-11, ratkaisematta)
+## Auth0-tenant siirretään EU:hun (2026-09-11, Jukan päätös)
 
 Tenant `dev-qanv0hdzfjjsybgm` on alueella **US-5**. Auth0 säilöö kirjautuvien
 käyttäjien sähköpostit, nimet ja kirjautumistiedot siellä.
@@ -51,8 +51,16 @@ Vaihtoehdot ennen lanseerausta:
 2. Tekstien korjaus molemmilla sivustoilla ja siirron dokumentointi
    tietosuojaselosteisiin
 
-**Tämä on ratkaistava tietoisesti, ei huomaamatta.** Kirjattu myös
-BLOCKERS.md:hen.
+**Päätös: vaihtoehto 1.** Kaikki siirretään uuteen EU-tenanttiin ennen
+lanseerausta. Silloin tenantteja on yhä yksi ja ilmaistaso riittää; erillinen
+tenant Reilusopparille olisi maksanut 35 $/kk eikä olisi ratkaissut aluetta.
+
+Sivustojen tekstejä ei siis muuteta — ne pitävät paikkansa siirron jälkeen.
+
+Siirtosuunnitelma, riskit ja tehtävälista ovat `BLOCKERS.md`:ssä. Kaksi
+olennaista kohtaa: ilmaistasolla vanhaa ja uutta ei voi ajaa rinnakkain, ja
+`auth0_sub` muuttuu niin että tietokantojen käyttäjärivit on kartoitettava
+uudelleen sähköpostin perusteella.
 
 ## Katselmus: molemmat kuvaavat mitä itse pitävät tärkeänä (2026-09-10, Jukan päätös)
 

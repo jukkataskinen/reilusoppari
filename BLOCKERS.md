@@ -133,15 +133,57 @@ viestin on oltava Reilusopparin näköinen ja eSinetin viestin eSinetin
 näköinen, se vaatii joko tenantin jakamisen tai pohjan, joka käyttää
 `{{ application.name }}`-muuttujaa kaikkialla missä nyt on tenantin nimi.
 
-## Auth0-tenant on Yhdysvalloissa — ratkaistava ennen lanseerausta
+## Auth0: siirto EU-tenanttiin — PÄÄTETTY 2026-09-11, ajankohta avoin
 
-Tenant on alueella US-5, mutta `esinetti.fi` ja `reilusoppari.fi` lupaavat
-alatunnisteessaan "tiedot EU:ssa". Sama tenant palvelee viittä sovellusta
-neljässä projektissa, joten siirto EU:hun on kertarysäys — ja ilmaistaso
-sallii vain yhden tenantin.
+Jukan päätös: kaikki viisi sovellusta siirretään uuteen EU-alueen tenanttiin
+jossain vaiheessa ennen lanseerausta. Silloin tenantteja on edelleen yksi ja
+ilmaistaso riittää (toinen tenant maksaisi 35 $/kk).
 
-Vaihtoehdot: siirto EU-tenanttiin kaikkine projekteineen, tai tekstien korjaus
-ja siirron dokumentointi tietosuojaselosteisiin. Ks. `DECISIONS.md`.
+Siirto koskee neljää projektia: `reilusoppari`, `esinetti`, Adepta PPR ja
+Adepta SKOG.
+
+### Kaksi asiaa, jotka ratkaisevat onnistuuko siirto
+
+**1. Ilmaistasolla vanhaa ja uutta ei voi ajaa rinnakkain.** Yksi tenant per
+tili tarkoittaa, että vanha on poistettava ennen uuden luontia — eli kaikkien
+neljän projektin kirjautuminen on poikki siirron ajan, eikä paluuta ole.
+
+Vaihtoehto, joka poistaa koko riskin: **maksa Essentials yhdeltä kuukaudelta
+(35 $).** Silloin molemmat tenantit ovat olemassa yhtä aikaa, siirron voi tehdä
+sovellus kerrallaan, testata, ja peruuttaa jos jokin menee pieleen. Kuukauden
+jälkeen vanha poistetaan ja palataan ilmaistasolle.
+
+35 dollaria on halpa hinta siitä, että neljän tuotantojärjestelmän
+kirjautuminen ei ole kerralla poikki ilman paluutietä.
+
+**2. `auth0_sub` muuttuu, ja tietokannat viittaavat siihen.** Uudessa
+tenantissa käyttäjät saavat uudet tunnisteet. Nämä rivit orpoutuvat:
+
+- `rs_users.auth0_sub` (Reilusoppari)
+- `sin_tenant_users.auth0_sub` (eSinetti)
+- vastaavat PPR:ssä ja SKOGissa
+
+Ne on kartoitettava uudelleen **sähköpostiosoitteen perusteella** siirron
+yhteydessä. Ilman tätä kirjautuminen onnistuu mutta käyttäjä näyttää uudelta:
+eSinetissä hän menettäisi pääsyn omaan tenanttiinsa ja Reilusopparissa omiin
+vuokrasuhteisiinsa.
+
+### Muu tehtävälista siirrossa
+
+- Jokaiselle sovellukselle uudet `AUTH0_DOMAIN`, `CLIENT_ID`, `CLIENT_SECRET`
+  → päivitettävä neljän projektin Vercel-ympäristömuuttujiin ja `.env.local`eihin
+- Callback-, logout- ja web origin -osoitteet uudelleen jokaiselle sovellukselle
+- Authentication Profile → **Identifier First** (muuten Reilusopparin
+  passwordless ei toimi, ks. DECISIONS.md)
+- Passwordless Email päälle Reilusopparille, tietokantayhteys siltä pois
+- Salasanakäyttäjien siirto: Auth0:n vienti ei sisällä salasanatiivisteitä
+  ilman erillistä pyyntöä. Käytännössä eSinetin, PPR:n ja SKOGin käyttäjät
+  joko asettavat salasanan uudelleen, tai heidätkin siirretään passwordlessiin.
+
+### Milloin
+
+Ennen lanseerausta. Luonteva hetki on **ennen kuin Reilusopparilla on oikeita
+käyttäjiä** — jokainen uusi tili kasvattaa kartoitustyötä kohdassa 2.
 
 ## 4. Jukan tehtävät (CLAUDE.md kohta 9)
 
