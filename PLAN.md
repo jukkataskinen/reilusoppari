@@ -36,7 +36,8 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [x] Paletti ja fontti sivustolta (`globals.css`, Plus Jakarta Sans itse
       hostattuna) — shadcn/ui lisätään kun ensimmäinen lomake tarvitsee sen
 - [x] **Mobiili ensin:** 390 px perusleveys, kosketuskohde 44 px, zoomaus sallittu
-- [ ] PWA: service worker ja ikonit (manifest tehty)
+- [ ] PWA: service worker ja ikonit (manifest tehty) — myös pohja
+      sovelluskaupoille, ks. vaihe 7
 - [x] Supabase kytketty: `src/lib/db/supabase.ts` (service + anon) ja
       `src/lib/db/access.ts` (osapuolirajaus yhdessä paikassa), 4
       IDOR-integraatiotestiä live-kantaa vasten
@@ -145,6 +146,44 @@ yhteystiedot eivät paljastu, vuokralainen näkee keskustelun.
 - [ ] Keskustelu portaalissa, ei yhteystietoja kummallekaan
 - [ ] Vuokralainen näkee keskustelun kokonaisuudessaan
 - [ ] Luvan peruminen sulkee avoimet keskustelut, rajat ja loki
+
+## Vaihe 7 — Sovelluskaupat (iOS ja Android)
+
+Jukan vaatimus 2026-09-11: sovelluksen pitää olla aidosti ladattavissa App
+Storesta ja Google Playsta, ei vain "lisää kotivalikkoon".
+
+DoD: sama koodi, kaksi julkaisua kaupoissa, kirjautuminen ja kamera toimivat
+molemmissa.
+
+- [ ] Capacitor-kuori olemassa olevan Next.js-sovelluksen ympärille
+      (ei erillistä natiivikoodikantaa — yksi sovellus, kaksi pakkausta)
+- [ ] Natiivikamera Capacitorin kautta: selaimen kameralla ei saa iOS:llä
+      luotettavaa kuvanlaatua eikä taustalataus toimi
+- [ ] Natiivipush (APNs ja FCM) web pushin rinnalle; **iOS-Safari-web push
+      vaatii, että käyttäjä on lisännyt PWA:n kotivalikkoon** — kaupasta
+      ladatussa sovelluksessa tätä ongelmaa ei ole
+- [ ] Auth0-kirjautuminen kuoressa: universal links (iOS) ja App Links
+      (Android), custom scheme vain varalle
+- [ ] Offline-tila: katselmuksen kuvat jonoon, lähetys kun verkko palaa
+- [ ] Apple: tietosuojaseloste, "App Privacy" -lomake, ikärajaus
+- [ ] Google Play: Data safety -lomake, arkaluonteisten lupien perustelu
+- [ ] Kaupan kuvaukset ja kuvakaappaukset suomeksi
+- [ ] Tilit: Apple Developer 99 $/v, Google Play 25 $ kertamaksu
+      (`KUSTANNUKSET.md`)
+
+## Vaihe 7 vaikuttaa vaiheeseen 5 — päätettävä ennen maksujen rakentamista
+
+Apple vaatii, että sovelluksen sisällä myytävä digitaalinen sisältö kulkee
+Applen oman maksujärjestelmän kautta (15–30 % provisio). Jos Reilusoppari
+myy 29 €:n vuokrasuhteen tai Plussan sovelluksessa, Stripe ei riitä.
+
+Kierto on vakiintunut ja sallittu: **sovelluksessa ei myydä mitään.** Käyttäjä
+ostaa verkossa, ja sovellus vain näyttää mitä hän on ostanut. Näin tekevät
+Netflix ja Spotify. Hinta on se, ettei sovelluksesta saa linkittää ostosivulle
+eikä kehottaa ostamaan siellä.
+
+Tämä on päätettävä ennen vaihetta 5, koska se muuttaa maksunäkymän rakenteen.
+Ks. `DECISIONS.md`.
 
 ---
 

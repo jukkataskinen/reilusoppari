@@ -209,3 +209,38 @@ Sivusto (`reilusoppari-web`), julkaistuja tekstejä korjattiin:
   kohtaa: yleinen väite myönteisen arvion ongelmallisuudesta tarkennettiin
   koskemaan asteikkoa, ei yksittäistä myönteistä sanaa; Askeleet-kohta 4;
   UKK-vastaus poistamisesta.
+
+
+## Sovellus julkaistaan App Storessa ja Google Playssa (2026-09-11, Jukan vaatimus)
+
+Jukka: "tämän sovelluksen pitää luonnollisesti olla ladattavissa aidosti
+äppinä iOS:lle ja androideille."
+
+PWA ei siis riitä. Tekninen tapa on Capacitor-kuori saman Next.js-sovelluksen
+ympärillä: yksi koodikanta, kolme julkaisua (web, iOS, Android). Erillistä
+natiivisovellusta ei kirjoiteta.
+
+**Tämä ei ole pelkkä pakkausmuoto — se muuttaa kahta asiaa.**
+
+**1. Maksut.** Apple vaatii digitaalisen sisällön myynnin kulkevan oman
+maksujärjestelmänsä kautta, provisio 15–30 %. Reilusopparin 29 €:n
+vuokrasuhde ja Plus ovat digitaalista sisältöä. Vaihtoehdot:
+
+| | Provisio | Seuraus |
+|---|---|---|
+| Applen IAP sovelluksessa | 15–30 % | 29 €:sta jää ~22 €; kaksi rinnakkaista maksujärjestelmää ylläpidettäväksi |
+| **Ei myyntiä sovelluksessa** | 0 % | Osto verkossa, sovellus näyttää vain mitä on ostettu. Sovelluksesta ei saa linkittää ostosivulle. |
+
+Suositus on jälkimmäinen, sama kuin Netflixillä ja Spotifylla. Päätös on
+tehtävä ennen vaihetta 5, koska maksunäkymä rakennetaan sen mukaan.
+
+**2. Apple hylkää pelkät verkkosivukuoret** (App Store Review Guideline 4.2).
+Reilusoppari läpäisee tämän, koska siinä on kamera, push-ilmoitukset ja
+offline-tila — mutta ne on toteutettava natiivisti Capacitorin kautta, ei
+selaimen rajapinnoilla. Se on työtä, ei muotoseikka.
+
+**Aikataulu.** Ensimmäinen App Store -katselmus kestää päiviä ja menee usein
+kerran läpi hylättynä. Lokakuun lanseeraus tarkoittaa käytännössä, että
+**web ja PWA julkaistaan ensin ja kaupat perässä** — tai että kauppatilit ja
+kuoret aloitetaan heti rinnalla. Tämä on Jukan valinta; `PLAN.md` vaihe 7 on
+kirjoitettu niin, että se voi tapahtua kummin päin tahansa.
