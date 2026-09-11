@@ -99,11 +99,17 @@ export function PartyDetailsFields({
             <label htmlFor={`${domId}-businessId`} className="text-sm font-medium">
               Y-tunnus
             </label>
+            {/*
+              Ei `inputMode="numeric"`: puhelimen numeronäppäimistössä ei ole
+              väliviivaa, eikä y-tunnusta saisi kirjoitettua sellaisena kuin
+              se luetaan.
+            */}
             <input
               {...field("businessId")}
               defaultValue={details.businessId ?? ""}
               placeholder="1234567-8"
-              inputMode="numeric"
+              autoComplete="off"
+              spellCheck={false}
             />
             <FieldError name="businessId" />
           </div>
