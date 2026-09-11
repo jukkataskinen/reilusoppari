@@ -467,3 +467,36 @@ kuussa lähtevälle kuittauspyynnölle se riittää.
 Jos käytännössä osoittautuu, ettei se riitä, vaihtoehdot ovat tekstiviesti tai
 paluu sovelluskauppoihin. Sähköposti on varakanava, ei ensisijainen — juuri
 siitä Jukka huomautti.
+
+
+## Avoimet kysymykset vaiheesta 1 (2026-09-11)
+
+Nämä tulivat vastaan rakentaessa eikä ohjeessa ole niistä linjausta. Tein
+turvallisimman valinnan ja jatkoin; korjaa jos tarkoitit toisin.
+
+**1. Vajaan ensimmäisen kuukauden vuokra.** Jos vuokrasuhde alkaa kesken
+kuukauden, ensimmäiselle kuukaudelle generoituu täysi vuokra. Suhteuttaminen
+vaatisi päätöksen laskutavasta (päivät/30 vai päivät kuukaudessa). Kunnes se
+ratkaistaan, vajaasta kuukaudesta voi sopia sopimuksen muissa ehdoissa.
+
+**2. Kutsun voimassaolo on 30 päivää.** Vuokrasuhde luodaan usein hyvissä
+ajoin, ja lyhyempi aika tarkoittaisi vanhentuneita kutsuja. Vanhentuneen
+tilalle voi luoda uuden.
+
+**3. Kutsutun sähköpostin on täsmättävä kirjautumiseen.** Muuten eteenpäin
+välitetty linkki liittäisi väärän ihmisen vuokrasuhteeseen, ja hänen nimensä
+päätyisi allekirjoitettuun sopimukseen. Väärällä tilillä avattu kutsu ei kulu.
+
+**4. Osapuolten nimet ovat sopimuksen dataa.** `rs_users.name` täyttyy vasta
+eSinetin tunnistuksesta, mutta sopimus on kirjoitettava ennen sitä.
+Vuokranantaja kirjoittaa nimet itse; allekirjoituksen jälkeen tunnistuksesta
+saatu nimi on se, joka pätee.
+
+**5. Sopimuksen oletusehdot on valittu niin, etteivät ne yllätä
+vuokralaista.** Vesi kuuluu vuokraan oletuksena — jos vuokranantaja ei huomaa
+muuttaa sitä, seurauksena ei ole yllätyslaskua.
+
+**6. Vuokralainen ei muokkaa sopimusta.** Hän näkee luonnoksen ja kertoo
+toiveensa vuokranantajalle, joka muuttaa ehtoja. Muuten sopimus voisi muuttua
+sen jälkeen, kun toinen on sen lukenut. Kommentointi portaalissa on vielä
+tekemättä.

@@ -20,7 +20,18 @@ import { createHash } from "node:crypto";
 import { renderToBuffer } from "@react-pdf/renderer";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
+
 import { ensureDocumentFonts } from "./fonts";
+
+/**
+ * Asiakirjakomponentti.
+ *
+ * Tyyppi on väljä tarkoituksella: asiakirjat ovat omia komponenttejaan, jotka
+ * palauttavat `DocumentRoot`in (`components.tsx`). `ReactElement<DocumentProps>`
+ * vaatisi, että juurena on React-PDF:n `Document` — ja juuri sitä ei käytetä
+ * suoraan, koska aikaleimat asetetaan `DocumentRoot`issa.
+ */
+export type DocumentElement = ReactElement<DocumentProps> | ReactElement<Record<string, unknown>>;
 
 export interface RenderedDocument {
   bytes: Uint8Array;
@@ -35,9 +46,7 @@ export interface RenderedDocument {
  * levyltä, eikä sitä pidä tehdä vain siksi, että joku importtaa tämän
  * moduulin.
  */
-export async function renderDocumentPdf(
-  element: ReactElement<DocumentProps>,
-): Promise<RenderedDocument> {
+export async function renderDocumentPdf(element: DocumentElement): Promise<RenderedDocument> {
   // Kesken oleva fonttilataus tuottaisi eri tavut kuin valmis (ks. `fonts.ts`).
   await ensureDocumentFonts();
 

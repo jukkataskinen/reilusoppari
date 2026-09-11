@@ -32,6 +32,11 @@ import {
   isInviteTokenShaped,
 } from "../tenancy/invite";
 import { generateRentPeriods } from "../tenancy/rent-periods";
+import {
+  CONTRACT_TEMPLATE_KEY,
+  CONTRACT_TEMPLATE_VERSION,
+  DEFAULT_CONTRACT_TERMS,
+} from "../tenancy/contract-schema";
 import type { TenancyInput } from "../tenancy/schema";
 
 export type TenancyStatus =
@@ -190,6 +195,26 @@ export async function createTenancy(
     const { error: partyError } = await supabase.from("rs_tenancy_parties").insert(parties);
     if (partyError) {
       console.error("[tenancies] osapuolten luonti epäonnistui:", partyError.message);
+      throw new Error("Vuokrasuhteen luonti epäonnistui.");
+    }
+
+    /*
+      Sopimusrivi luodaan heti oletusehdoilla ja luonnissa annetuilla
+      nimillä. Ilman tätä vuokralaisen nimi katoaisi: `rs_tenancy_parties`
+      tallentaa vain sähköpostin, ja sopimus tarvitsee nimen.
+    */
+    const { error: contractError } = await supabase.from("rs_contracts").insert({
+      tenancy_id: tenancy.id,
+      template_key: CONTRACT_TEMPLATE_KEY,
+      template_version: CONTRACT_TEMPLATE_VERSION,
+      template_data: {
+        ...DEFAULT_CONTRACT_TERMS,
+        tenantNames: input.tenants.map((tenant) => tenant.name),
+      },
+    });
+
+    if (contractError) {
+      console.error("[tenancies] sopimusrivin luonti epäonnistui:", contractError.message);
       throw new Error("Vuokrasuhteen luonti epäonnistui.");
     }
 
@@ -590,4 +615,35 @@ export async function reissueInvite(
   }
 
   return { email: party.invite_email ?? "", name: "", token: invite.token };
+}
+
+/**
+ * Vuokrasuhteen asunto osapuolelle.
+ *
+ * `getProperty` rajaa omistajaan, eikä vuokralainen omista asuntoa — mutta
+ * hänen on nähtävä osoite sopimuksessa ja katselmuksessa. Tämä on se
+ * kapea poikkeus: osoite näkyy sille, joka on vuokrasuhteen osapuoli.
+ * Muut asunnon tiedot (kulut, verolaskelma) pysyvät omistajalla.
+ */
+export async function getTenancyProperty(
+  userId: string,
+  tenancyId: string,
+): Promise<{ street: string; postalCode: string; city: string } | null> {
+  const tenancy = await getTenancy(userId, tenancyId);
+  if (!tenancy) return null;
+
+  const { data, error } = await getServiceClient()
+    .from("rs_properties")
+    .select("street, postal_code, city")
+    .eq("id", tenancy.propertyId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[tenancies] asunnon haku epäonnistui:", error.message);
+    return null;
+  }
+  if (!data) return null;
+
+  const row = data as { street: string; postal_code: string; city: string };
+  return { street: row.street, postalCode: row.postal_code, city: row.city };
 }

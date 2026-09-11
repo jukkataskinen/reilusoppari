@@ -81,12 +81,15 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
       eräpäivä, vakuus. 1–2 vuokralaista, määräaikainen tai toistaiseksi
 - [x] **Ilmoitus loppuarviosta** luontinäkymässä ja kutsulinkin takana —
       sama komponentti kaikissa kolmessa paikassa, jottei teksti erkaannu
-- [ ] Sopimuslomake `vuokrasopimus_asuinhuoneisto`-schemalla
-- [ ] Esikatselu PDF:nä eSinetin `/documents/render`-kutsulla
+- [x] Sopimuslomake: irtisanomisaika, vuokrankorotusehto, avaimet, tupakointi,
+      lemmikit, vesi ja sähkö, muut ehdot. Vain vuokranantaja muokkaa
+- [x] Esikatselu PDF:nä omalla renderöijällä. Päiväys on vuokrasuhteen
+      alkupäivä eikä kuluva päivä, jotta esikatselun tiiviste on vakaa
 - [x] Kutsulinkki vuokralaiselle, `rs_tenancy_parties` + token. Tunniste vain
       tiivisteenä, uudelleenlähetys mitätöi vanhan, sähköpostin on täsmättävä
 - [x] Vuokralaisen liittyminen: julkinen kutsusivu, kirjautuminen, liittyminen
-- [ ] Vuokralaisen näkymä sopimusluonnokseen ja kommentointi
+- [x] Vuokralaisen näkymä sopimusluonnokseen
+- [ ] Vuokralaisen kommentointi sopimukseen
 - [ ] Alkukatselmus: checkpoint-lista huoneittain, kummankin oma kuvausnäkymä
 - [ ] **Kumpi tahansa voi lisätä oman kohtansa** (`added_by_user_id`) ja kuvata
       ilman checkpointia — oletuslista on muistin tueksi, ei rajoite
