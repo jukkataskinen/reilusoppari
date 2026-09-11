@@ -94,11 +94,9 @@ const KATSELMUS: InspectionProtocolData = {
   lockedAt: "2026-08-30T14:20:00.000Z",
   lockedByName: "Matti Virtanen",
   place: "Jyväskylä",
-  items: [
+  rooms: [
     {
-      room: "Keittiö",
-      item: "Liesi ja uuni",
-      addedBy: null,
+      name: "Keittiö",
       photos: [
         {
           dataUri: KUVA_A.dataUri,
@@ -114,15 +112,12 @@ const KATSELMUS: InspectionProtocolData = {
           takenAt: "2026-08-30T13:05:00.000Z",
           takenByName: "Maija Meikäläinen",
           takenByRole: "tenant",
-          note: null,
+          note: "Välitilan laatoitus ehjä.",
         },
       ],
     },
-    { room: "Keittiö", item: "Jääkaappi ja pakastin", addedBy: null, photos: [] },
     {
-      room: "Kylpyhuone",
-      item: "Silikonisaumat",
-      addedBy: null,
+      name: "Kylpyhuone",
       photos: [
         {
           dataUri: KUVA_C.dataUri,
@@ -135,9 +130,7 @@ const KATSELMUS: InspectionProtocolData = {
       ],
     },
     {
-      room: "Olohuone",
-      item: "Lattia",
-      addedBy: null,
+      name: "Olohuone",
       photos: [
         {
           dataUri: KUVA_D.dataUri,
@@ -150,9 +143,9 @@ const KATSELMUS: InspectionProtocolData = {
       ],
     },
     {
-      room: "Parveke",
-      item: "Kaiteen kiinnitys",
-      addedBy: { name: "Maija Meikäläinen", role: "tenant" },
+      // Vuokralaisen itse lisäämä tila. Se näkyy pöytäkirjassa samalla
+      // tavalla kuin oletuslistan huoneet.
+      name: "Parveke",
       photos: [
         {
           dataUri: KUVA_E.dataUri,

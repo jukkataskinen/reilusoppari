@@ -12,14 +12,20 @@
  * vastaanotti ja mikä on sen tiiviste. Aika on palvelimen aika eikä
  * puhelimen ilmoittama: puhelimen kelloa voi siirtää.
  *
- * MOLEMPIEN LISÄYKSET OVAT SAMANARVOISIA
+ * RAKENNE ON HUONE, EI TARKISTUSLISTA
  *
- * Oletuslista on muistin tueksi, ei rajoite (DECISIONS.md 2026-09-10).
- * Kumpi tahansa osapuoli voi lisätä oman kohtansa, ja pöytäkirja esittää
- * lisätyn kohdan täsmälleen samalla tavalla kuin oletuslistalta tulleen —
- * ainoa ero on merkintä siitä, kuka sen lisäsi. Käyttöliittymän tavoin
- * asiakirjakaan ei saa esittää vuokranantajan listaa "oikeana" ja
- * vuokralaisen lisäyksiä poikkeuksena.
+ * Aiemmin pöytäkirja oli lista ennalta määrätyistä kohdista, ja tyhjä kohta
+ * näkyi siinä merkintänä "ei kuvia". Jukka linjasi toisin (2026-09-11):
+ * kuvataan huoneittain, eikä kuvaa vaadita mistään tietystä kohdasta.
+ *
+ * Siksi pöytäkirjassa ei ole tyhjiä kohtia. Se kertoo, mitä kuvattiin — ei
+ * sitä, mitä jäi kuvaamatta. Jälkimmäinen olisi harhaanjohtavaa: lista, jossa
+ * on kymmenen "ei kuvia" -riviä, näyttää huolimattomalta katselmukselta,
+ * vaikka osapuolet olisivat kuvanneet juuri sen, mikä heidän mielestään
+ * merkitsee.
+ *
+ * Kuvan alla oleva selite kertoo, miksi juuri se kohta kuvattiin. Selite on
+ * vapaaehtoinen, joten sitä ei ole kaikilla kuvilla.
  * ===========================================================================
  */
 
@@ -52,14 +58,15 @@ export interface InspectionPhoto {
   takenByRole: PartyRole;
   /** Tallennetun tiedoston SHA-256. */
   sha256: string;
+  /** Miksi tämä kohta kuvattiin. Vapaaehtoinen. */
   note: string | null;
+  /** Merkitty kuulumattomaksi. Kuva jää pöytäkirjaan — merkittynä. */
+  flaggedReason?: string | null;
 }
 
-export interface InspectionItem {
-  room: string;
-  item: string;
-  /** `null` = oletuslistalta generoitu. Muuten kohdan lisännyt osapuoli. */
-  addedBy: { name: string; role: PartyRole } | null;
+/** Yksi huone ja siitä otetut kuvat aikajärjestyksessä. */
+export interface InspectionRoomGroup {
+  name: string;
   photos: InspectionPhoto[];
 }
 
@@ -73,22 +80,20 @@ export interface InspectionProtocolData {
   lockedAt: string;
   lockedByName: string;
 
-  items: InspectionItem[];
+  rooms: InspectionRoomGroup[];
 
   place: string;
 }
 
 /**
- * Kuka kohdan lisäsi.
+ * Kumpi osapuoli kuvan otti.
  *
- * Rooli eikä nimi: nimi on jo kuvatekstissä ja allekirjoituksissa, ja
- * ”lisännyt Maija Meikäläinen, vuokralainen” ei mahtunut kaventamatta
- * sarakkeita niin, että kuvat olisivat kärsineet. Olennaista on kumpi
- * osapuoli kohdan lisäsi — se erottaa lisätyn kohdan oletuslistan kohdasta.
+ * Rooli nimen perässä, koska nimi yksin ei kerro lukijalle kumpi osapuoli on
+ * kyseessä — ja juuri se erottaa yhteisen katselmuksen yksipuolisesta.
  */
-const ADDED_BY_LABEL: Record<PartyRole, string> = {
-  landlord: "Vuokranantajan lisäämä",
-  tenant: "Vuokralaisen lisäämä",
+const ROLE_LABEL: Record<PartyRole, string> = {
+  landlord: "vuokranantaja",
+  tenant: "vuokralainen",
 };
 
 /** Kellonaika minuutin tarkkuudella: sekunnit eivät kerro lukijalle mitään. */
@@ -105,73 +110,78 @@ function shortHash(sha256: string): string {
   return sha256.slice(0, 12);
 }
 
-/** Kohdat huoneittain alkuperäisessä järjestyksessä. */
-export function groupByRoom(items: InspectionItem[]): { room: string; items: InspectionItem[] }[] {
-  const rooms: { room: string; items: InspectionItem[] }[] = [];
-  for (const item of items) {
-    const last = rooms[rooms.length - 1];
-    if (last && last.room === item.room) last.items.push(item);
-    else rooms.push({ room: item.room, items: [item] });
-  }
-  return rooms;
+export function countPhotos(rooms: InspectionRoomGroup[]): number {
+  return rooms.reduce((total, room) => total + room.photos.length, 0);
 }
 
-export function countPhotos(items: InspectionItem[]): number {
-  return items.reduce((total, item) => total + item.photos.length, 0);
+/** Huoneet, joista on kuvia. Tyhjä huone ei ole pöytäkirjan sisältöä. */
+export function photographedRooms(rooms: InspectionRoomGroup[]): InspectionRoomGroup[] {
+  return rooms.filter((room) => room.photos.length > 0);
 }
 
 /**
  * Pienoiskuvan mitat.
  *
- * Neljä kuvaa ja kohdan nimi mahtuvat samalle riville sivun leveydelle
- * (CLAUDE.md 5.3: enintään neljä kuvaa kohtaa kohden). Kiinteä leveys eikä
- * joustava: samankokoisia kuvia on helpompi verrata keskenään, ja vaihteleva
- * leveys tekisi pöytäkirjasta levottoman.
+ * Kolme kuvaa rinnakkain mahtuu sivun leveydelle niin, että kuvan alla on
+ * tilaa selitteelle. Kiinteä leveys eikä joustava: samankokoisia kuvia on
+ * helpompi verrata keskenään, ja vaihteleva leveys tekisi pöytäkirjasta
+ * levottoman.
  */
-const PHOTO_WIDTH = 88;
-const PHOTO_GAP = 6;
-const LABEL_WIDTH = 132;
+const PHOTO_WIDTH = 158;
+const PHOTO_GAP = 10;
+const PHOTOS_PER_ROW = 3;
 
-/**
- * Yksi kuva pienoiskuvana ja sen tiedot.
- *
- * Enintään neljä kuvaa kohtaa kohden mahtuu riviin (CLAUDE.md 5.3), joten
- * leveys on kiinteä eikä joustava — vaihteleva leveys tekisi pöytäkirjasta
- * levottoman, ja kuvien kokoa on helpompi verrata kun ne ovat samankokoisia.
- */
+/** Kuvat kolmen riveihin. Rivit ovat erillisiä, jotta sivu voi vaihtua niiden välissä. */
+export function photoRows(photos: InspectionPhoto[]): InspectionPhoto[][] {
+  const rows: InspectionPhoto[][] = [];
+  for (let index = 0; index < photos.length; index += PHOTOS_PER_ROW) {
+    rows.push(photos.slice(index, index + PHOTOS_PER_ROW));
+  }
+  return rows;
+}
+
+/** Yksi kuva pienoiskuvana ja sen tiedot. */
 function PhotoCard({ photo }: { photo: InspectionPhoto }) {
   return (
-    <View style={{ width: PHOTO_WIDTH, marginRight: PHOTO_GAP }}>
+    <View style={{ width: PHOTO_WIDTH, marginRight: PHOTO_GAP, marginTop: 10 }}>
       {/*
         eslint-disable-next-line jsx-a11y/alt-text --
         React-PDF:n `Image` ei ole HTML:n `img` eikä ota vastaan `alt`-tekstiä;
         PDF-muoto ei myöskään tue vaihtoehtoista tekstiä ilman tagattua
         rakennetta, jota React-PDF ei tuota. Saavutettavuus hoidetaan sillä,
-        mitä kuvan ympärillä lukee: kohta, kuvaaja, aika, tiiviste ja
-        huomautus ovat kaikki tekstiä.
+        mitä kuvan ympärillä lukee: huone, kuvaaja, aika, tiiviste ja selite
+        ovat kaikki tekstiä.
       */}
       <Image
         src={photo.dataUri}
         style={{
           width: PHOTO_WIDTH,
-          height: 66,
+          height: 96,
           objectFit: "cover",
           borderRadius: 6,
           border: `1px solid ${colors.line}`,
         }}
       />
+      {photo.note ? (
+        <Text style={{ fontSize: typeScale.small, color: colors.ink, marginTop: 4 }}>
+          {photo.note}
+        </Text>
+      ) : null}
+      {/*
+        Kuvaaja ja aika samalla rivillä, tiiviste omallaan.
+
+        Kolme erillistä riviä kasvatti kortin niin korkeaksi, ettei kuvarivi
+        mahtunut sivun loppuun jäävään tilaan — ja sivun loppu jäi tyhjäksi.
+      */}
       <Text style={{ fontSize: typeScale.label, color: colors.inkSoft, marginTop: 3 }}>
-        {photo.takenByName}
-      </Text>
-      <Text style={{ fontSize: typeScale.label, color: colors.inkFaint }}>
-        {formatDateTime(photo.takenAt)}
+        {photo.takenByName} ({ROLE_LABEL[photo.takenByRole]}) · {formatDateTime(photo.takenAt)}
       </Text>
       <Text style={{ fontSize: typeScale.label, color: colors.inkFaint }}>
         {shortHash(photo.sha256)}
       </Text>
-      {photo.note ? (
+      {photo.flaggedReason !== undefined && photo.flaggedReason !== null ? (
         <Text style={{ fontSize: typeScale.label, color: colors.ink, marginTop: 2 }}>
-          {photo.note}
+          Merkitty kuulumattomaksi: {photo.flaggedReason}
         </Text>
       ) : null}
     </View>
@@ -179,43 +189,55 @@ function PhotoCard({ photo }: { photo: InspectionPhoto }) {
 }
 
 /**
- * Yksi kohta kuvineen.
+ * Yhden huoneen kuvat.
  *
- * `wrap={false}`: kohta ei saa katketa kahdelle sivulle. Puolikas kohta, jonka
- * kuvat ovat seuraavalla sivulla, on riitatilanteessa juuri se, mitä ei
- * haluta selittää.
+ * ===========================================================================
+ * ORPON OTSIKON ESTO ILMAN JAKAMATONTA LOHKOA
+ *
+ * Ensin otsikko ja ensimmäinen kuva olivat yhdessä `wrap={false}`-lohkossa.
+ * Se esti orvon otsikon mutta maksoi liikaa: kuvallinen lohko on korkea, ja
+ * jos se ei mahtunut jäljelle jääneeseen tilaan, koko sivun loppu jäi
+ * tyhjäksi. Ensimmäisestä sivusta tuli näin lähes tyhjä.
+ *
+ * `minPresenceAhead` ratkaisee saman ongelman halvemmalla: otsikko siirtyy
+ * seuraavalle sivulle vain, jos sen alle ei mahdu annettua määrää. Kuvat
+ * saavat sen jälkeen katketa sivunvaihdossa vapaasti — yksittäinen kuva ei
+ * katkea, koska `PhotoCard` on itse jakamaton.
+ * ===========================================================================
  */
-function ItemBlock({ item }: { item: InspectionItem }) {
-  return (
-    <View style={{ flexDirection: "row", marginTop: 9 }} wrap={false}>
-      <View style={{ width: LABEL_WIDTH, paddingRight: 10 }}>
-        <Text style={{ fontWeight: weight.bold, fontSize: typeScale.small }}>{item.item}</Text>
-        {item.addedBy ? (
-          <Text style={{ fontSize: typeScale.label, color: colors.inkFaint, marginTop: 1 }}>
-            {ADDED_BY_LABEL[item.addedBy.role]}
-          </Text>
-        ) : null}
-      </View>
+function RoomBlock({ room }: { room: InspectionRoomGroup }) {
+  const rows = photoRows(room.photos);
 
-      <View style={{ flex: 1 }}>
-        {item.photos.length === 0 ? (
-          <Text style={{ fontSize: typeScale.small, color: colors.inkFaint }}>
-            Ei kuvia. Kumpikaan osapuoli ei kuvannut tätä kohtaa.
-          </Text>
-        ) : (
-          <View style={{ flexDirection: "row" }}>
-            {item.photos.map((photo) => (
-              <PhotoCard key={photo.sha256} photo={photo} />
-            ))}
-          </View>
-        )}
-      </View>
+  /*
+    Ylämarginaali on tavallista suurempi, koska otsikko on absoluuttisesti
+    sijoitettu ensimmäisen kuvarivin yläpuolelle eikä vie tilaa virrassa.
+    Ilman lisäystä otsikko liimautuisi edelliseen sisältöön kiinni.
+  */
+  return (
+    <View style={{ marginTop: spacing.block + 16 }}>
+      {rows.map((row, index) => (
+        <View key={row[0].sha256} style={{ flexDirection: "row" }} wrap={false}>
+          {/*
+            Otsikko on ensimmäisen kuvarivin sisällä, jotta ne pysyvät
+            yhdessä. Orpo otsikko sivun lopussa näyttää siltä, että jotain
+            puuttuu.
+          */}
+          {index === 0 ? (
+            <View style={{ position: "absolute", top: -22, left: 0 }}>
+              <Heading>{room.name}</Heading>
+            </View>
+          ) : null}
+          {row.map((photo) => (
+            <PhotoCard key={photo.sha256} photo={photo} />
+          ))}
+        </View>
+      ))}
     </View>
   );
 }
 
 function buildFacts(data: InspectionProtocolData): Fact[] {
-  const photos = countPhotos(data.items);
+  const rooms = photographedRooms(data.rooms);
 
   return [
     {
@@ -238,22 +260,20 @@ function buildFacts(data: InspectionProtocolData): Fact[] {
     { icon: "henkilo", label: "Vuokranantaja", value: data.landlordName },
     {
       icon: "kilpi",
-      label: "Kohtia",
-      value: formatCount(data.items.length, "kohta", "kohtaa"),
+      label: "Tiloja kuvattu",
+      value: formatCount(rooms.length, "tila", "tilaa"),
     },
-    { icon: "kilpi", label: "Kuvia", value: formatCount(photos, "kuva", "kuvaa") },
+    { icon: "kilpi", label: "Kuvia", value: formatCount(countPhotos(rooms), "kuva", "kuvaa") },
   ];
 }
 
 export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
   const isFinal = data.kind === "final";
   const title = isFinal ? "Loppukatselmus" : "Alkukatselmus";
-  const rooms = groupByRoom(data.items);
+  const rooms = photographedRooms(data.rooms);
   const date = data.lockedAt.slice(0, 10);
 
-  const allPhotos = data.items.flatMap((item) =>
-    item.photos.map((photo) => ({ item, photo })),
-  );
+  const allPhotos = rooms.flatMap((room) => room.photos.map((photo) => ({ room, photo })));
 
   return (
     <DocumentRoot
@@ -269,8 +289,8 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
         <Title
           lead={
             isFinal
-              ? "Tämä on pöytäkirja siitä, missä kunnossa koti on vuokrasuhteen päättyessä. Kohdat ovat samat kuin alkukatselmuksessa."
-              : "Tämä on pöytäkirja siitä, missä kunnossa koti on vuokrasuhteen alkaessa. Molemmat osapuolet ovat käyneet sen läpi yhdessä."
+              ? "Tämä on pöytäkirja siitä, missä kunnossa koti on vuokrasuhteen päättyessä. Tilat ovat samat kuin alkukatselmuksessa."
+              : "Tämä on pöytäkirja siitä, missä kunnossa koti on vuokrasuhteen alkaessa. Molemmat osapuolet ovat kuvanneet sen omalta osaltaan."
           }
         >
           {title}
@@ -286,10 +306,15 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
         <Panel style={{ marginTop: spacing.block }}>
           <Text style={{ fontWeight: weight.medium }}>Miten tätä luetaan</Text>
           <Text style={{ fontSize: typeScale.small, color: colors.inkSoft, marginTop: 3 }}>
-            Kumpikin osapuoli on kuvannut ne kohdat, jotka on itse katsonut tärkeiksi. Kohdat, joiden alla lukee ”lisäämä”, on lisätty
-            listan ulkopuolelta — ne ovat yhtä päteviä kuin muutkin. Jokaisen kuvan alla on kuvaaja, palvelimen vastaanottoaika
-            ja tiivisteen alku. Aika on palvelimen aika, ei puhelimen: puhelimen kelloa voi
-            siirtää. Täydet tiivisteet ovat viimeisellä sivulla.
+            Kumpikin osapuoli on kuvannut ne kohdat, jotka on itse katsonut tärkeiksi. Kuvat ovat
+            huoneittain siinä järjestyksessä, jossa ne on otettu, ja molempien kuvat ovat samassa
+            listassa samanarvoisina. Jokaisen kuvan alla on kuvaaja, palvelimen vastaanottoaika ja
+            tiivisteen alku. Aika on palvelimen aika, ei puhelimen: puhelimen kelloa voi siirtää.
+            Täydet tiivisteet ovat viimeisellä sivulla.
+          </Text>
+          <Text style={{ fontSize: typeScale.small, color: colors.inkSoft, marginTop: 6 }}>
+            Pöytäkirja kertoo, mitä kuvattiin. Se ei ole tarkistuslista eikä väitä, että kaikki
+            kuvaamisen arvoinen olisi kuvattu — kumpikin osapuoli on itse valinnut kohtansa.
           </Text>
           <Text style={{ fontSize: typeScale.small, color: colors.inkSoft, marginTop: 6 }}>
             Katselmus on lukittu {formatDateTime(data.lockedAt)}. Lukituksen jälkeen kuvia ei ole
@@ -298,24 +323,8 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
         </Panel>
 
         {rooms.map((room) => (
-          <View key={room.room} style={{ marginTop: spacing.block }}>
-            {/*
-              Huoneen otsikko ja sen ensimmäinen kohta pidetään yhdessä
-              jakamattomassa lohkossa. `minPresenceAhead` ei riittänyt: sen
-              arvo on arvaus kohdan korkeudesta, ja kuvallinen kohta on
-              korkeampi kuin kuvaton. Yksin sivun alalaitaan jäänyt
-              huoneen otsikko näyttää siltä, että jotain puuttuu.
-            */}
-            <View wrap={false}>
-              <Heading>{room.room}</Heading>
-              <ItemBlock item={room.items[0]} />
-            </View>
-            {room.items.slice(1).map((item) => (
-              <ItemBlock key={item.room + item.item} item={item} />
-            ))}
-          </View>
+          <RoomBlock key={room.name} room={room} />
         ))}
-
       </Page>
 
       {/*
@@ -336,7 +345,7 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
         </Title>
 
         <View style={{ marginTop: spacing.block }}>
-          {allPhotos.map(({ item, photo }) => (
+          {allPhotos.map(({ room, photo }) => (
             <View
               key={photo.sha256}
               style={{
@@ -348,9 +357,9 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
               wrap={false}
             >
               <View style={{ width: "38%", paddingRight: 8 }}>
-                <Text style={{ fontSize: typeScale.small }}>{item.item}</Text>
+                <Text style={{ fontSize: typeScale.small }}>{room.name}</Text>
                 <Text style={{ fontSize: typeScale.label, color: colors.inkFaint }}>
-                  {item.room} · {photo.takenByName}
+                  {photo.takenByName} · {formatDateTime(photo.takenAt)}
                 </Text>
               </View>
               <Text
@@ -377,16 +386,16 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
 
         {/*
           Loppusana ja allekirjoitukset ovat viimeisellä sivulla eivätkä
-          kohtalistan perässä.
+          kuvien perässä.
 
           Kaksi syytä. Allekirjoitus kattaa näin koko pöytäkirjan liitteineen
-          eikä vain kuvasivuja. Ja kohtalistan pituus vaihtelee asunnoittain:
-          kun allekirjoitus oli listan perässä, se työntyi omalle lähes
-          tyhjälle sivulleen aina kun lista sattui päättymään sivun lopussa.
+          eikä vain kuvasivuja. Ja kuvien määrä vaihtelee: kun allekirjoitus
+          oli kuvien perässä, se työntyi omalle lähes tyhjälle sivulleen aina
+          kun kuvat sattuivat päättymään sivun lopussa.
         */}
         <ClosingNote
           title="Kiitos, että kävitte kodin läpi yhdessä."
-          body="Tämä lista käydään samassa järjestyksessä läpi myös vuokrasuhteen päättyessä."
+          body="Samat tilat käydään läpi myös vuokrasuhteen päättyessä."
         />
 
         <Signatures

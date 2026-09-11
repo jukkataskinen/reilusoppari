@@ -39,6 +39,7 @@ import {
   DEFAULT_CONTRACT_TERMS,
 } from "../tenancy/contract-schema";
 import type { TenancyInput } from "../tenancy/schema";
+import type { PropertyType } from "../property/default-checkpoints";
 
 export type TenancyStatus =
   | "draft"
@@ -688,13 +689,14 @@ export async function getTenancyProperty(
   city: string;
   rooms: number | null;
   areaM2: number | null;
+  propertyType: PropertyType;
 } | null> {
   const tenancy = await getTenancy(userId, tenancyId);
   if (!tenancy) return null;
 
   const { data, error } = await getServiceClient()
     .from("rs_properties")
-    .select("street, postal_code, city, rooms, area_m2")
+    .select("street, postal_code, city, rooms, area_m2, property_type")
     .eq("id", tenancy.propertyId)
     .maybeSingle();
 
@@ -708,6 +710,7 @@ export async function getTenancyProperty(
     street: string;
     postal_code: string;
     city: string;
+    property_type: PropertyType;
     rooms: number | null;
     area_m2: number | string | null;
   };
@@ -719,5 +722,8 @@ export async function getTenancyProperty(
     rooms: row.rooms,
     // numeric palautuu merkkijonona, kuten `properties.ts`:ssä.
     areaM2: row.area_m2 === null ? null : Number(row.area_m2),
+    // Katselmuksen huoneluettelo johdetaan tästä. Ilman sitä vuokralaisen
+    // pitäisi lukea asunto omistajan oikeuksilla, mikä olisi väärä reitti.
+    propertyType: row.property_type,
   };
 }

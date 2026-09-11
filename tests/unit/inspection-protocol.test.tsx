@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   InspectionProtocol,
   countPhotos,
-  groupByRoom,
-  type InspectionItem,
+  photographedRooms,
   type InspectionProtocolData,
+  type InspectionRoomGroup,
 } from "@/documents/InspectionProtocol";
 import { RentalAgreement, type RentalAgreementData } from "@/documents/RentalAgreement";
 import { renderDocumentPdf } from "@/documents/render";
@@ -34,13 +34,12 @@ function photo(hash: string, name: string, role: "landlord" | "tenant") {
   };
 }
 
-const ITEMS: InspectionItem[] = [
-  { room: "Keittiö", item: "Liesi", addedBy: null, photos: [photo("a", "Matti", "landlord")] },
-  { room: "Keittiö", item: "Jääkaappi", addedBy: null, photos: [] },
+const ROOMS: InspectionRoomGroup[] = [
+  { name: "Keittiö", photos: [photo("a", "Matti", "landlord")] },
+  // Kuvaton tila: se ei tule pöytäkirjaan lainkaan.
+  { name: "Makuuhuone", photos: [] },
   {
-    room: "Kylpyhuone",
-    item: "Saumat",
-    addedBy: { name: "Maija", role: "tenant" },
+    name: "Kylpyhuone",
     photos: [photo("b", "Maija", "tenant"), photo("c", "Matti", "landlord")],
   },
 ];
@@ -53,31 +52,35 @@ const DATA: InspectionProtocolData = {
   lockedAt: "2026-08-30T14:20:00.000Z",
   lockedByName: "Matti Virtanen",
   place: "Jyväskylä",
-  items: ITEMS,
+  rooms: ROOMS,
 };
 
-describe("kohtien ryhmittely", () => {
-  it("säilyttää järjestyksen ja kokoaa peräkkäiset saman huoneen kohdat", () => {
-    const rooms = groupByRoom(ITEMS);
-    expect(rooms.map((r) => r.room)).toEqual(["Keittiö", "Kylpyhuone"]);
-    expect(rooms[0].items).toHaveLength(2);
-    expect(rooms[1].items).toHaveLength(1);
+describe("tilojen valinta pöytäkirjaan", () => {
+  it("kuvaton tila jätetään pois kokonaan", () => {
+    /*
+      Pöytäkirja kertoo, mitä kuvattiin — ei sitä, mitä jäi kuvaamatta.
+      Lista, jossa on kymmenen "ei kuvia" -riviä, näyttää huolimattomalta
+      katselmukselta, vaikka osapuolet olisivat kuvanneet juuri sen, minkä
+      itse katsoivat merkitseväksi (Jukan linjaus 2026-09-11).
+    */
+    expect(photographedRooms(ROOMS).map((room) => room.name)).toEqual([
+      "Keittiö",
+      "Kylpyhuone",
+    ]);
   });
 
-  it("ei yhdistä saman huoneen kohtia yli toisen huoneen", () => {
-    // Järjestys on se, jossa asunto kävellään läpi. Jos kohdat
-    // uudelleenjärjestettäisiin huoneen mukaan, loppukatselmuksen
-    // vertaaminen alkukatselmukseen menisi sekaisin.
-    const sekoitettu: InspectionItem[] = [
-      { room: "Keittiö", item: "A", addedBy: null, photos: [] },
-      { room: "Sauna", item: "B", addedBy: null, photos: [] },
-      { room: "Keittiö", item: "C", addedBy: null, photos: [] },
-    ];
-    expect(groupByRoom(sekoitettu).map((r) => r.room)).toEqual(["Keittiö", "Sauna", "Keittiö"]);
+  it("säilyttää järjestyksen", () => {
+    // Järjestys on se, jossa asunto kävellään läpi. Sama järjestys toistuu
+    // loppukatselmuksessa, jotta tilat voi verrata ilman etsimistä.
+    const jarjestys = photographedRooms([
+      { name: "Eteinen", photos: [photo("d", "Matti", "landlord")] },
+      { name: "Keittiö", photos: [photo("e", "Matti", "landlord")] },
+    ]);
+    expect(jarjestys.map((room) => room.name)).toEqual(["Eteinen", "Keittiö"]);
   });
 
   it("laskee kuvat", () => {
-    expect(countPhotos(ITEMS)).toBe(3);
+    expect(countPhotos(ROOMS)).toBe(3);
     expect(countPhotos([])).toBe(0);
   });
 });
@@ -100,11 +103,23 @@ describe("pöytäkirjan renderöinti", () => {
     expect(loppu.sha256).not.toBe(alku.sha256);
   }, 30_000);
 
-  it("kuvaton kohta sanotaan ääneen eikä jätetä tyhjäksi", async () => {
-    // Tyhjä kohta pöytäkirjassa on epäselvä: eikö sitä katsottu, vai
-    // eikö kuva tallentunut? Asiakirjan on kerrottava kumpi.
-    const { bytes } = await renderDocumentPdf(<InspectionProtocol data={DATA} />);
-    expect(bytes.length).toBeGreaterThan(2000);
+  it("kuvan selite tulee asiakirjaan", async () => {
+    const ilman = await renderDocumentPdf(<InspectionProtocol data={DATA} />);
+    const selitteella = await renderDocumentPdf(
+      <InspectionProtocol
+        data={{
+          ...DATA,
+          rooms: [
+            {
+              name: "Keittiö",
+              photos: [{ ...photo("a", "Matti", "landlord"), note: "Naarmu uunin luukussa" }],
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(selitteella.sha256).not.toBe(ilman.sha256);
   }, 30_000);
 });
 
