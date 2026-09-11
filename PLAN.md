@@ -37,7 +37,9 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
       hostattuna) — shadcn/ui lisätään kun ensimmäinen lomake tarvitsee sen
 - [x] **Mobiili ensin:** 390 px perusleveys, kosketuskohde 44 px, zoomaus sallittu
 - [ ] PWA: service worker ja ikonit (manifest tehty)
-- [ ] Supabase-projekti kytketty, `src/lib/db/` clientit (anon + service)
+- [x] Supabase kytketty: `src/lib/db/supabase.ts` (service + anon) ja
+      `src/lib/db/access.ts` (osapuolirajaus yhdessä paikassa), 4
+      IDOR-integraatiotestiä live-kantaa vasten
 - [x] Migraatio `0001_initial.sql`: 23 taulua, RLS, `rs_is_party`, GRANTit —
       **ajettu live-Supabaseen ja RLS todennettu oikealla rivillä**
 - [x] Storage-bucketit `photos` ja `documents` (migraatio `0002`), private,

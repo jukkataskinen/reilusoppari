@@ -71,6 +71,26 @@ Jukan päätös, ks. `DECISIONS.md`:
 `CLAUDE.md` on päivitetty vastaamaan tätä (kohta 2, tietomalli, kohta 5.8).
 Sivuston tekstit on korjattu samana päivänä.
 
+## Ympäristön tila (päivitetty 2026-09-11)
+
+| Palvelu | Tila |
+|---|---|
+| Supabase (EU) | **valmis** – migraatiot 0001 ja 0002 ajettu, RLS todennettu |
+| Vercel-projekti | **valmis** – <https://reilusoppari.vercel.app> vastaa 200 |
+| GitHub-repo | **valmis** – <https://github.com/jukkataskinen/reilusoppari> |
+| Auth0 passwordless | puuttuu – estää kirjautumisen ja vaiheen 0 DoD:n |
+| eSinetti-tenant + API-avain | puuttuu – mock riittää vaiheisiin 0 ja 1 |
+| VAPID, Resend, Stripe | puuttuu – tarvitaan vaiheissa 2 ja 5 |
+
+**`app.reilusoppari.fi` ei ole vielä liitetty** (404). Koska `reilusoppari.fi`:n
+DNS-vyöhyke on Vercelillä, liittäminen on yksi askel: projekti → Settings →
+Domains → Add `app.reilusoppari.fi`. Tietue syntyy automaattisesti.
+
+**Ympäristömuuttujat puuttuvat Vercelistä.** Niitä ei vielä tarvita, koska
+julkaistu sivu on paikanvaraaja, mutta heti kun tietokantakerros otetaan
+käyttöön näkymissä, deploy tarvitsee ainakin `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY` ja `SUPABASE_ANON_KEY`.
+
 ## 4. Jukan tehtävät (CLAUDE.md kohta 9)
 
 | # | Tehtävä | Tila |
