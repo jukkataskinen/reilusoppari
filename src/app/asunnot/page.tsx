@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listProperties } from "@/lib/db/properties";
 import { formatAddress } from "@/lib/property/schema";
+import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: fi.nav.properties };
@@ -28,7 +29,7 @@ export default async function PropertiesPage() {
   const properties = await listProperties(user.id);
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[var(--container-content)] px-6 py-10">
+    <AppShell>
       <div className="flex items-baseline justify-between gap-4">
         <h1 className="text-2xl">{fi.nav.properties}</h1>
         <Link
@@ -75,6 +76,6 @@ export default async function PropertiesPage() {
           {fi.common.back}
         </Link>
       </p>
-    </main>
+    </AppShell>
   );
 }

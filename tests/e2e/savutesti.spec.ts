@@ -29,7 +29,12 @@ test("etusivu latautuu ilman konsolivirheitä", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
 
-  await expect(page.getByRole("heading", { name: "Reilusoppari" })).toBeVisible();
+  // Tunnus on ylätunnisteessa, ei otsikkona: otsikko kertoo mitä palvelu
+  // tekee, ei mikä sen nimi on.
+  await expect(page.getByRole("banner").getByText("Reilusoppari")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Vuokrasuhteen yhteinen työkalu" }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Kirjaudu" })).toBeVisible();
 
   // CSP-rikkomus näkyy konsolivirheenä. Jos nonce ei päädy Next.js:n

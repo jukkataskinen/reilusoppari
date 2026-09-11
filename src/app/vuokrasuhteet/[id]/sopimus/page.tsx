@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getContractTerms } from "@/lib/db/contracts";
 import { getTenancy, listParties } from "@/lib/db/tenancies";
 import { ContractForm } from "./ContractForm";
+import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: "Vuokrasopimus" };
@@ -33,7 +34,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   const tenantCount = parties.filter((party) => party.role === "tenant").length;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[var(--container-content)] px-6 py-10">
+    <AppShell>
       <h1 className="text-2xl">Vuokrasopimus</h1>
       <p className="mt-2 text-ink/70">
         {isLandlord
@@ -73,6 +74,6 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
           {fi.common.back}
         </Link>
       </p>
-    </main>
+    </AppShell>
   );
 }

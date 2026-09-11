@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { acceptInvite, findTenancyByInvite } from "@/lib/db/tenancies";
+import { AppShell } from "@/components/AppShell";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { fi } from "@/i18n/fi";
 
@@ -45,10 +46,12 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   if (!preview) {
     return (
-      <main className="mx-auto flex min-h-dvh max-w-[var(--container-content)] flex-col justify-center px-6 py-12">
-        <h1 className="text-2xl">Kutsu ei ole voimassa</h1>
-        <p className="mt-3 text-ink/70">{fi.invite.expired}</p>
-      </main>
+      <AppShell nav={false} signedIn={false}>
+        <div className="py-10">
+          <h1 className="text-2xl">Kutsu ei ole voimassa</h1>
+          <p className="mt-3 text-ink/70">{fi.invite.expired}</p>
+        </div>
+      </AppShell>
     );
   }
 
@@ -62,7 +65,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     }
 
     return (
-      <main className="mx-auto flex min-h-dvh max-w-[var(--container-content)] flex-col justify-center px-6 py-12">
+      <AppShell nav={false}>
+        <div className="py-10">
         <h1 className="text-2xl">Kutsu on toiselle osoitteelle</h1>
         <p className="mt-3 text-ink/70">
           {result.reason === "wrong_account" ? fi.invite.wrongAccount : fi.invite.expired}
@@ -76,12 +80,13 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
             Kirjaudu ulos ja yritä toisella osoitteella
           </a>
         </p>
-      </main>
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[var(--container-content)] px-6 py-10">
+    <AppShell nav={false} signedIn={false}>
       <h1 className="text-2xl">{fi.invite.title}</h1>
       <p className="mt-2 text-ink/70">
         {preview.landlordName ? `${preview.landlordName} kutsui sinut` : "Sinut on kutsuttu"}{" "}
@@ -141,6 +146,6 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           Mikä Reilusoppari on?
         </Link>
       </p>
-    </main>
+    </AppShell>
   );
 }

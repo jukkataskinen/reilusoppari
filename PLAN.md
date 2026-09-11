@@ -82,9 +82,9 @@ Sovelluksessa ei ole tällä hetkellä tunnusta lainkaan — asiakirjoissa ja
 sivustolla on merkki, tunnuslause ja väripaletti, mutta sovelluksen näkymät
 ovat pelkkää tekstiä. Tehtävä:
 
-- [ ] Sovelluksen ylätunniste: merkki ja nimi, sama kuin asiakirjoissa
-- [ ] Navigaatio puhelimessa: asunnot, vuokrasuhteet, asetukset
-- [ ] Tyhjien näkymien ilme (ei vielä asuntoja / ei vielä vuokrasuhteita)
+- [x] Sovelluksen ylätunniste: merkki ja nimi, sama kuin asiakirjoissa
+- [x] Navigaatio puhelimessa alalaidassa, työpöydällä ylätunnisteessa
+- [x] Aloitussivu: kirjautumattomalle esittely, kirjautuneelle tilannekuva
 - [x] ~~Kirjautumisnäkymän ilme~~ — Auth0:n kirjautumissivu on nyt suomeksi,
       logolla ja Reilusopparin väreillä (2026-09-11)
 

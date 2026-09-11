@@ -7,6 +7,7 @@ import { getTenancy, listParties } from "@/lib/db/tenancies";
 import { formatAddress } from "@/lib/property/schema";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { InviteRow } from "./InviteRow";
+import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: "Vuokrasuhde" };
@@ -35,7 +36,7 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
   const tenants = parties.filter((party) => party.role === "tenant");
 
   return (
-    <main className="mx-auto min-h-dvh max-w-[var(--container-content)] px-6 py-10">
+    <AppShell>
       <h1 className="text-2xl">{property ? formatAddress(property) : "Vuokrasuhde"}</h1>
       <p className="mt-2 text-ink/70">{fi.tenancyStatus[tenancy.status]}</p>
 
@@ -113,6 +114,6 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
           {fi.common.back}
         </Link>
       </p>
-    </main>
+    </AppShell>
   );
 }
