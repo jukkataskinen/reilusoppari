@@ -1,0 +1,15 @@
+{
+  "name": "Reilusoppari",
+  "short_name": "Reilusoppari",
+  "description": "Vuokranantajan ja vuokralaisen yhteinen työkalu koko vuokrasuhteen ajaksi.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f6fa",
+  "theme_color": "#1b2a41",
+  "lang": "fi",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

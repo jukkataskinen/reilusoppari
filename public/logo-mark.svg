@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-hidden="true">
+  <!--
+    Reilusopparin merkki: yksi koti, kaksi yhtä suurta osapuolta.
+    Neliot ovat tarkoituksella samankokoiset (CLAUDE.md kohta 5).
+    Viivanpaksuus 2,5 yksikkoa 100 yksikon ruudukossa.
+  -->
+  <path d="M12 44 L50 14 L88 44 L88 86 L12 86 Z" fill="none" stroke="#1B2A41" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="26" y="52" width="20" height="20" rx="4" fill="#3D8BFF"/>
+  <rect x="54" y="52" width="20" height="20" rx="4" fill="#FF6F59"/>
+</svg>

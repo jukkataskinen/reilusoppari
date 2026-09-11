@@ -32,24 +32,26 @@ eSinetti-tunnuksia. Vasta oikea läpivienti vaatii ne.
 
 DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 
-- [ ] `npx create-next-app` (TypeScript, App Router, Tailwind) ja perussiivous
-- [ ] shadcn/ui käyttöön, perusteemat Reilusopparin paletilla (ks. sivuston
-      `globals.css`: ink/sky/coral/paper/cloud/moss — sama paletti, sama fontti)
-- [ ] **Mobiili ensin:** perusnäkymät suunnitellaan 390 px leveydelle
-- [ ] PWA: manifest, service worker, ikonit, asennettavuus
+- [x] Next.js-runko (TypeScript, App Router, Tailwind v4), turvaotsakkeet
+- [x] Paletti ja fontti sivustolta (`globals.css`, Plus Jakarta Sans itse
+      hostattuna) — shadcn/ui lisätään kun ensimmäinen lomake tarvitsee sen
+- [x] **Mobiili ensin:** 390 px perusleveys, kosketuskohde 44 px, zoomaus sallittu
+- [ ] PWA: service worker ja ikonit (manifest tehty)
 - [ ] Supabase-projekti kytketty, `src/lib/db/` clientit (anon + service)
-- [ ] Migraatio `0001_initial.sql`: kaikki `rs_`-taulut, RLS päälle,
-      `rs_is_party(tenancy_id)` -funktio, eksplisiittiset GRANTit
-- [ ] Storage-bucketit `photos` ja `documents`, molemmat private
+- [x] Migraatio `0001_initial.sql`: 23 taulua, RLS, `rs_is_party`, GRANTit —
+      **ajettu live-Supabaseen ja RLS todennettu oikealla rivillä**
+- [x] Storage-bucketit `photos` ja `documents` (migraatio `0002`), private,
+      kokorajat ja MIME-tyypit tietokannan tasolla
 - [ ] Auth0 passwordless (sähköpostikoodi), molemmat roolit, ei salasanoja
 - [ ] `rs_users`-rivin luonti ensimmäisellä kirjautumisella
 - [ ] `lib/esinetti/`: rajapinta + **mock** + oikea client (render, seal,
       rounds, verify, webhookit)
 - [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti
 - [ ] Asunnon luonti (`rs_properties`) ja lista
-- [ ] Oletus-checkpointien generointi asuntotyypin mukaan (kohta 5.3)
+- [x] Oletus-checkpointien generointi asuntotyypin ja huoneluvun mukaan,
+      10 yksikkötestiä
 - [ ] CI: lint, typecheck, unit, e2e
-- [ ] `.env.example` kaikilla muuttujilla selityksineen
+- [x] `.env.example` kaikilla muuttujilla selityksineen
 
 ## Vaihe 1 — Sopimus, katselmus, allekirjoitus
 

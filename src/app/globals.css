@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/*
+ * Sama paletti kuin sivustolla (reilusoppari-web/globals.css). Kaksi väriä,
+ * kaksi osapuolta: `sky` vuokranantaja, `coral` vuokralainen, ja kaikki
+ * yhteinen `ink`-tummaa. Kun molemmat värit esiintyvät, ne ovat yhtä isoina.
+ *
+ * MOBIILI ENSIN (CLAUDE.md kohta 2): perusarvot on mitoitettu 390 px:lle,
+ * ja työpöytä on laajennus. Kosketuskohteiden vähimmäiskoko 44 px.
+ */
+@theme {
+  --color-ink: #1b2a41;
+  --color-ink-strong: #121d2e;
+  --color-sky: #3d8bff;
+  --color-coral: #ff6f59;
+  --color-paper: #ffffff;
+  --color-cloud: #f3f6fa;
+  --color-moss: #2e9e6b;
+  --color-line: #dfe6f0;
+
+  --font-sans: var(--font-sans-local), ui-sans-serif, system-ui, sans-serif;
+
+  --container-content: 640px;
+  --radius-panel: 16px;
+  /* Kosketuskohteen vähimmäiskorkeus. Sovellusta käytetään puhelimella
+     asunnossa seisten, usein yhdellä kädellä. */
+  --size-touch: 44px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-cloud);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  /* Estää iOS:n kaksoisnapautuszoomin lomakkeissa. */
+  touch-action: manipulation;
+}
+
+h1 {
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+h2,
+h3 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
