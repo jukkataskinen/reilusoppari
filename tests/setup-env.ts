@@ -1,9 +1,10 @@
 /**
- * Lataa `.env.local` yksikkötesteihin.
+ * Lataa `.env.local` testeihin.
  *
- * Next.js lataa sen automaattisesti sovelluksessa, mutta Vitest ei – ilman
- * tätä live-Supabasea vasten ajettavat integraatiotestit ohittuisivat aina,
- * vaikka tunnukset ovat olemassa.
+ * Next.js lataa sen automaattisesti sovelluksessa, mutta Vitest ja Playwright
+ * eivät – ilman tätä live-Supabasea vasten ajettavat integraatiotestit
+ * ohittuisivat aina, vaikka tunnukset ovat olemassa, ja Playwrightin
+ * Auth0-testi ohittuisi myös paikallisesti.
  *
  * Oma jäsennin eikä `dotenv`: tarve on yksi tiedosto ja `KEY=value`-rivit,
  * eikä testiajoon kannata lisätä riippuvuutta sitä varten. Arvoja ei tulosteta
@@ -12,9 +13,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-const envPath = path.resolve(import.meta.dirname, "..", ".env.local");
+export function loadEnvLocal(): void {
+  // `process.cwd()` eikä `import.meta.dirname`: Playwright lataa
+  // konfiguraationsa CommonJS-moduulina, jossa `import.meta` ei ole
+  // käytettävissä. Molemmat testiajurit käynnistyvät repon juuresta.
+  const envPath = path.resolve(process.cwd(), ".env.local");
+  if (!existsSync(envPath)) return;
 
-if (existsSync(envPath)) {
   for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
@@ -32,3 +37,6 @@ if (existsSync(envPath)) {
     }
   }
 }
+
+// Vitestin setupFile: ladataan heti.
+loadEnvLocal();

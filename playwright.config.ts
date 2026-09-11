@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnvLocal } from "./tests/setup-env";
+
+// Playwright ei lue `.env.local`:ia. Ilman tätä Auth0-testi ohittuisi myös
+// paikallisesti, eikä koko ketjua todentaisi mikään.
+loadEnvLocal();
 
 /**
  * E2E-testit (CLAUDE.md kohta 7).
