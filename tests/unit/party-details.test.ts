@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  missingPartyDetails,
   partyDetailsFormToInput,
   partyDetailsSchema,
+  type PartyDetailsView,
 } from "@/lib/tenancy/party-details";
 
 /**
@@ -116,5 +118,70 @@ describe("osapuolen tiedot lomakkeelta", () => {
   it("poistaminen on oma valintansa", () => {
     const parsed = parse({ clearPersonalId: "on" });
     expect(parsed.success && parsed.data.clearPersonalId).toBe(true);
+  });
+});
+
+describe("mitä sopimuksesta puuttuu", () => {
+  const valmis = (yli: Partial<PartyDetailsView> = {}): PartyDetailsView => ({
+    partyId: "p",
+    role: "tenant",
+    position: 0,
+    name: "Maija Meikäläinen",
+    partyType: "henkilo",
+    identifierMasked: "131052-***T",
+    businessId: null,
+    signatoryName: null,
+    phone: null,
+    email: null,
+    bankAccount: null,
+    isSelf: false,
+    ...yli,
+  });
+
+  const vuokranantaja = valmis({
+    role: "landlord",
+    name: "Matti Virtanen",
+    bankAccount: "FI21 1234 5600 0007 85",
+  });
+
+  it("täysistä tiedoista ei valiteta", () => {
+    expect(missingPartyDetails([vuokranantaja, valmis()])).toEqual([]);
+  });
+
+  it("huomaa tyhjän osapuolen", () => {
+    // Juuri tämä tapahtui: ennen migraatiota luodun vuokrasuhteen
+    // vuokranantajarivi oli kokonaan tyhjä, eikä asiakirja kertonut siitä.
+    const tyhja = valmis({
+      role: "landlord",
+      name: null,
+      identifierMasked: null,
+      bankAccount: null,
+    });
+
+    expect(missingPartyDetails([tyhja, valmis()])).toEqual([
+      "Vuokranantajan nimi",
+      "Vuokranantajan henkilötunnus",
+      "Tilinumero, jolle vuokra maksetaan",
+    ]);
+  });
+
+  it("yritykseltä kysytään y-tunnus ja allekirjoittaja", () => {
+    const yritys = valmis({
+      role: "landlord",
+      partyType: "yritys",
+      name: "Kiinteistö Oy",
+      identifierMasked: null,
+      bankAccount: "FI21 1234 5600 0007 85",
+    });
+
+    expect(missingPartyDetails([yritys])).toEqual([
+      "Vuokranantajan y-tunnus",
+      "Vuokranantajan allekirjoittaja",
+    ]);
+  });
+
+  it("tilinumeroa kysytään vain vuokranantajalta", () => {
+    // Vuokralaisen tili ei kuulu sopimukseen: vuokra ei mene sinne.
+    expect(missingPartyDetails([valmis()])).toEqual([]);
   });
 });

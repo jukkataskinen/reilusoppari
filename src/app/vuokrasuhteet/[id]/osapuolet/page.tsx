@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy } from "@/lib/db/tenancies";
-import { listPartyDetails } from "@/lib/tenancy/party-details";
+import { listPartyDetails, missingPartyDetails } from "@/lib/tenancy/party-details";
+import { ApplyOwnDefaults } from "@/components/ApplyOwnDefaults";
 import { PartyDetailsForm } from "@/components/PartyDetailsForm";
 import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
@@ -43,6 +44,7 @@ export default async function PartiesPage({ params }: { params: Promise<{ id: st
   const parties = await listPartyDetails(user.id, id);
 
   const tenants = parties.filter((party) => party.role === "tenant");
+  const puuttuu = missingPartyDetails(parties);
 
   return (
     <AppShell>
@@ -51,6 +53,25 @@ export default async function PartiesPage({ params }: { params: Promise<{ id: st
         Nämä tiedot tulostuvat sopimukseen. Tunnus tarvitaan, jotta osapuolet ovat
         yksiselitteisesti yksilöitävissä, jos sopimuksesta tulee myöhemmin erimielisyyttä.
       </p>
+
+      {/*
+        Puutteet kerrotaan tässä, ei asiakirjassa. Tyhjä kohta sopimuksessa
+        näyttäisi siltä, että siihen kuuluisi kirjoittaa kynällä.
+      */}
+      {puuttuu.length > 0 ? (
+        <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+          <p className="font-medium">Sopimuksesta puuttuu vielä</p>
+          <ul className="mt-2 flex flex-col gap-1 text-sm text-ink/70">
+            {puuttuu.map((kohta) => (
+              <li key={kohta}>· {kohta}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm text-ink/60">
+            Puuttuva tieto ei näy sopimuksessa mitenkään, joten se on helppo ohittaa. Täydennä
+            ennen allekirjoitusta.
+          </p>
+        </div>
+      ) : null}
 
       {parties
         .filter((party) => party.role === "landlord")
@@ -109,6 +130,14 @@ function Section({
     <section className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
       <h2 className="font-medium">{title}</h2>
       {party.isSelf ? <p className="mt-1 text-sm text-ink/60">Sinä</p> : null}
+
+      {/*
+        Nappi ennen lomaketta: jos rivi on tyhjä, tämä on nopein tie eteenpäin
+        eikä sitä pidä joutua etsimään lomakkeen alta.
+      */}
+      {editable && party.isSelf ? (
+        <ApplyOwnDefaults tenancyId={tenancyId} partyId={party.partyId} />
+      ) : null}
 
       <PartyDetailsForm details={party} tenancyId={tenancyId} readOnly={!editable} />
 

@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { fieldErrors } from "@/lib/property/schema";
 import { hasEncryptionKey } from "@/lib/identity/crypto";
 import {
+  applyOwnDefaults,
   partyDetailsFormToInput,
   partyDetailsSchema,
   savePartyDetails,
@@ -88,5 +89,27 @@ export async function saveOwnDetailsAction(
   }
 
   revalidatePath("/omat-tiedot");
+  return { errors: {}, saved: true };
+}
+
+/** "Täytä omista tiedoistani" osapuolisivulla. */
+export async function applyOwnDefaultsAction(
+  _previous: PartyFormState,
+  formData: FormData,
+): Promise<PartyFormState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const tenancyId = String(formData.get("tenancyId") ?? "");
+  const partyId = String(formData.get("partyId") ?? "");
+
+  try {
+    const result = await applyOwnDefaults(user.id, tenancyId, partyId);
+    if (!result.ok) return { errors: {}, message: "Näitä tietoja ei voi muokata." };
+  } catch {
+    return { errors: {}, message: "Kopiointi ei onnistunut. Yritä hetken kuluttua uudelleen." };
+  }
+
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/osapuolet`);
   return { errors: {}, saved: true };
 }

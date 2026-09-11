@@ -443,6 +443,68 @@ export async function ownPartyDefaultColumns(
   };
 }
 
+/**
+ * Kopioi omat perustiedot yhdelle osapuoliriville.
+ *
+ * Perustiedot kopioituvat automaattisesti vain vuokrasuhdetta luotaessa. Tämä
+ * on sitä varten, että ne saa myös jälkikäteen: vuokrasuhde on voitu luoda
+ * ennen kuin perustiedot oli täytetty, tai ne ovat sittemmin muuttuneet.
+ *
+ * Vain omalle riville. Toisen osapuolen riville kopioituna nämä olisivat
+ * väärän ihmisen tiedot.
+ */
+export async function applyOwnDefaults(
+  userId: string,
+  tenancyId: string,
+  partyId: string,
+): Promise<{ ok: true } | { ok: false; reason: "not_allowed" }> {
+  await requireTenancyParty(userId, tenancyId);
+
+  const target = (await fetchPartyRows(tenancyId)).find((row) => row.id === partyId);
+  if (!target || target.user_id !== userId) return { ok: false, reason: "not_allowed" };
+
+  const { error } = await getServiceClient()
+    .from("rs_tenancy_parties")
+    .update({ ...(await ownPartyDefaultColumns(userId)), updated_at: new Date().toISOString() })
+    .eq("id", partyId)
+    .eq("tenancy_id", tenancyId);
+
+  if (error) {
+    console.error("[party-details] perustietojen kopiointi epäonnistui:", error.message);
+    throw new Error("Tietojen kopiointi epäonnistui.");
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Mitä sopimuksesta puuttuu?
+ *
+ * Puuttuva tieto ei näy asiakirjassa mitenkään — tyhjä kohta sopimuksessa
+ * näyttäisi siltä, että siihen kuuluisi kirjoittaa kynällä. Siksi puutteet
+ * kerrotaan sovelluksessa, ennen allekirjoitusta.
+ */
+export function missingPartyDetails(parties: PartyDetailsView[]): string[] {
+  const puuttuu: string[] = [];
+
+  for (const party of parties) {
+    const kuka = party.role === "landlord" ? "Vuokranantajan" : "Vuokralaisen";
+
+    if (!party.name) puuttuu.push(`${kuka} nimi`);
+    if (!party.identifierMasked) {
+      puuttuu.push(party.partyType === "yritys" ? `${kuka} y-tunnus` : `${kuka} henkilötunnus`);
+    }
+    if (party.partyType === "yritys" && !party.signatoryName) {
+      puuttuu.push(`${kuka} allekirjoittaja`);
+    }
+    if (party.role === "landlord" && !party.bankAccount) {
+      puuttuu.push("Tilinumero, jolle vuokra maksetaan");
+    }
+  }
+
+  return puuttuu;
+}
+
 /** Lomakedata zodille. */
 export function partyDetailsFormToInput(form: FormData, prefix = ""): Record<string, unknown> {
   const text = (key: string) => {

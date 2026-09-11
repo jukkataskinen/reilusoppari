@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getContractTerms } from "@/lib/db/contracts";
 import { getTenancy } from "@/lib/db/tenancies";
+import { listPartyDetails, missingPartyDetails } from "@/lib/tenancy/party-details";
 import { ContractForm } from "./ContractForm";
 import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
@@ -26,7 +27,12 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const terms = await getContractTerms(user.id, id);
+  const [terms, parties] = await Promise.all([
+    getContractTerms(user.id, id),
+    listPartyDetails(user.id, id),
+  ]);
+
+  const puuttuu = missingPartyDetails(parties);
 
   return (
     <AppShell>
@@ -36,6 +42,27 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
           ? "Täytä ehdot ja katso esikatselu. Sopimus allekirjoitetaan vasta alkukatselmuksen jälkeen."
           : "Tämä on sopimusluonnos. Voit lukea sen ennen allekirjoitusta."}
       </p>
+
+      {/*
+        Puute kerrotaan ennen esikatselua, ei sen jälkeen: asiakirjassa se ei
+        näy mitenkään, joten esikatselu näyttää valmiilta vaikkei ole.
+      */}
+      {puuttuu.length > 0 ? (
+        <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+          <p className="font-medium">Osapuolten tiedot ovat kesken</p>
+          <p className="mt-2 text-sm text-ink/70">
+            Sopimuksesta puuttuu {puuttuu.length === 1 ? "yksi tieto" : `${puuttuu.length} tietoa`}
+            . Puuttuva tieto ei näy asiakirjassa mitenkään, joten esikatselu näyttää valmiilta
+            vaikkei ole.
+          </p>
+          <Link
+            href={`/vuokrasuhteet/${id}/osapuolet`}
+            className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+          >
+            {fi.nav.parties}
+          </Link>
+        </div>
+      ) : null}
 
       <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <p className="font-medium">Esikatselu</p>
