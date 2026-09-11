@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { Document, Page, Text } from "@react-pdf/renderer";
+import { Page, Text } from "@react-pdf/renderer";
+import { DocumentRoot } from "@/documents/components";
 import { renderDocumentPdf } from "@/documents/render";
 import {
   completeMockRound,
@@ -20,7 +21,6 @@ import type { RoundDocumentInput } from "@/lib/esinetti/types";
  */
 
 const client = new EsinettiMockClient();
-const PAIVAYS = new Date("2026-10-01T00:00:00.000Z");
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
@@ -35,12 +35,11 @@ function sha256(bytes: Uint8Array): string {
  */
 async function renderSample() {
   return renderDocumentPdf(
-    <Document title="Vuokrasopimus">
+    <DocumentRoot title="Vuokrasopimus" subject="Testi" date="2026-10-01">
       <Page size="A4">
         <Text>Testikatu 1 A 4 – vuokra 850 €/kk</Text>
       </Page>
-    </Document>,
-    { documentDate: PAIVAYS },
+    </DocumentRoot>,
   );
 }
 

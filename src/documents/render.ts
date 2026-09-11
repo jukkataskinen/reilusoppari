@@ -10,19 +10,17 @@
  * joka kerta, tiiviste ei tarkoittaisi mitään: esikatselun ja
  * allekirjoitettavan asiakirjan vertaaminen olisi mahdotonta.
  *
- * PDF:ään päätyy oletuksena luontiaika, joka muuttuu joka ajolla. Siksi
- * `creationDate` ja `modificationDate` annetaan aina eksplisiittisesti.
- * Kutsuja antaa `documentDate`n — yleensä sopimuksen päiväys tai
- * katselmuksen lukitusaika — eikä kellonaikaa oteta koneelta.
+ * Kaksi kohtaa PDF:ssä olisi muuten satunnaista: aikaleimat ja tiedoston
+ * tunniste. Aikaleimat hoitaa `DocumentRoot` asiakirjan omasta päiväyksestä,
+ * tunnisteen `normalizeFileId` alla.
  * ===========================================================================
  */
 
 import { createHash } from "node:crypto";
-import { cloneElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
-import { registerDocumentFonts } from "./fonts";
+import { ensureDocumentFonts } from "./fonts";
 
 export interface RenderedDocument {
   bytes: Uint8Array;
@@ -30,38 +28,20 @@ export interface RenderedDocument {
   sizeBytes: number;
 }
 
-export interface RenderOptions {
-  /**
-   * Asiakirjan päiväys. Määrää PDF:n aikaleimat, joten sama syöte ja sama
-   * päiväys tuottavat samat tavut. Anna sopimuksen päiväys tai katselmuksen
-   * lukitusaika — älä `new Date()`.
-   */
-  documentDate: Date;
-}
-
 /**
  * Renderöi asiakirjan ja laskee sen tiivisteen.
  *
- * Fontit rekisteröidään tässä eikä moduulin latauksessa: rekisteröinti lukee
- * tiedostoja levyltä, eikä sitä pidä tehdä vain siksi, että joku importtaa
- * tämän moduulin.
+ * Fontit ladataan tässä eikä moduulin latauksessa: lataus lukee tiedostoja
+ * levyltä, eikä sitä pidä tehdä vain siksi, että joku importtaa tämän
+ * moduulin.
  */
 export async function renderDocumentPdf(
   element: ReactElement<DocumentProps>,
-  options: RenderOptions,
 ): Promise<RenderedDocument> {
-  registerDocumentFonts();
+  // Kesken oleva fonttilataus tuottaisi eri tavut kuin valmis (ks. `fonts.ts`).
+  await ensureDocumentFonts();
 
-  // Aikaleimat asetetaan tässä eikä jätetä kutsujan muistettavaksi: yksi
-  // unohdus tekisi juuri sen asiakirjan tiivisteestä epävakaan, eikä sitä
-  // huomaisi ennen kuin esikatselun ja allekirjoitetun asiakirjan tiivisteet
-  // eroaisivat tuotannossa.
-  const dated = cloneElement(element, {
-    creationDate: options.documentDate,
-    modificationDate: options.documentDate,
-  });
-
-  const bytes = normalizeFileId(await renderToBuffer(dated));
+  const bytes = normalizeFileId(await renderToBuffer(element));
 
   return {
     bytes,

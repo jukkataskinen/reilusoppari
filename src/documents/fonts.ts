@@ -8,10 +8,18 @@
 
 import path from "node:path";
 import { Font } from "@react-pdf/renderer";
+import { FONT_FAMILY, weight } from "./theme";
+
+const WEIGHTS = [weight.regular, weight.medium, weight.bold] as const;
 
 let registered = false;
+let loaded: Promise<void> | null = null;
 
-export function registerDocumentFonts(): void {
+function fontPath(fontWeight: number): string {
+  return path.join(process.cwd(), "src/documents/fonts", `plus-jakarta-sans-${fontWeight}.ttf`);
+}
+
+function registerDocumentFonts(): void {
   if (registered) return;
 
   /**
@@ -27,14 +35,39 @@ export function registerDocumentFonts(): void {
    * tavuttamatta lainkaan.
    */
   Font.registerHyphenationCallback((word) => [word]);
-  const dir = path.join(process.cwd(), "src/documents/fonts");
+
   Font.register({
-    family: "Jakarta",
-    fonts: [
-      { src: path.join(dir, "plus-jakarta-sans-400.ttf"), fontWeight: 400 },
-      { src: path.join(dir, "plus-jakarta-sans-600.ttf"), fontWeight: 600 },
-      { src: path.join(dir, "plus-jakarta-sans-700.ttf"), fontWeight: 700 },
-    ],
+    family: FONT_FAMILY,
+    fonts: WEIGHTS.map((fontWeight) => ({ src: fontPath(fontWeight), fontWeight })),
   });
+
   registered = true;
+}
+
+/**
+ * Varmistaa, että fontit ovat luettuina ennen renderöintiä.
+ *
+ * ===========================================================================
+ * TÄMÄ EI OLE OPTIMOINTI VAAN DETERMINISMIN EHTO
+ *
+ * React-PDF lataa fontin levyltä vasta tarvittaessa. Jos renderöinti alkaa
+ * ennen kuin lataus on valmis, se käyttää korvaavaa fonttia — ja tuottaa eri
+ * tavut kuin sama asiakirja hetkeä myöhemmin. Testeissä tämä näkyi
+ * satunnaisena epäonnistumisena noin joka kolmannessa täydessä ajossa;
+ * tuotannossa se olisi tarkoittanut, että saman sopimuksen tiiviste riippuu
+ * siitä, monesko renderöinti prosessin käynnistyksen jälkeen se on.
+ *
+ * Asiakirjan SHA-256 on osa sen todistusvoimaa, joten tämä ei ole pieni asia.
+ * ===========================================================================
+ */
+export async function ensureDocumentFonts(): Promise<void> {
+  registerDocumentFonts();
+
+  if (!loaded) {
+    loaded = Promise.all(
+      WEIGHTS.map((fontWeight) => Font.load({ fontFamily: FONT_FAMILY, fontWeight })),
+    ).then(() => undefined);
+  }
+
+  await loaded;
 }

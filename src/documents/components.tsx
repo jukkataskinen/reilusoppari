@@ -7,10 +7,10 @@
  * jälkeen, ja ne ovat saman palvelun samaa asiakirjasarjaa.
  */
 
-import { Circle, G, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Circle, Document, G, Path, Rect, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/stylesheet";
 import type { ReactNode } from "react";
-import { FONT_FAMILY, colors, radius, spacing, type as typeScale, weight } from "./theme";
+import { A4_HEIGHT, FONT_FAMILY, colors, radius, spacing, type as typeScale, weight } from "./theme";
 
 const s = StyleSheet.create({
   page: {
@@ -52,13 +52,29 @@ const s = StyleSheet.create({
   label: { fontSize: typeScale.label, color: colors.inkFaint },
   value: { fontSize: typeScale.body, fontWeight: weight.medium, marginTop: 1 },
 
+  /**
+   * Alatunniste.
+   *
+   * ==========================================================================
+   * SIJAINTI `top`:LLA EIKÄ `bottom`:LLA — JA SIIHEN ON KIPEÄ SYY
+   *
+   * `bottom`-sijainti EI piirtynyt lainkaan tässä asiakirjassa, vaikka sama
+   * merkkaus toimi yksinkertaisemmalla sivulla. Teksti oli PDF:n
+   * sisältövirrassa — se löytyi tekstihaulla — mutta ei näkynyt sivulla.
+   * Mikään ei kaatunut eikä varoittanut.
+   *
+   * `top` toimii. Siksi sijainti lasketaan sivun korkeudesta käsin.
+   *
+   * `left` ja `right` ovat sivun sisennyksen verran, koska absoluuttinen
+   * sijainti lasketaan sivun REUNASTA eikä sisennetystä sisältöalueesta.
+   * ==========================================================================
+   */
   footer: {
     position: "absolute",
-    bottom: spacing.page - 12,
+    top: A4_HEIGHT - 34,
     left: spacing.page,
     right: spacing.page,
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
   },
   footerText: { fontSize: typeScale.label, color: colors.inkFaint },
@@ -139,6 +155,50 @@ export function Icon({ name, size = 13 }: { name: IconName; size?: number }) {
 
 export const pageStyle = s.page;
 
+/**
+ * Asiakirjan juuri.
+ *
+ * ===========================================================================
+ * AIKALEIMAT OVAT TÄSSÄ, EIVÄT KUTSUJAN VASTUULLA
+ *
+ * PDF:ään kirjoitetaan luonti- ja muokkausaika. Jos niitä ei anneta, pdfkit
+ * käyttää kellonaikaa — ja silloin sama asiakirja saa eri tiivisteen joka
+ * renderöinnillä. Tämä oli kerran rikki niin, että vika näkyi vain jos kaksi
+ * renderöintiä osui eri sekunnille: testit menivät läpi satunnaisesti.
+ *
+ * Siksi jokainen asiakirja rakennetaan tämän komponentin ympärille eikä
+ * `Document`ia käytetä suoraan. Päiväys tulee asiakirjan omasta sisällöstä
+ * (sopimuksen päiväys, katselmuksen lukitusaika) eikä koneen kellosta.
+ * ===========================================================================
+ */
+export function DocumentRoot({
+  title,
+  subject,
+  date,
+  children,
+}: {
+  title: string;
+  subject: string;
+  /** Asiakirjan päiväys `YYYY-MM-DD`. */
+  date: string;
+  children: ReactNode;
+}) {
+  const timestamp = new Date(date + "T00:00:00.000Z");
+
+  return (
+    <Document
+      title={title}
+      subject={subject}
+      author="Reilusoppari"
+      language="fi"
+      creationDate={timestamp}
+      modificationDate={timestamp}
+    >
+      {children}
+    </Document>
+  );
+}
+
 export function DocumentHeader({ tagline = "Sopikaa. Kuvatkaa. Kuitatkaa." }: { tagline?: string }) {
   return (
     <View style={s.header} fixed>
@@ -158,12 +218,21 @@ export function DocumentHeader({ tagline = "Sopikaa. Kuvatkaa. Kuitatkaa." }: { 
 export function DocumentFooter() {
   return (
     <View style={s.footer} fixed>
-      <View style={s.brand}>
-        <LogoMark size={12} />
-        <Text style={[s.footerText, { marginLeft: 6 }]}>Reilusoppari</Text>
-      </View>
+      {/*
+        Pelkkää tekstiä, ei merkkiä: `Svg` `fixed`-elementin sisällä esti koko
+        alatunnisteen piirtymisen. Merkki on jo ylätunnisteessa, joten sen
+        toistaminen alalaidassa ei tuo mitään.
+      */}
+      <Text style={s.footerText}>Reilusoppari</Text>
+      {/*
+        `fixed` on oltava myös tässä Textissä eikä vain sen ympärillä olevassa
+        Viewissä: React-PDF vaatii sen jokaiselta elementiltä, joka käyttää
+        `render`-funktiota. Ilman sitä koko alatunniste jää piirtämättä —
+        hiljaa, ilman virhettä.
+      */}
       <Text
         style={s.footerText}
+        fixed
         render={({ pageNumber, totalPages }) =>
           totalPages > 1 ? `${pageNumber} / ${totalPages}` : "Reilua asumista. Yhdessä."
         }
@@ -172,11 +241,31 @@ export function DocumentFooter() {
   );
 }
 
-export function Title({ children, lead }: { children: ReactNode; lead?: string }) {
+/**
+ * Otsikko ja sen selittävä lause, valinnaisen vinjetin kanssa.
+ *
+ * Vinjetin kanssa otsikkopalsta kavennetaan, jotta teksti ei kierry kuvan
+ * alle. Ilman vinjettiä palsta on täysleveä — katselmuspöytäkirjassa
+ * vinjettiä ei ole (`decorations.tsx`).
+ */
+export function Title({
+  children,
+  lead,
+  aside,
+}: {
+  children: ReactNode;
+  lead?: string;
+  aside?: ReactNode;
+}) {
   return (
-    <View>
-      <Text style={s.title}>{children}</Text>
-      {lead ? <Text style={s.subtitle}>{lead}</Text> : null}
+    <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+      <View style={{ width: aside ? "62%" : "100%" }}>
+        <Text style={s.title}>{children}</Text>
+        {lead ? <Text style={s.subtitle}>{lead}</Text> : null}
+      </View>
+      {aside ? (
+        <View style={{ flex: 1, alignItems: "flex-end", paddingTop: 4 }}>{aside}</View>
+      ) : null}
     </View>
   );
 }
@@ -328,11 +417,24 @@ export function Terms({ terms }: { terms: Term[] }) {
   );
 }
 
-/** Lämmin loppusana. Sydänkuvake ja kaksi riviä – ei enempää. */
-export function ClosingNote({ title, body }: { title: string; body: string }) {
+/**
+ * Lämmin loppusana. Sydänkuvake, kaksi riviä ja lehtioksa – ei enempää.
+ *
+ * `sprig` on valinnainen, koska katselmuspöytäkirjassa kuvituselementtejä ei
+ * käytetä (`decorations.tsx`).
+ */
+export function ClosingNote({
+  title,
+  body,
+  sprig,
+}: {
+  title: string;
+  body: string;
+  sprig?: ReactNode;
+}) {
   return (
-    <Panel style={{ marginTop: spacing.block, flexDirection: "row", alignItems: "flex-start" }}>
-      <View style={{ marginTop: 1, marginRight: 9 }}>
+    <Panel style={{ marginTop: spacing.block, flexDirection: "row", alignItems: "center" }}>
+      <View style={{ marginRight: 9, marginTop: 1 }}>
         <Icon name="sydan" />
       </View>
       <View style={{ flex: 1 }}>
@@ -341,6 +443,7 @@ export function ClosingNote({ title, body }: { title: string; body: string }) {
           {body}
         </Text>
       </View>
+      {sprig ? <View style={{ marginLeft: 10 }}>{sprig}</View> : null}
     </Panel>
   );
 }

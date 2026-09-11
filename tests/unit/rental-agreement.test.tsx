@@ -112,33 +112,28 @@ describe("sopimusehdot", () => {
 
 describe("sopimuksen renderöinti", () => {
   it("tuottaa PDF:n ja on deterministinen", async () => {
-    const date = new Date("2026-09-01T00:00:00.000Z");
-    const first = await renderDocumentPdf(<RentalAgreement data={DATA} />, {
-      documentDate: date,
-    });
-    const second = await renderDocumentPdf(<RentalAgreement data={DATA} />, {
-      documentDate: date,
-    });
+    const first = await renderDocumentPdf(<RentalAgreement data={DATA} />);
+
+    // Yli sekunnin viive: PDF:n aikaleima on sekunnin tarkkuudella, ja ilman
+    // odotusta testi ei huomaisi kellonajan vuotamista asiakirjaan.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const second = await renderDocumentPdf(<RentalAgreement data={DATA} />);
 
     expect(Buffer.from(first.bytes).subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(second.sha256).toBe(first.sha256);
-  });
+  }, 20_000);
 
   it("eri vuokra tuottaa eri asiakirjan", async () => {
-    const date = new Date("2026-09-01T00:00:00.000Z");
-    const a = await renderDocumentPdf(<RentalAgreement data={DATA} />, { documentDate: date });
-    const b = await renderDocumentPdf(<RentalAgreement data={{ ...DATA, rentAmount: 900 }} />, {
-      documentDate: date,
-    });
+    const a = await renderDocumentPdf(<RentalAgreement data={DATA} />);
+    const b = await renderDocumentPdf(<RentalAgreement data={{ ...DATA, rentAmount: 900 }} />);
 
     expect(b.sha256).not.toBe(a.sha256);
   });
 
   it("kaksi vuokralaista mahtuu allekirjoitusriville", async () => {
     const result = await renderDocumentPdf(
-      <RentalAgreement data={{ ...DATA, tenantNames: ["Maija Meikäläinen", "Matti Meikäläinen"] }} />,
-      { documentDate: new Date("2026-09-01T00:00:00.000Z") },
-    );
+      <RentalAgreement data={{ ...DATA, tenantNames: ["Maija Meikäläinen", "Matti Meikäläinen"] }} />);
     expect(result.sizeBytes).toBeGreaterThan(2000);
   });
 });

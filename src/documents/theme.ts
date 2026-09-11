@@ -20,6 +20,10 @@
  * ===========================================================================
  */
 
+/** A4 pisteinä. Tarvitaan, kun jokin sijoitetaan sivun reunaan absoluuttisesti. */
+export const A4_WIDTH = 595;
+export const A4_HEIGHT = 842;
+
 /** Sama paletti kuin sovelluksessa (`globals.css`), pehmennettynä paperille. */
 export const colors = {
   ink: "#1b2a41",

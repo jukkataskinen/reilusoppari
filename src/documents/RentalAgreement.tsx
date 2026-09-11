@@ -20,11 +20,12 @@
  * ===========================================================================
  */
 
-import { Document, Page, Text, View } from "@react-pdf/renderer";
+import { Page, Text, View } from "@react-pdf/renderer";
 import {
   ClosingNote,
   DocumentFooter,
   DocumentHeader,
+  DocumentRoot,
   Heading,
   KeyFacts,
   Panel,
@@ -35,6 +36,7 @@ import {
   type Fact,
   type Term,
 } from "./components";
+import { HomeVignette, LeafSprig, PageDecoration } from "./decorations";
 import { formatAddress, formatCount, formatDate, formatEuro, formatNames } from "./format";
 import { colors, spacing, type as typeScale } from "./theme";
 
@@ -216,16 +218,22 @@ export function RentalAgreement({ data }: { data: RentalAgreementData }) {
   const terms = buildTerms(data);
 
   return (
-    <Document
+    <DocumentRoot
       title={`Vuokrasopimus – ${formatAddress(data.property)}`}
-      author="Reilusoppari"
       subject="Asuinhuoneiston vuokrasopimus"
-      language="fi"
+      date={data.signedDate}
     >
       <Page size="A4" style={pageStyle}>
-        <DocumentHeader />
+        {/* Ensimmäisenä, jotta sisältö piirtyy taustamuotojen päälle. */}
+        <PageDecoration />
 
-        <Title lead="Tämä on sopimus kodista, jonka vuokralainen ja vuokranantaja ovat sopineet yhdessä.">
+        <DocumentHeader />
+        <DocumentFooter />
+
+        <Title
+          lead="Tämä on sopimus kodista, jonka vuokralainen ja vuokranantaja ovat sopineet yhdessä."
+          aside={<HomeVignette />}
+        >
           Vuokrasopimus
         </Title>
 
@@ -239,6 +247,7 @@ export function RentalAgreement({ data }: { data: RentalAgreementData }) {
         <ClosingNote
           title="Kiitos, että olette sopineet tästä yhdessä."
           body="Toivottavasti tästä alkaa monta hyvää vuotta kodissa."
+          sprig={<LeafSprig />}
         />
 
         <Signatures
@@ -261,8 +270,7 @@ export function RentalAgreement({ data }: { data: RentalAgreementData }) {
           </Text>
         </Panel>
 
-        <DocumentFooter />
       </Page>
-    </Document>
+    </DocumentRoot>
   );
 }
