@@ -5,6 +5,55 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Identifier First -kirjautumistyyli koko tenantille (2026-09-11)
+
+Passwordless-sähköpostikirjautuminen ei toiminut, vaikka yhteys oli kytketty
+Reilusopparille ja tietokantayhteys kytketty siltä pois. Auth0 pudotti
+`connection=email`-parametrin ja näytti salasanalomakkeen.
+
+Syy: Auth0:n **Authentication Profile** oli oletusarvossa *Identifier +
+Password*, jossa sähköposti ja salasana ovat samalla ruudulla. Siihen ei mahdu
+passwordless-vaihtoehtoa, joten se ohitetaan hiljaisesti. Passwordless vaatii
+**Identifier First** -tyylin.
+
+Vaihdettu Identifier Firstiin. Kirjautuminen todennettu toimivaksi päästä
+päähän: koodi sähköpostiin, paluu sovellukseen ja `rs_users`-rivin luonti.
+
+**Tämä on tenant-tason asetus ja koskee myös muita projekteja.** Sama Auth0-
+tenant palvelee sovelluksia Adepta PPR, Adepta SKOG, Adepta SKOG Backend ja
+eSinetti. Niiden kirjautuminen muuttui yksivaiheisesta kaksivaiheiseksi: ensin
+sähköposti, sitten salasana. Salasanakirjautuminen toimii edelleen eikä
+käyttäjätilejä menetetty — vain ruutu näyttää erilaiselta.
+
+Jos jokin niistä projekteista rikkoutuu odottamattomasti, tämä on
+ensimmäinen paikka johon katsoa. Asetus on palautettavissa, mutta silloin
+Reilusopparin passwordless lakkaa toimimasta.
+
+## Auth0-tenant on Yhdysvalloissa (2026-09-11, ratkaisematta)
+
+Tenant `dev-qanv0hdzfjjsybgm` on alueella **US-5**. Auth0 säilöö kirjautuvien
+käyttäjien sähköpostit, nimet ja kirjautumistiedot siellä.
+
+Kaksi julkaistua sivustoa lupaa toisin:
+
+- `esinetti.fi` ja `reilusoppari.fi` alatunnisteessa: *"Suomalainen palvelu,
+  tiedot EU:ssa"*
+- Reilusopparin tietosuojaseloste: käsittely EU:ssa
+
+Siirto EU-alueelle ei ole mahdollista jälkikäteen — alue on tenantin pysyvä
+ominaisuus. Se tarkoittaisi uutta tenanttia ja **viiden sovelluksen ja neljän
+projektin** uudelleenkonfigurointia sekä käyttäjien siirtoa. Auth0:n ilmaistaso
+sallii lisäksi vain yhden tenantin, joten siirto olisi tehtävä kertarysäyksellä.
+
+Vaihtoehdot ennen lanseerausta:
+
+1. Siirto EU-tenanttiin, kaikki projektit kerralla
+2. Tekstien korjaus molemmilla sivustoilla ja siirron dokumentointi
+   tietosuojaselosteisiin
+
+**Tämä on ratkaistava tietoisesti, ei huomaamatta.** Kirjattu myös
+BLOCKERS.md:hen.
+
 ## Katselmus: molemmat kuvaavat mitä itse pitävät tärkeänä (2026-09-10, Jukan päätös)
 
 Rakennusohjeen alkuperäinen malli oli checkpoint-vetoinen: vuokranantaja

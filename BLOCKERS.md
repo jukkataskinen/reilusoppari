@@ -78,7 +78,7 @@ Sivuston tekstit on korjattu samana päivänä.
 | Supabase (EU) | **valmis** – migraatiot 0001 ja 0002 ajettu, RLS todennettu |
 | Vercel-projekti | **valmis** – <https://reilusoppari.vercel.app> vastaa 200 |
 | GitHub-repo | **valmis** – <https://github.com/jukkataskinen/reilusoppari> |
-| Auth0 passwordless | puuttuu – estää kirjautumisen ja vaiheen 0 DoD:n |
+| Auth0 passwordless | **valmis** – kirjautuminen todennettu päästä päähän 2026-09-11 |
 | eSinetti-tenant + API-avain | puuttuu – mock riittää vaiheisiin 0 ja 1 |
 | VAPID, Resend, Stripe | puuttuu – tarvitaan vaiheissa 2 ja 5 |
 
@@ -90,6 +90,16 @@ Domains → Add `app.reilusoppari.fi`. Tietue syntyy automaattisesti.
 julkaistu sivu on paikanvaraaja, mutta heti kun tietokantakerros otetaan
 käyttöön näkymissä, deploy tarvitsee ainakin `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY` ja `SUPABASE_ANON_KEY`.
+
+## Auth0-tenant on Yhdysvalloissa — ratkaistava ennen lanseerausta
+
+Tenant on alueella US-5, mutta `esinetti.fi` ja `reilusoppari.fi` lupaavat
+alatunnisteessaan "tiedot EU:ssa". Sama tenant palvelee viittä sovellusta
+neljässä projektissa, joten siirto EU:hun on kertarysäys — ja ilmaistaso
+sallii vain yhden tenantin.
+
+Vaihtoehdot: siirto EU-tenanttiin kaikkine projekteineen, tai tekstien korjaus
+ja siirron dokumentointi tietosuojaselosteisiin. Ks. `DECISIONS.md`.
 
 ## 4. Jukan tehtävät (CLAUDE.md kohta 9)
 
