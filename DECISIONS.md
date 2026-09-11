@@ -283,3 +283,39 @@ ulosottovirastolta, se on väärä.
 
 Pohjien juridinen sisältö on Jukan vastuulla, ulkoasu ja kieli tämän
 linjauksen mukaan.
+
+
+## Asiakirjojen ulkoasu: Jukan luonnos on lähtökohta (2026-09-11)
+
+Jukka toimitti visuaalisen luonnoksen vuokrasopimuksesta ja
+vuokrasuhdetodistuksesta. Se on `templates/`-pohjien ulkoasun perusta, ja
+rakenne on luettu auki `templates/README.md`:hen, jotta pohjat voidaan
+kirjoittaa ilman että kuvaa tarvitsee katsoa rinnalla.
+
+Luonnos vastaa suoraan linjaukseen "ei viranomaispaperia": iso ystävällinen
+otsikko, yksi selittävä lause ihmisen kielellä, avaintiedot pehmeässä
+paneelissa kuvakkeineen, ehdot lyhyinä otsikoituina kohtina, lämmin loppusana
+ja tunnuslause *Reilua asumista. Yhdessä.*
+
+**Neljä asiaa luonnoksesta, jotka vaativat oman päätöksensä:**
+
+1. **Ei korallinpunaista asiakirjoissa.** Luonnos on kokonaan sinisen
+   sävyissä, ja se on oikein — sovelluksen `--color-coral` luetaan
+   asiakirjassa varoitukseksi.
+
+2. **Koristekuva vain sopimukseen ja todistukseen, ei pöytäkirjaan.**
+   Katselmuspöytäkirjassa kuva on todiste. Koristekuva samalla sivulla
+   tekisi rajasta epäselvän.
+
+3. **"Vuokranantajan tervehdys" on luonnoksessa näkyvä paneeli.** Kun
+   suositusta ei anneta, koko paneelin on kadottava jäljettömiin — ei tyhjää
+   laatikkoa eikä eri asettelua. Tämä on aiemman päätöksen (2026-09-10) ydin,
+   ja taitto on rakennettava sen mukaan.
+
+4. **QR-koodi generoidaan Reilusopparissa** ja välitetään kuvana. Ulkoista
+   QR-palvelua ei voi käyttää: renderöijä ei hae ulkoisia resursseja, eikä
+   todistuksen tunnistetta lähetetä kolmannelle osapuolelle.
+
+Avoin kysymys: korostusrivin käsinkirjoitusfontti vaatii toisen upotetun
+fontin jokaiseen PDF:ään. Halvempi vaihtoehto on Plus Jakarta Sansin
+kursiivi. Päätetään ennen ensimmäistä pohjaa.
