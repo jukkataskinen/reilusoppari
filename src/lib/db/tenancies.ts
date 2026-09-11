@@ -628,13 +628,19 @@ export async function reissueInvite(
 export async function getTenancyProperty(
   userId: string,
   tenancyId: string,
-): Promise<{ street: string; postalCode: string; city: string } | null> {
+): Promise<{
+  street: string;
+  postalCode: string;
+  city: string;
+  rooms: number | null;
+  areaM2: number | null;
+} | null> {
   const tenancy = await getTenancy(userId, tenancyId);
   if (!tenancy) return null;
 
   const { data, error } = await getServiceClient()
     .from("rs_properties")
-    .select("street, postal_code, city")
+    .select("street, postal_code, city, rooms, area_m2")
     .eq("id", tenancy.propertyId)
     .maybeSingle();
 
@@ -644,6 +650,20 @@ export async function getTenancyProperty(
   }
   if (!data) return null;
 
-  const row = data as { street: string; postal_code: string; city: string };
-  return { street: row.street, postalCode: row.postal_code, city: row.city };
+  const row = data as {
+    street: string;
+    postal_code: string;
+    city: string;
+    rooms: number | null;
+    area_m2: number | string | null;
+  };
+
+  return {
+    street: row.street,
+    postalCode: row.postal_code,
+    city: row.city,
+    rooms: row.rooms,
+    // numeric palautuu merkkijonona, kuten `properties.ts`:ssä.
+    areaM2: row.area_m2 === null ? null : Number(row.area_m2),
+  };
 }

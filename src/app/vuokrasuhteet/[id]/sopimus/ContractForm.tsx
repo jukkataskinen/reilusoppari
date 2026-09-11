@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 import { saveContractAction, type ContractFormState } from "@/app/vuokrasuhteet/contract-actions";
 import type { ContractTerms } from "@/lib/tenancy/contract-schema";
 
@@ -22,6 +22,8 @@ export function ContractForm({
   tenantCount: number;
 }) {
   const [state, formAction, pending] = useActionState(saveContractAction, initialState);
+  const [hasMinimumTerm, setHasMinimumTerm] = useState(terms.minimumTermMonths !== null);
+  const [waterIncluded, setWaterIncluded] = useState(terms.waterIncluded);
   const prefix = useId();
 
   const field = (name: string) => {
@@ -121,6 +123,20 @@ export function ContractForm({
           <FieldError name="noticePeriodMonths" />
         </div>
         <div className="flex-1">
+          <label htmlFor={`${prefix}-depositDueDate`} className="text-sm font-medium">
+            Vakuus maksettava
+          </label>
+          <input
+            {...field("depositDueDate")}
+            type="date"
+            defaultValue={terms.depositDueDate ?? ""}
+          />
+          <FieldError name="depositDueDate" />
+        </div>
+      </div>
+
+      <div className="flex gap-4">
+        <div className="w-[9rem]">
           <label htmlFor={`${prefix}-keysCount`} className="text-sm font-medium">
             Avaimia
           </label>
@@ -133,6 +149,43 @@ export function ContractForm({
           <FieldError name="keysCount" />
         </div>
       </div>
+
+      {/*
+        Toistaiseksi voimassa, mutta ei heti irtisanottavissa. Yleinen
+        järjestely, jolle ei ollut aiemmin paikkaa lomakkeella.
+      */}
+      <fieldset className="flex flex-col gap-2 border-0 p-0">
+        <legend className="text-sm font-medium">Sitoutumisaika</legend>
+        <label className="flex min-h-[var(--size-touch)] items-center gap-3">
+          <input
+            type="checkbox"
+            name="hasMinimumTerm"
+            defaultChecked={terms.minimumTermMonths !== null}
+            onChange={(event) => setHasMinimumTerm(event.target.checked)}
+            className="size-5"
+          />
+          <span className="text-sm">Sopimusta ei voi irtisanoa heti</span>
+        </label>
+
+        {hasMinimumTerm ? (
+          <div className="ml-8 w-[10rem]">
+            <label htmlFor={`${prefix}-minimumTermMonths`} className="text-sm">
+              Kuukautta alusta
+            </label>
+            <input
+              {...field("minimumTermMonths")}
+              inputMode="numeric"
+              defaultValue={String(terms.minimumTermMonths ?? 12)}
+            />
+            <FieldError name="minimumTermMonths" />
+          </div>
+        ) : null}
+
+        <p className="ml-8 text-sm text-ink/60">
+          Sopimus on silti toistaiseksi voimassa — se vain jatkuu normaalisti tämän ajan
+          jälkeen. Eri asia kuin määräaikainen sopimus, joka päättyy sovittuna päivänä.
+        </p>
+      </fieldset>
 
       <div>
         <label htmlFor={`${prefix}-rentIncreaseTerm`} className="text-sm font-medium">
@@ -157,13 +210,69 @@ export function ContractForm({
 
       <fieldset className="flex flex-col gap-2 border-0 p-0">
         <legend className="text-sm font-medium">Vuokraan sisältyy</legend>
+
+        <label className="flex min-h-[var(--size-touch)] items-center gap-3">
+          <input
+            type="checkbox"
+            name="waterIncluded"
+            defaultChecked={terms.waterIncluded}
+            onChange={(event) => setWaterIncluded(event.target.checked)}
+            className="size-5"
+          />
+          <span className="text-sm">Vesi</span>
+        </label>
+
+        {waterIncluded ? null : (
+          <div className="ml-8 flex flex-col gap-2">
+            <div className="w-[10rem]">
+              <label htmlFor={`${prefix}-waterChargeEur`} className="text-sm">
+                Vesimaksu (€/kk)
+              </label>
+              <input
+                {...field("waterChargeEur")}
+                inputMode="decimal"
+                defaultValue={terms.waterChargeEur === null ? "" : String(terms.waterChargeEur)}
+                placeholder="25"
+              />
+              <p className="mt-1.5 text-sm text-ink/60">
+                Tyhjänä: vesi maksetaan käytön mukaan.
+              </p>
+              <FieldError name="waterChargeEur" />
+            </div>
+            <Toggle
+              name="waterChargePerPerson"
+              label="Vesimaksu on henkilöä kohden"
+              defaultChecked={terms.waterChargePerPerson}
+            />
+          </div>
+        )}
+
         <Toggle
-          name="waterIncluded"
-          label="Vesi"
-          hint="Jos vesi ei sisälly, se maksetaan erikseen käytön mukaan."
-          defaultChecked={terms.waterIncluded}
+          name="electricityIncluded"
+          label="Sähkö"
+          hint="Jos sähkö ei sisälly, vuokralainen tekee oman sähkösopimuksensa."
+          defaultChecked={terms.electricityIncluded}
         />
-        <Toggle name="electricityIncluded" label="Sähkö" defaultChecked={terms.electricityIncluded} />
+        <Toggle
+          name="broadbandIncluded"
+          label="Laajakaista"
+          defaultChecked={terms.broadbandIncluded}
+        />
+        <Toggle
+          name="furnished"
+          label="Asunto vuokrataan kalustettuna"
+          defaultChecked={terms.furnished}
+        />
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2 border-0 p-0">
+        <legend className="text-sm font-medium">Vakuutus</legend>
+        <Toggle
+          name="insuranceRequired"
+          label="Vuokralaisella on oltava kotivakuutus"
+          hint="Vastuuvakuutuksella. Suojaa myös vuokralaista itseään."
+          defaultChecked={terms.insuranceRequired}
+        />
       </fieldset>
 
       <div>

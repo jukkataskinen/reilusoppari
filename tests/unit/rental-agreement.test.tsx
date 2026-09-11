@@ -14,6 +14,13 @@ const DATA: RentalAgreementData = {
   rentDueDay: 5,
   depositAmount: 1700,
   noticePeriodMonths: 1,
+  minimumTermMonths: null,
+  furnished: false,
+  depositDueDate: null,
+  waterChargeEur: null,
+  waterChargePerPerson: false,
+  broadbandIncluded: false,
+  insuranceRequired: true,
   rentIncreaseTerm: null,
   keysCount: 3,
   smokingAllowed: false,
@@ -84,22 +91,6 @@ describe("sopimusehdot", () => {
     expect(toinen?.body).toContain("Lemmikkejä ei pidetä");
   });
 
-  it("vesi ja sähkö kerrotaan oikein kaikissa yhdistelmissä", () => {
-    const vain = (d: Partial<RentalAgreementData>) =>
-      buildTerms({ ...DATA, ...d }).find((t) => t.title === "Vesi ja sähkö")?.body ?? "";
-
-    expect(vain({ waterIncluded: true, electricityIncluded: true })).toContain("vesi ja sähkö");
-    expect(vain({ waterIncluded: true, electricityIncluded: false })).toContain(
-      "Sähkö maksetaan erikseen",
-    );
-    expect(vain({ waterIncluded: false, electricityIncluded: true })).toContain(
-      "Vesi maksetaan erikseen",
-    );
-    expect(vain({ waterIncluded: false, electricityIncluded: false })).toContain(
-      "vuokran lisäksi",
-    );
-  });
-
   it("muut ehdot tulevat mukaan vain jos niitä on", () => {
     expect(buildTerms(DATA).some((t) => t.title === "Muut ehdot")).toBe(false);
     expect(
@@ -160,5 +151,130 @@ describe("ehtojen ladonta", () => {
       .flat()
       .map((r) => r.number);
     expect(numbers).toEqual(numbers.map((_, i) => i + 1));
+  });
+});
+
+describe("sitoutumisaika", () => {
+  it("kertoo aikaisimman irtisanomispäivän eikä vain kuukausimäärää", () => {
+    // Kuukausimäärä vaatii lukijalta laskutoimituksen. Päivämäärä ei.
+    const kesto = buildTerms({ ...DATA, minimumTermMonths: 12 }).find(
+      (t) => t.title === "Sopimuksen kesto",
+    );
+
+    expect(kesto?.body).toContain("12 kuukautta");
+    expect(kesto?.body).toContain("1.9.2027");
+    // Ero määräaikaiseen sanotaan ääneen: sopimus ei pääty siihen.
+    expect(kesto?.body).toContain("jatkuu toistaiseksi");
+  });
+
+  it("yksi kuukausi taipuu oikein", () => {
+    const kesto = buildTerms({ ...DATA, minimumTermMonths: 1 }).find(
+      (t) => t.title === "Sopimuksen kesto",
+    );
+    expect(kesto?.body).toContain("1 kuukausi ");
+  });
+
+  it("ei mainita, jos sitä ei ole", () => {
+    const kesto = buildTerms(DATA).find((t) => t.title === "Sopimuksen kesto");
+    expect(kesto?.body).toBe("Sopimus on voimassa toistaiseksi.");
+  });
+
+  it("määräaikainen ohittaa sitoutumisajan", () => {
+    // Määräaikainen päättyy joka tapauksessa sovittuna päivänä, joten
+    // sitoutumisajan toistaminen olisi harhaanjohtavaa.
+    const kesto = buildTerms({
+      ...DATA,
+      endDate: "2027-08-31",
+      minimumTermMonths: 12,
+    }).find((t) => t.title === "Sopimuksen kesto");
+
+    expect(kesto?.body).toContain("määräaikainen");
+    expect(kesto?.body).not.toContain("irtisanomispäivä");
+  });
+});
+
+describe("vesi, sähkö ja laajakaista", () => {
+  const teksti = (d: Partial<RentalAgreementData>) =>
+    buildTerms({ ...DATA, ...d }).find((t) => t.title === "Vesi, sähkö ja laajakaista")?.body ?? "";
+
+  it("vesi sisältyy", () => {
+    expect(teksti({ waterIncluded: true })).toContain("Vesi sisältyy vuokraan");
+  });
+
+  it("erillinen vesimaksu henkilöä kohden", () => {
+    expect(teksti({ waterIncluded: false, waterChargeEur: 25, waterChargePerPerson: true })).toContain(
+      "25 € kuukaudessa henkilöä kohden",
+    );
+  });
+
+  it("erillinen vesimaksu asuntoa kohden", () => {
+    expect(teksti({ waterIncluded: false, waterChargeEur: 25 })).toContain("asuntoa kohden");
+  });
+
+  it("ilman summaa vesi menee käytön mukaan", () => {
+    expect(teksti({ waterIncluded: false, waterChargeEur: null })).toContain("käytön mukaan");
+  });
+
+  it("sähkösopimus on vuokralaisen, jos sähkö ei sisälly", () => {
+    expect(teksti({ electricityIncluded: false })).toContain("oman sähkösopimuksensa");
+    expect(teksti({ electricityIncluded: true })).toContain("Sähkö sisältyy");
+  });
+});
+
+describe("mallisopimuksesta otetut ehdot", () => {
+  it("kattaa muuttopäivän, muutostyöt, loppusiivouksen ja jälleenvuokrauksen", () => {
+    const otsikot = buildTerms(DATA).map((t) => t.title);
+    for (const otsikko of [
+      "Vuokrattava koti",
+      "Muuttopäivä",
+      "Muutostyöt",
+      "Loppusiivous",
+      "Asunnon luovuttaminen eteenpäin",
+      "Sovellettava laki",
+    ]) {
+      expect(otsikot, otsikko).toContain(otsikko);
+    }
+  });
+
+  it("kotivakuutus on ehtona vain jos sitä vaaditaan", () => {
+    expect(buildTerms(DATA).some((t) => t.title === "Kotivakuutus")).toBe(true);
+    expect(
+      buildTerms({ ...DATA, insuranceRequired: false }).some((t) => t.title === "Kotivakuutus"),
+    ).toBe(false);
+  });
+
+  it("kuvaa asunnon huoneluvulla ja pinta-alalla kun ne tiedetään", () => {
+    const koti = buildTerms({
+      ...DATA,
+      property: { ...DATA.property, rooms: 2, areaM2: 54.5 },
+    }).find((t) => t.title === "Vuokrattava koti");
+
+    expect(koti?.body).toContain("2h+k, noin 54,5 m²");
+    expect(koti?.body).toContain("kalustamattomana");
+  });
+
+  it("ei väitä huoneluvusta mitään jos sitä ei tiedetä", () => {
+    const koti = buildTerms(DATA).find((t) => t.title === "Vuokrattava koti");
+    expect(koti?.body).toContain("asuinhuoneisto");
+  });
+
+  it("ei käytä mallisopimuksen virkakieltä", () => {
+    // Sisältö on mallista, sanamuodot eivät (DECISIONS.md 2026-09-11).
+    const kaikki = buildTerms(DATA)
+      .map((t) => t.body)
+      .join(" ")
+      .toLowerCase();
+
+    for (const virkakieli of [
+      "edellä mainittu",
+      "täten",
+      "kyseinen",
+      "asianomainen",
+      "realisoida",
+      "ilman tuomiota",
+      "luvanvaraisina töinä pidetään",
+    ]) {
+      expect(kaikki, virkakieli).not.toContain(virkakieli);
+    }
   });
 });

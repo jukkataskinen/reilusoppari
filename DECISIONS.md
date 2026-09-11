@@ -500,3 +500,52 @@ muuttaa sitä, seurauksena ei ole yllätyslaskua.
 toiveensa vuokranantajalle, joka muuttaa ehtoja. Muuten sopimus voisi muuttua
 sen jälkeen, kun toinen on sen lukenut. Kommentointi portaalissa on vielä
 tekemättä.
+
+
+## Sopimuksen sisältö oikeasta mallisopimuksesta, kieli omaa (2026-09-11, Jukan linjaus)
+
+Jukka antoi mallikappaleeksi käyttämänsä oikean vuokrasopimuksen ja sanoi:
+*"tuo sopimus on sisällöltään hyvä mutta se on juuri sellaisella
+virkamieskielellä kirjoitettu, jota yritetään tässä sovelluksessa välttää."*
+
+**Sisältö otetaan, sanamuodot ei.** Mallista tulivat ne kohdat, jotka meiltä
+puuttuivat: muuttopäivä, muutostyöt, loppusiivous, kotivakuutus,
+jälleenvuokraus, viivästyskorko, vakuuden eräpäivä ja sen käyttö
+maksamattomiin eriin. Ehtoja on nyt 18–19 aiemman 12:n sijaan.
+
+Kieli on kirjoitettu kokonaan uudelleen. Esimerkki samasta asiasta:
+
+> **Malli:** "Vuokranantajalla on oikeus ilman tuomiota tai päätöstä
+> realisoida vakuus vuokrasaatavien kattamiseksi."
+>
+> **Meillä:** "Jos vuokraa tai muuta sovittua maksua jää maksamatta
+> kirjallisesta muistutuksesta huolimatta, vuokranantaja voi käyttää vakuutta
+> niiden kattamiseen."
+
+Sisältö ei kevene. Se, mitä osapuolet tosiasiassa sopivat, pysyy samana —
+vain lukukelpoisuus muuttuu. Tämä on sama linjaus kuin *"Asiakirjat eivät saa
+näyttää viranomaispapereilta"*, mutta koskee tekstiä eikä ulkoasua.
+
+Testi `tests/unit/rental-agreement.test.tsx` vartioi tätä: se hylkää
+sopimuksen, jos teksteihin ilmestyy virkakielen vakiofraaseja
+("edellä mainittu", "täten", "kyseinen", "ilman tuomiota").
+
+
+## Sitoutumisaika: toistaiseksi voimassa, mutta ei heti irtisanottavissa (2026-09-11, Jukan pyyntö)
+
+*"Irtisanomisessa voisi olla äpissä valintana suoraan, että ensimmäisen 12 kk
+aikana ei voi sanoa sopimusta irti."*
+
+Lomakkeella on nyt rasti **"Sopimusta ei voi irtisanoa heti"** ja sen alla
+kuukausimäärä (oletus 12). Tämä on **eri asia kuin määräaikainen sopimus**, ja
+ero sanotaan sekä lomakkeella että asiakirjassa ääneen: määräaikainen päättyy
+sovittuna päivänä, tämä jatkuu sen jälkeen normaalisti.
+
+Asiakirjaan ei kirjoiteta pelkkää kuukausimäärää vaan **laskettu päivämäärä**:
+"Ensimmäiset 12 kuukautta kumpikaan ei kuitenkaan voi irtisanoa sitä: aikaisin
+mahdollinen irtisanomispäivä on 1.9.2027." Kuukausimäärä vaatisi lukijalta
+laskutoimituksen, päivämäärä ei. Sama tieto on myös etusivun tietolaatikossa
+vuokran vieressä — sitä ei pidä joutua etsimään ehtojen joukosta.
+
+Jos sopimus on määräaikainen, sitoutumisaikaa ei toisteta: sopimus päättyy
+joka tapauksessa sovittuna päivänä.

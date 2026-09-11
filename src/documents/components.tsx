@@ -270,8 +270,21 @@ export function Title({
   );
 }
 
-export function Panel({ children, style }: { children: ReactNode; style?: Style }) {
-  return <View style={[s.panel, style ?? {}]}>{children}</View>;
+export function Panel({
+  children,
+  style,
+  wrap,
+}: {
+  children: ReactNode;
+  style?: Style;
+  /** `false` pitää paneelin yhdellä sivulla. Puolikas paneeli on rikkinäisen näköinen. */
+  wrap?: boolean;
+}) {
+  return (
+    <View wrap={wrap} style={[s.panel, style ?? {}]}>
+      {children}
+    </View>
+  );
 }
 
 export function Heading({ children }: { children: ReactNode }) {
@@ -433,7 +446,10 @@ export function ClosingNote({
   sprig?: ReactNode;
 }) {
   return (
-    <Panel style={{ marginTop: spacing.block, flexDirection: "row", alignItems: "center" }}>
+    <Panel
+      wrap={false}
+      style={{ marginTop: spacing.block, flexDirection: "row", alignItems: "center" }}
+    >
       <View style={{ marginRight: 9, marginTop: 1 }}>
         <Icon name="sydan" />
       </View>

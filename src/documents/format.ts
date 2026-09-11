@@ -48,3 +48,30 @@ export function formatNames(names: string[]): string {
 export function formatCount(count: number, singular: string, partitive: string): string {
   return `${count} ${count === 1 ? singular : partitive}`;
 }
+
+/**
+ * Päivä N kuukauden päästä, `YYYY-MM-DD`.
+ *
+ * Jos kohdekuukaudessa ei ole samaa päivää (31.1. + 1 kk), tulos on kuukauden
+ * viimeinen päivä eikä seuraavan kuukauden alku — sama sääntö kuin
+ * eräpäivissä (`tenancy/rent-periods.ts`).
+ */
+/**
+ * Pinta-ala suomeksi: desimaalierotin on pilkku, eikä turhaa nollaa näytetä.
+ * 54.5 -> "54,5", 54 -> "54".
+ */
+export function formatArea(areaM2: number): string {
+  const rounded = Math.round(areaM2 * 10) / 10;
+  return rounded % 1 === 0 ? String(rounded) : String(rounded).replace(".", ",");
+}
+
+export function addMonths(isoDate: string, months: number): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const total = (year * 12 + (month - 1)) + months;
+  const targetYear = Math.floor(total / 12);
+  const targetMonth = (total % 12) + 1;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+  const targetDay = Math.min(day, lastDay);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${targetYear}-${pad(targetMonth)}-${pad(targetDay)}`;
+}

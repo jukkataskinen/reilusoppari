@@ -31,6 +31,9 @@ export async function buildRentalAgreementData(
   if (!tenancy.startDate || !tenancy.rentDueDay || tenancy.rentAmount === null) return null;
 
   return {
+    // Huoneluku ja pinta-ala asunnolta: asiakirja kuvaa kohteen ("2h+k,
+    // noin 54 m²"), eikä sitä tarvitse kirjoittaa sopimuslomakkeella
+    // uudelleen.
     property,
     landlordName: terms.landlordName ?? "",
     tenantNames: terms.tenantNames,
@@ -43,6 +46,13 @@ export async function buildRentalAgreementData(
     depositAmount: tenancy.depositAmount ?? 0,
 
     noticePeriodMonths: terms.noticePeriodMonths,
+    minimumTermMonths: terms.minimumTermMonths,
+    furnished: terms.furnished,
+    depositDueDate: terms.depositDueDate,
+    waterChargeEur: terms.waterChargeEur,
+    waterChargePerPerson: terms.waterChargePerPerson,
+    broadbandIncluded: terms.broadbandIncluded,
+    insuranceRequired: terms.insuranceRequired,
     rentIncreaseTerm: terms.rentIncreaseTerm,
     keysCount: terms.keysCount,
     smokingAllowed: terms.smokingAllowed,
