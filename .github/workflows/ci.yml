@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Kehitysarvoja, EI tuotantosalaisuuksia. Riittävän oikean muotoisia, jotta
+# Auth0-clientin ja Supabase-clientin alustustarkistukset eivät kaada buildia.
+# Oikeat arvot ovat Vercelissä eivätkä kulje CI:n läpi.
+env:
+  NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
+  APP_BASE_URL: http://127.0.0.1:3100
+  AUTH0_DOMAIN: ci-testi.eu.auth0.com
+  AUTH0_CLIENT_ID: ci-client-id-ei-oikea
+  AUTH0_CLIENT_SECRET: ci-client-secret-ei-oikea
+  AUTH0_SECRET: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  INVITE_TOKEN_SECRET: ci-invite-secret-ei-oikea
+  SHARE_TOKEN_SECRET: ci-share-secret-ei-oikea
+  # ESINETTI_API_KEY jätetään tarkoituksella pois: ilman sitä käytössä on
+  # mock, ja juuri sitä CI:n kuuluukin ajaa (ks. src/lib/esinetti/index.ts).
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run typecheck
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - name: Yksikkö- ja integraatiotestit
+        # Supabase-salaisuudet ovat valinnaisia: ilman niitä RLS- ja
+        # IDOR-integraatiotestit ohittuvat siististi (hasSupabaseCredentials).
+        # Lisää nämä repon Settings → Secrets and variables → Actions -alle
+        # ERILLISESTÄ testiprojektista, jotta ne oikeasti ajetaan.
+        env:
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run test
+
+  # Reilusopparissa ei ole henkilötunnuksia missään (CLAUDE.md kohta 6).
+  # Tämä työ on olemassa sitä varten, että jos joku joskus lisää sellaisen,
+  # se ei mene läpi hiljaa.
+  ei-henkilotunnuksia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Etsi hetu-sanastoa koodista ja migraatioista
+        # Kommenttirivit sallitaan: useassa tiedostossa selitetään nimenomaan,
+        # ettei hetuja käsitellä, ja se selitys saa jäädä. Koodirivi ei saa.
+        run: |
+          if grep -rniE "hetu|henkil[oö]tunnus|social_security" src/ supabase/ templates/ 2>/dev/null \
+            | grep -viE "^[^:]+:[0-9]+: *(\*|//|--|#)"; then
+            echo "LÖYTYI: henkilötunnukseen viittaavaa koodia. Reilusoppari ei käsittele hetuja."
+            exit 1
+          fi
+          echo "OK: ei hetu-viittauksia koodissa."
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - name: Varmista ettei salaisuuksia ole selainpaketissa
+        # Palvelinsalaisuudet eivät saa päätyä .next/static-tiedostoihin.
+        # Tämä huomaisi esimerkiksi vahingossa NEXT_PUBLIC_-etuliitteen
+        # saaneen muuttujan tai suoraan bundlattavaan koodiin kirjoitetun avaimen.
+        run: |
+          if grep -rl "ci-client-secret-ei-oikea\|service_role\|SUPABASE_SERVICE_ROLE_KEY" .next/static/ 2>/dev/null; then
+            echo "VIRHE: palvelinsalaisuus löytyi selainpaketista."
+            exit 1
+          fi
+          echo "OK: selainpaketissa ei salaisuuksia."
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, unit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - name: Asenna Playwright-selaimet
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 7
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - run: npm audit --audit-level=high
+        # Ei vielä pakollinen, mutta tulos näytetään jokaisessa ajossa.
+        continue-on-error: true

@@ -10,6 +10,17 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Sovellus ei ole upotettava, toisin kuin eSinetin /embed.
   { key: "X-Frame-Options", value: "DENY" },
+  /**
+   * Kamera on sallittu: katselmuksen kuvat otetaan selaimessa (CLAUDE.md 5.3).
+   *
+   * Paikannus on nimenomaisesti KIELLETTY. Kuvista poistetaan EXIF-GPS
+   * palvelimella (CLAUDE.md 5.3), ja olisi epäjohdonmukaista pyytää samaa
+   * tietoa selaimelta erikseen. Mikrofonia ei tarvita mihinkään.
+   */
+  {
+    key: "Permissions-Policy",
+    value: "camera=(self), microphone=(), geolocation=(), payment=(), usb=()",
+  },
 ];
 
 const nextConfig: NextConfig = {

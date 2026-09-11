@@ -36,6 +36,8 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [x] Paletti ja fontti sivustolta (`globals.css`, Plus Jakarta Sans itse
       hostattuna) — shadcn/ui lisätään kun ensimmäinen lomake tarvitsee sen
 - [x] **Mobiili ensin:** 390 px perusleveys, kosketuskohde 44 px, zoomaus sallittu
+- [x] CSP noncella ja `strict-dynamic`, Permissions-Policy (kamera sallittu,
+      paikannus ei), 9 yksikkötestiä + e2e-savutesti tuotantokäännöstä vasten
 - [ ] PWA: service worker ja ikonit (manifest tehty) — myös pohja
       sovelluskaupoille, ks. vaihe 7
 - [x] Supabase kytketty: `src/lib/db/supabase.ts` (service + anon) ja
@@ -56,7 +58,8 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [ ] Asunnon luonti (`rs_properties`) ja lista
 - [x] Oletus-checkpointien generointi asuntotyypin ja huoneluvun mukaan,
       10 yksikkötestiä
-- [ ] CI: lint, typecheck, unit, e2e
+- [x] CI: lint, typecheck, unit, build, e2e, audit + kaksi tarkistusta:
+      selainpaketissa ei salaisuuksia, koodissa ei hetu-viittauksia
 - [x] `.env.example` kaikilla muuttujilla selityksineen
 
 ## Vaihe 1 — Sopimus, katselmus, allekirjoitus
