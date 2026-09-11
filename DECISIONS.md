@@ -414,3 +414,56 @@ valokuvien kanssa: pöytäkirjassa kuva on todiste.
 Tekniset mitat kun ajankohtaista: vinjetti on 118 × 118 pt, eli 150 dpi:llä
 noin 250 × 250 px. JPEG, alle 100 kt. Kuva rajataan aina samaan laatikkoon
 (`objectFit: "cover"`), joten kuvasuhde ei ole kriittinen.
+
+
+## Sovelluskaupat eivät ole välttämättömiä (2026-09-11, Jukan korjaus)
+
+Jukka korjasi aiempaa linjaustaan: *"Tämän ei tarvitse toimia äppinä, jos se
+skaalautuu mukavasti puhelimeen ja push-ilmoitukset saa jollakin muulla tavalla
+toimimaan. Se ei ole hyvä ratkaisu, että vuokranantaja saa sähköpostin jossa
+pyydetään tarkastamaan vuokranmaksu. Herätys puhelimeen on parempi."*
+
+Vaatimus ei siis ole sovelluskauppa vaan **ilmoitus puhelimeen**. Se onnistuu
+ilman natiivisovellusta — yhdellä ehdolla.
+
+### Mikä toimii ja missä
+
+| | Android | iPhone |
+|---|---|---|
+| Selaimesta ilman mitään | ✅ push toimii | ❌ ei ilmoituksia |
+| Kotivalikkoon lisättynä | ✅ | ✅ push toimii |
+
+**iPhonella push-ilmoitukset vaativat, että käyttäjä lisää sovelluksen
+kotivalikkoon** (Safari → Jaa → Lisää Koti-valikkoon). Tämä on Applen sääntö,
+ei tekninen puute, eikä sitä voi kiertää. Toiminto on ollut iOS 16.4:stä
+(maaliskuu 2023), joten laitekanta ei ole ongelma lokakuussa 2026.
+
+Käytännössä: **iPhone-käyttäjä on ohjattava lisäämään sovellus kotivalikkoon
+siinä hetkessä, kun ilmoituksilla alkaa olla merkitystä** — eli kun
+vuokrasuhde muuttuu aktiiviseksi ja ensimmäinen kuittauspyyntö on tulossa.
+Ei heti ensimmäisellä käynnillä, jolloin hyötyä ei vielä näe.
+
+### Mitä tästä seuraa
+
+**Vaihe 7 (sovelluskaupat) muuttuu valinnaiseksi.** Se ei ole lanseerauksen
+edellytys. Samalla poistuu:
+
+- Apple Developer 99 $/v ja Google Play 25 $
+- App Store -katselmus ja sen hylkäyskierrokset
+- **Applen 15–30 % provisio digitaalisesta sisällöstä.** Tämä oli vaiheen 5
+  suurin avoin kysymys: 29 €:n vuokrasuhteesta olisi jäänyt noin 22 €.
+  Nyt Stripe riittää eikä maksunäkymää tarvitse rakentaa kahdesti.
+
+**Vaatimukset PWA:lle kiristyvät vastaavasti.** Sovelluksen on skaalauduttava
+puhelimeen kunnolla — se on jo suunnitteluperiaate (mobiili ensin, 390 px) —
+ja kotivalikkoon lisäämisen on oltava sujuva ja selitetty.
+
+### Jäljelle jäävä riski
+
+iOS:n PWA-push on vähemmän luotettava kuin natiivisovelluksen: käyttöjärjestelmä
+voi viivästyttää ilmoituksia, eikä taustapäivitykselle ole takeita. Kerran
+kuussa lähtevälle kuittauspyynnölle se riittää.
+
+Jos käytännössä osoittautuu, ettei se riitä, vaihtoehdot ovat tekstiviesti tai
+paluu sovelluskauppoihin. Sähköposti on varakanava, ei ensisijainen — juuri
+siitä Jukka huomautti.

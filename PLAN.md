@@ -105,6 +105,9 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 Polut 5.5–5.6. DoD: kuittaus toimii pushista ja sähköpostista, historia näkyy molemmille.
 
 - [ ] Web push (VAPID), tilaus ja vastaanotto PWA:ssa
+- [ ] **iPhone: ohjaus kotivalikkoon lisäämiseen** siinä hetkessä, kun
+      ilmoituksilla alkaa olla merkitystä (vuokrasuhde aktivoituu). Ilman
+      sitä iPhone ei näytä ilmoituksia lainkaan — Applen sääntö
 - [ ] Sähköposti varakanavana (Resend)
 - [ ] Cron: eräpäivänä klo 9 Europe/Helsinki, muistutus 3 pv myöhemmin
 - [ ] Kuittaus: Kyllä / Ei vielä / Osittain + summa, muutettavissa 30 pv
@@ -166,10 +169,14 @@ yhteystiedot eivät paljastu, vuokralainen näkee keskustelun.
 - [ ] Vuokralainen näkee keskustelun kokonaisuudessaan
 - [ ] Luvan peruminen sulkee avoimet keskustelut, rajat ja loki
 
-## Vaihe 7 — Sovelluskaupat (iOS ja Android)
+## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
-Jukan vaatimus 2026-09-11: sovelluksen pitää olla aidosti ladattavissa App
-Storesta ja Google Playsta, ei vain "lisää kotivalikkoon".
+**Muutettu 2026-09-11:** Jukan korjaus — vaatimus ei ole sovelluskauppa vaan
+ilmoitus puhelimeen, ja se onnistuu PWA:lla. iPhonella se vaatii, että
+käyttäjä lisää sovelluksen kotivalikkoon; Androidilla toimii suoraan.
+Ks. DECISIONS.md.
+
+Tämä vaihe tehdään vain, jos PWA-push osoittautuu käytännössä riittämättömäksi.
 
 DoD: sama koodi, kaksi julkaisua kaupoissa, kirjautuminen ja kamera toimivat
 molemmissa.
@@ -190,19 +197,11 @@ molemmissa.
 - [ ] Tilit: Apple Developer 99 $/v, Google Play 25 $ kertamaksu
       (`KUSTANNUKSET.md`)
 
-## Vaihe 7 vaikuttaa vaiheeseen 5 — päätettävä ennen maksujen rakentamista
+## ~~Vaihe 7 vaikuttaa vaiheeseen 5~~ — ratkennut
 
-Apple vaatii, että sovelluksen sisällä myytävä digitaalinen sisältö kulkee
-Applen oman maksujärjestelmän kautta (15–30 % provisio). Jos Reilusoppari
-myy 29 €:n vuokrasuhteen tai Plussan sovelluksessa, Stripe ei riitä.
-
-Kierto on vakiintunut ja sallittu: **sovelluksessa ei myydä mitään.** Käyttäjä
-ostaa verkossa, ja sovellus vain näyttää mitä hän on ostanut. Näin tekevät
-Netflix ja Spotify. Hinta on se, ettei sovelluksesta saa linkittää ostosivulle
-eikä kehottaa ostamaan siellä.
-
-Tämä on päätettävä ennen vaihetta 5, koska se muuttaa maksunäkymän rakenteen.
-Ks. `DECISIONS.md`.
+Applen 15–30 %:n provisio digitaalisesta sisällöstä koski vain
+sovelluskaupasta ladattua sovellusta. Kun kauppoja ei tarvita, Stripe riittää
+eikä maksunäkymää tarvitse rakentaa kahdesti.
 
 ---
 
