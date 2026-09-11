@@ -40,7 +40,11 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   let data;
   try {
     data = await buildRentalAgreementData(user.id, id);
-  } catch {
+  } catch (err) {
+    // Virheen SYY lokiin, käyttäjälle neutraali viesti. Ilman tätä riviä
+    // tuotannon vika näkyy vain geneerisenä tekstinä, ja syy on etsittävä
+    // alustan lokeista arvaamalla.
+    console.error("[sopimus] tietojen kokoaminen epäonnistui:", err instanceof Error ? err.message : err);
     return new NextResponse("Esikatselua ei voitu tuottaa.", { status: 500 });
   }
 
@@ -61,7 +65,8 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
         "x-document-sha256": result.sha256,
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("[sopimus] renderöinti epäonnistui:", err instanceof Error ? err.message : err);
     return new NextResponse("Esikatselua ei voitu tuottaa.", { status: 500 });
   }
 }

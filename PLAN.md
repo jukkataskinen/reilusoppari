@@ -73,6 +73,20 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
       selainpaketissa ei salaisuuksia, koodissa ei hetu-viittauksia
 - [x] `.env.example` kaikilla muuttujilla selityksineen
 
+## Sovelluksen ilme — Jukan havainto 2026-09-11
+
+Ensimmäinen puhelintesti tuotannossa: *"Brändäystä puhelinnäkymäkin vaatii
+vaikka olikin ihan siisti."*
+
+Sovelluksessa ei ole tällä hetkellä tunnusta lainkaan — asiakirjoissa ja
+sivustolla on merkki, tunnuslause ja väripaletti, mutta sovelluksen näkymät
+ovat pelkkää tekstiä. Tehtävä:
+
+- [ ] Sovelluksen ylätunniste: merkki ja nimi, sama kuin asiakirjoissa
+- [ ] Navigaatio puhelimessa: asunnot, vuokrasuhteet, asetukset
+- [ ] Tyhjien näkymien ilme (ei vielä asuntoja / ei vielä vuokrasuhteita)
+- [ ] Kirjautumisnäkymän ilme — se on ensimmäinen mitä vuokralainen näkee
+
 ## Vaihe 1 — Sopimus, katselmus, allekirjoitus
 
 Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.

@@ -91,6 +91,29 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm run build
+      - name: Varmista etta PDF:n fontit ovat funktiopaketissa
+        # Next.js ei nae dynaamisesti ladattuja tiedostoja: omat fontit
+        # luetaan ajon aikana muodostetulta polulta, ja pdfkit lataa omat
+        # vakiofonttinsa dynaamisella requirella. Molemmat toimivat
+        # paikallisesti ja kaatuvat vasta tuotannossa, joten tama tarkistus
+        # on ainoa paikka, jossa puuttuminen huomataan ajoissa.
+        run: |
+          TRACE=$(find .next/server -name "route.js.nft.json" -path "*esikatselu*" | head -1)
+          if [ -z "$TRACE" ]; then
+            echo "VIRHE: esikatselureitin jaljitystiedostoa ei loytynyt."
+            exit 1
+          fi
+          # Hakusanoissa ei ole hakemistoerottimia: jaljitystiedosto
+          # kirjoitetaan kaannoskoneen erottimilla, ja ne eroavat Windowsissa
+          # ja Linuxissa.
+          for needed in "Helvetica.cjs" "plus-jakarta-sans-400.ttf" ".afm"; do
+            if ! grep -q "$needed" "$TRACE"; then
+              echo "VIRHE: $needed puuttuu funktiopaketista ($TRACE)."
+              exit 1
+            fi
+          done
+          echo "OK: PDF:n fontit ovat mukana."
+
       - name: Varmista ettei salaisuuksia ole selainpaketissa
         # Palvelinsalaisuudet eivät saa päätyä .next/static-tiedostoihin.
         # Tämä huomaisi esimerkiksi vahingossa NEXT_PUBLIC_-etuliitteen

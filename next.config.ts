@@ -25,12 +25,30 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /**
-   * Asiakirjojen fontit luetaan levyltä ajon aikana (`src/documents/fonts.ts`).
-   * Ilman tätä ne eivät päädy Vercelin funktiopakettiin, ja PDF:n tuottaminen
-   * kaatuisi vasta tuotannossa — paikallisesti kaikki toimisi.
+   * Tiedostot, jotka on pakattava mukaan palvelinfunktioihin.
+   *
+   * ==========================================================================
+   * MIKSI NÄMÄ ON LUETELTAVA KÄSIN
+   *
+   * Next.js päättelee riippuvuudet koodia lukemalla. Se ei näe kahta asiaa:
+   *
+   * 1. **Omat fontit.** Ne luetaan levyltä polulla, joka muodostetaan ajon
+   *    aikana (`src/documents/fonts.ts`).
+   * 2. **pdfkitin vakiofontit.** pdfkit lataa ne dynaamisella `require`illa,
+   *    jota jäljitin ei tunnista. Näitä tarvitaan, vaikka asiakirjoissa
+   *    käytetään omaa fonttia: pdfkit alustaa dokumentin Helveticalla.
+   *
+   * Molemmat toimivat paikallisesti, koska silloin koko `node_modules` on
+   * olemassa. Vika näkyy vasta tuotannossa — ja näkyi:
+   * `Cannot find module '/var/task/node_modules/pdfkit/js/standard-fonts/Helvetica.cjs'`.
+   * ==========================================================================
    */
   outputFileTracingIncludes: {
-    "/**": ["./src/documents/fonts/**"],
+    "/**": [
+      "./src/documents/fonts/**",
+      "./node_modules/pdfkit/js/standard-fonts/**",
+      "./node_modules/pdfkit/js/data/**",
+    ],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
