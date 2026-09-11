@@ -26,6 +26,8 @@ export const colors = {
   inkSoft: "#5a6b84",
   inkFaint: "#8a99b0",
   sky: "#3d8bff",
+  /** Merkin toinen neliö. Kaksi osapuolta, ei kahta väriä — asiakirja pysyy rauhallisena. */
+  skySoft: "#8fb9ff",
   /** Paneelien tausta. Riittävän vaalea, että teksti pysyy luettavana tulostettuna. */
   panel: "#eaf1fb",
   panelStrong: "#d8e6f9",

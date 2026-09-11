@@ -64,7 +64,25 @@ test("sovellusta ei indeksoida", async ({ page }) => {
   );
 });
 
+/**
+ * Ohitetaan, jos Auth0-osoite on CI:n keksitty arvo.
+ *
+ * Auth0:n SDK hakee kirjautumisosoitteen tenantin discovery-dokumentista, eli
+ * `/auth/login` tekee oikean verkkopyynnön. Keksityllä osoitteella se
+ * palauttaa 500:n. Vaihtoehtoina olisivat olleet oikean tenantin osoite
+ * CI:hin (jolloin jokainen ajo riippuisi Auth0:n saatavuudesta) tai testin
+ * poistaminen. Kumpikaan ei ole hyvä: parametrien katoaminen on nyt katettu
+ * yksikkötestillä (`tests/unit/auth0-config.test.ts`), ja tämä testi todentaa
+ * koko ketjun siellä missä oikea tenantti on käytettävissä.
+ */
+const auth0Domain = process.env.AUTH0_DOMAIN ?? "";
+const realAuth0 = auth0Domain.length > 0 && !auth0Domain.startsWith("ci-testi.");
+
 test("kirjautuminen ohjaa Auth0:aan sähköpostiyhteydellä", async ({ page }) => {
+  // Ohitus testin sisällä eikä tiedoston tasolla: tiedoston tasolla
+  // `test.skip` ohittaisi kaikki tämän tiedoston testit.
+  test.skip(!realAuth0, "Auth0-osoite on CI:n korvike, ei oikea tenantti");
+
   // Ei seurata uudelleenohjausta perille asti: Auth0 on ulkopuolinen palvelu,
   // eikä CI saa olla riippuvainen sen saatavuudesta. Riittää että osoite,
   // johon ohjataan, on oikea.
