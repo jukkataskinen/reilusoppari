@@ -105,20 +105,28 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 - [x] Vuokralaisen liittyminen: julkinen kutsusivu, kirjautuminen, liittyminen
 - [x] Vuokralaisen näkymä sopimusluonnokseen
 - [ ] Vuokralaisen kommentointi sopimukseen
-- [ ] Alkukatselmus: checkpoint-lista huoneittain, kummankin oma kuvausnäkymä
-- [ ] **Kumpi tahansa voi lisätä oman kohtansa** (`added_by_user_id`) ja kuvata
-      ilman checkpointia — oletuslista on muistin tueksi, ei rajoite
-- [ ] Kuvan otto selaimessa, pakkaus asiakaspäässä, signed upload URL
-- [ ] Palvelin: EXIF pois (myös GPS), `taken_at_server`, SHA-256, `rs_photos`
-- [ ] Katselmuksen lukitus — **lukitusnappi estetty** kunnes vuokralainen on
-      valmis tai 24 h kulunut hänen ensimmäisestä kirjautumisestaan
-- [x] Katselmuspöytäkirjan renderöinti: kohta, kuvat, kuvaaja, aika, tiiviste;
-      pöytäkirjasta käy ilmi kumpi lisäsi kohdan ja kumpi otti kuvan.
-      Täydet tiivisteet omalla sivullaan
-- [ ] Allekirjoituskierros eSinettiin: kaksi asiakirjaa, 2–3 allekirjoittajaa
-- [ ] Webhook `round.completed`: sinetöidyt PDF:t, `identity_verified_at`,
-      tenancy → `active`, `rs_rent_periods` generoidaan
+- [x] Osapuolten tunnistetiedot: henkilö- tai y-tunnus, puhelin, sähköposti,
+      maksutili. Tunnus salattuna, näytöllä aina peitettynä
+- [x] Omat perustiedot, jotka kopioituvat uuteen vuokrasuhteeseen
+- [x] **Alkukatselmus huoneittain** — huoneluettelo on kulkureitti, ei
+      tarkistuslista. Kuvaa ei vaadita mistään tietystä kohdasta
+      (Jukan linjaus 2026-09-11)
+- [x] **Kumpi tahansa voi kuvata tilan, jota listalla ei ole.** Lisätty tila
+      syntyy siitä, että joku kuvaa sen — erillistä riviä ei luoda
+- [x] Kuvan vapaaehtoinen selite: miksi juuri tämä kohta kuvattiin
+- [x] Kuvan otto selaimessa, pakkaus asiakaspäässä (max 2000 px)
+- [x] Palvelin: EXIF pois (myös GPS) ilman kirjastoa, `taken_at_server`,
+      SHA-256 tallennetusta tiedostosta, `rs_photos`
+- [x] Katselmuksen lukitus — **lukitusnappi estetty** kunnes vuokralainen on
+      valmis tai 24 h kulunut hänen ensimmäisestä käynnistään
+- [x] Katselmuspöytäkirjan renderöinti huoneittain: kuvat, selite, kuvaaja,
+      aika, tiiviste. Kuvaton tila jätetään pois. Täydet tiivisteet omalla
+      sivullaan
+- [x] Allekirjoituskierros eSinettiin: kaksi asiakirjaa, 2–3 allekirjoittajaa
+- [x] Webhook `round.completed`: sinetöidyt PDF:t, `identity_verified_at`,
+      tenancy → `active`, `rs_rent_periods` generoidaan. Idempotentti
 - [ ] e2e mockilla: asunto → vuokrasuhde → kutsu → kuvat → lukitus → allekirjoitus
+- [ ] Kuvan merkintä "ei kuulu tähän" käyttöliittymässä (datakerros on valmis)
 
 ## Vaihe 2 — Kuittaus ja huoltokirja
 

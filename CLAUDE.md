@@ -19,8 +19,8 @@ Vuokranantaja luo asunnon ja vuokrasuhteen, täyttää huoneenvuokralain mukaise
 | Kirjautuminen | Auth0 passwordless (sähköpostikoodi) molemmille rooleille. Ei salasanoja. Vuokralaiselle tili syntyy automaattisesti, kun hän avaa kutsulinkin; vahva henkilöllisyys tulee eSinetin tunnistuksesta allekirjoituksen yhteydessä ja tallennetaan tiliin (`identity_verified_at`, nimi, syntymäaika). Sopimuksen osapuolitiedot (henkilö- tai y-tunnus, puhelin, sähköposti) ovat eri asia: ne kirjoitetaan lomakkeelle ja tallennetaan salattuna, ks. kohta 6. |
 | eSinetti-liitäntä | eSinetin REST-API tenantille `reilusoppari` API-avaimella. **Reilusoppari on eSinetin "käyttötapa 2" -asiakas (Jukan linjaus 2026-09-11): se tekee allekirjoitettavan PDF:n itse valmiiksi, ja eSinetti vain kerää allekirjoitukset ja toimittaa allekirjoitetut asiakirjat.** Käytettävät endpointit: `POST /rounds`, `GET /rounds/{id}`, download, `POST /documents/seal` (sinetöinti ilman allekirjoittajia — allekirjoittamattomat todistukset), `GET /verify`. Webhookit kierrosten tiloista. `POST /documents/render` EI ole käytössä. Kaikki eSinetti-kutsut moduulissa `lib/esinetti/`, jolla on mock-toteutus testeihin. |
 | Sopimus- ja pöytäkirjapohjat | **Asiakirjat tehdään Reilusopparissa** (`src/documents/`, React-PDF) eikä eSinetin pohjina — ks. DECISIONS.md 2026-09-11. Asiakirjat: vuokrasopimus, alku- ja loppukatselmus, vuokratodistukset, verolaskelma. Ulkoasu: ei viranomaispaperia (`src/documents/README.md`). Juridinen sisältö Jukan vastuulla; julkaisu vasta hyväksynnän jälkeen. |
-| Kuvat | Otetaan selaimessa (`<input capture="environment">`), pakataan asiakaspäässä max 2000 px / ~1 MB, ladataan signed upload URL:lla. Palvelin poistaa EXIF:n (mukaan lukien sijainnin), tallentaa `taken_at_server = now()`, laskee SHA-256 tallennetusta tiedostosta ja kirjoittaa rivin `rs_photos`. Kuvaa ei voi muokata eikä poistaa kumpikaan osapuoli; virheellisen kuvan voi merkitä "ei kuulu tähän" molempien nähden. |
-| Katselmuksen sitovuus | Alkukatselmus lukitaan ennen allekirjoitusta; lukituksen jälkeen kuvia ei voi lisätä siihen (uudet kuvat menevät huoltokirjaan). Katselmuspöytäkirja renderöidään PDF:ksi (kuvien pienoiskuvat + tiivisteet + huomautukset) ja allekirjoitetaan samassa kierroksessa sopimuksen kanssa. |
+| Kuvat | Otetaan selaimessa (`<input capture="environment">`), pakataan asiakaspäässä max 2000 px / ~1 MB, lähetetään omaan reittiin (EI signed upload URL: silloin palvelin ei voisi puhdistaa tiedostoa). Palvelin poistaa EXIF:n (mukaan lukien sijainnin), tallentaa `taken_at_server = now()`, laskee SHA-256 tallennetusta tiedostosta ja kirjoittaa rivin `rs_photos`. Kuvaa ei voi muokata eikä poistaa kumpikaan osapuoli; virheellisen kuvan voi merkitä "ei kuulu tähän" molempien nähden. |
+| Katselmuksen sitovuus | Alkukatselmus lukitaan ennen allekirjoitusta; lukituksen jälkeen kuvia ei voi lisätä siihen (uudet kuvat menevät huoltokirjaan). Lukitus ei ole mahdollinen ennen kuin vuokralaisella on ollut aito mahdollisuus lisätä omat kuvansa (kohta 5.3). Katselmuspöytäkirja renderöidään PDF:ksi (kuvat huoneittain + tiivisteet + selitteet) ja allekirjoitetaan samassa kierroksessa sopimuksen kanssa. |
 | Kuittaus | Vuokranantajan oma merkintä (Kyllä / Ei vielä / Osittain + summa), aikaleima, näkyy vuokralaiselle, joka voi kommentoida (300 merkkiä). Ei pankkiliittymää, ei perintää. Kaksi peräkkäistä "Ei vielä" → näytetään ohje ja linkki neuvontaan, ei muuta. |
 | Todistus | **Molemmille kerrotaan jo vuokrasuhdetta luotaessa, että lopuksi kumpikin antaa toisestaan arvion ja saa oman todistuksensa** – tämä ei saa tulla yllätyksenä lopussa, ja se on osa sitä mihin allekirjoituksella sitoudutaan. Generoidaan loppukatselmuksen allekirjoituksen jälkeen, AINA (vastaanottaja ei voi estää syntymistä). Rakenteinen arvio on **kaksiarvoinen: `recommend` tai ei arviota** – kielteistä vaihtoehtoa ei ole, eikä todistukseen tule merkintää puuttuvasta suosituksesta (Jukan päätös 2026-09-10, ks. DECISIONS.md). Lisäksi 300 merkkiä vapaata tekstiä; vastaanottaja näkee sen ja voi liittää 300 merkin vastineen 7 päivän kuluessa; sitten sinetöidään (`/documents/seal`), ei uutta tunnistusta. Vuokralaisen todistus näkyy vain vuokralaiselle; hän jakaa sen allekirjoitetulla linkillä (30 pv, mitätöitävissä). Vuokranantajan todistus symmetrisesti. Sanasto: *vuokratodistus*, ei luottotieto/maksuhäiriö/maksumoraali. |
 | Yhteydenottolupa todistuksessa (lisäominaisuus, vaihe 6) | Todistuksen antaja voi sallia, että uusi vuokranantaja voi kysyä häneltä lisää. Keskustelu käydään **portaalissa**, ei sähköpostissa: kysyjä kirjautuu ja tunnistautuu vahvasti (kerran per henkilö, `identity_verified_at`), eikä kummankaan yhteystietoja näytetä toiselle. Vuokralainen näkee keskustelun kokonaisuudessaan. Lupa peruttavissa milloin vain. Sivutuote: uusi vuokranantaja ohjautuu palveluun ja hänen ensimmäinen vuokrasuhteensa on ilmainen. Ks. kohta 5.10. |
@@ -167,26 +167,59 @@ Passwordless-kirjautuminen → "Lisää asunto" (osoite, tyyppi, huoneet) → ol
 Kutsulinkki → passwordless-kirjautuminen samalla sähköpostilla → näkee sopimusluonnoksen ja asunnon checkpointit → **näkee myös saman ilmoituksen loppuarvioista kuin vuokranantaja (kohta 5.1)** → voi kuvata heti. Vuokralainen voi ehdottaa muutosta sopimukseen kommenttina; vuokranantaja muokkaa ja esikatselu päivittyy. Kumpikaan ei allekirjoita ennen kuin alkukatselmus on lukittu.
 
 ### 5.3 Alkukatselmus
-Checkpoint-lista huoneittain. Oletuslista asuntotyypin ja huoneluvun mukaan (esim. jokaiselle huoneelle lattia, seinät, ikkunat, ovi; keittiölle lisäksi tasot, kaapit, liesi, jääkaappi, astianpesukoneen liitäntä; kylpyhuoneelle lattiakaivo, silikonisaumat, hanat, wc-istuin, pesukoneliitäntä; yleisille avaimet, ovikello, palovaroitin, sauna).
 
-**Oletuslista on muistin tueksi, EI rajoite (Jukan päätös, ks. DECISIONS.md).**
-Kumpi tahansa osapuoli voi lisätä oman kohtansa (`rs_checkpoints.added_by_user_id`),
-ja kuvan voi ottaa myös ilman checkpointia pelkällä huomautuksella
-(`rs_photos.checkpoint_id = null`). Vuokralaisen lisäämä kohta on samanarvoinen
-vuokranantajan lisäämän kanssa: se näkyy pöytäkirjassa samalla tavalla ja se
-käydään läpi myös loppukatselmuksessa. Käyttöliittymä ei saa esittää
-vuokranantajan listaa "oikeana" ja vuokralaisen lisäyksiä poikkeuksena.
+**Kuvataan huoneittain, ei kohta kerrallaan (Jukan linjaus 2026-09-11, ks. DECISIONS.md).**
 
-Kummallakin osapuolella oma kuvausnäkymä: checkpoint → kamera → kuva + huomautus.
-Toisen kuvat näkyvät reaaliajassa. Vuokranantaja lukitsee, kun molemmat ovat
-valmiita – lukitusnappi on kuitenkin pois käytöstä, kunnes vuokralainen on joko
-merkinnyt olevansa valmis tai 24 h on kulunut hänen ensimmäisestä kirjautumisestaan
-katselmukseen. Vuokranantaja ei siis voi lukita katselmusta ennen kuin
-vuokralaisella on ollut aito mahdollisuus lisätä omansa.
+Katselmus esittää asunnon **huoneluettelona**, joka on kulkureitti asunnon
+läpi: eteinen, asuinhuoneet, keittiö, kylpyhuone, sauna, ulkotilat, yleiset.
+Luettelo johdetaan asunnon tyypistä ja huoneluvusta
+(`lib/inspection/rooms.ts`). Sama järjestys toistuu loppukatselmuksessa,
+jolloin tilat voi verrata pari kerrallaan ilman etsimistä.
 
-Lukituksen jälkeen palvelu renderöi katselmuspöytäkirjan: kohta, kuvat
-pienoiskuvina (max 4 per kohta), kuvaaja, aika, tiiviste, huomautukset. Pöytäkirjasta
-käy ilmi kumpi osapuoli kunkin kohdan lisäsi ja kumpi kuvan otti.
+Jokaisessa huoneessa näkyy ohje, joka on Jukan sanamuoto:
+
+> Ota yleiskuva huoneesta ja lisäksi niistä kohdista, joiden kunnon haluat
+> muistaa riitojen välttämiseksi.
+
+**Kuvaa ei vaadita mistään tietystä kohdasta.** Huoneella on vihjelista siitä,
+mitä siinä yleensä kannattaa katsoa (keittiössä liesi, kylpyhuoneessa
+silikonisaumat). Vihjeet ovat tekstiä eivätkä ruutuja: mitään ei voi merkitä
+tehdyksi, mikään ei laske "tekemättömiä", eikä mikään tarkista onko jostakin
+kuva. Käyttöliittymä ei saa esittää listaa vaatimuksena.
+
+**Kuvalla on vapaaehtoinen selite**: miksi juuri tämä kohta kuvattiin. Kenttä
+on kameran yläpuolella, koska asunnossa seisten kukaan ei palaa kirjoittamaan
+selitettä jälkikäteen. Pakollinen kenttä tuottaisi tekstejä kuten "ok".
+
+**Kumpi tahansa osapuoli voi kuvata tilan, jota listalla ei ole.** Lisätty tila
+syntyy siitä, että joku kuvaa sen (`rs_photos.room` on vapaa teksti) — erillistä
+riviä ei luoda, koska tyhjä lisätty huone ei ole mitään. Lisätty tila on
+samanarvoinen oletushuoneen kanssa ja käydään läpi myös loppukatselmuksessa.
+
+Kummallakin osapuolella on oma kuvausnäkymänsä, ja toisen kuvat näkyvät heti.
+Kuvat ovat huoneen sisällä aikajärjestyksessä eikä kuvaajan mukaan
+ryhmiteltyinä: ryhmittely tekisi näkymästä kaksi listaa, ja katselmus on
+yhteinen.
+
+**Lukitus.** Vuokranantaja lukitsee, kun molemmat ovat valmiita. Lukitusnappi
+on pois käytöstä, kunnes vuokralainen on joko merkinnyt olevansa valmis tai
+24 h on kulunut hänen ensimmäisestä käynnistään katselmuksessa. Vuokranantaja
+ei siis voi lukita ennen kuin vuokralaisella on ollut aito mahdollisuus lisätä
+omansa. Sääntö on puhdas funktio `lib/inspection/lock.ts` ja testattu
+kokonaan. Kahden vuokralaisen tapauksessa odotetaan hitainta.
+
+**Kuvien käsittely.** Kuva otetaan selaimessa (`<input capture>`), pakataan
+asiakaspäässä max 2000 px, ja lähetetään omaan reittiin — ei signed upload
+URL:lla, koska silloin palvelin ei voisi poistaa metatietoja. Palvelin poistaa
+EXIF:n (erityisesti GPS) ilman kirjastoa tavutasolla
+(`lib/photos/strip-metadata.ts`), laskee SHA-256:n **tallennetusta**
+tiedostosta ja kirjoittaa rivin `rs_photos`. Pikselit eivät muutu.
+
+**Pöytäkirja.** Lukituksen jälkeen palvelu renderöi katselmuspöytäkirjan:
+huone, kuvat pienoiskuvina kolmen riveissä, kunkin alla selite, kuvaaja,
+palvelimen vastaanottoaika ja tiivisteen alku. Täydet tiivisteet omalla
+sivullaan. **Pöytäkirjassa ei ole tyhjiä kohtia** — se kertoo mitä kuvattiin,
+ei sitä mitä jäi kuvaamatta. Kuvaton tila jätetään pois kokonaan.
 
 ### 5.4 Allekirjoitus
 `POST /rounds` eSinettiin: kaksi asiakirjaa (sopimus, alkukatselmus), 2–3 allekirjoittajaa (vuokranantaja + vuokralaiset), `expected_birthdate` jos tiedossa. Allekirjoittajat saavat eSinetin linkit; Reilusoppari näyttää tilan. Webhook `round.completed` → tallennetaan sinetöidyt PDF:t ja tiivisteet, `rs_users.identity_verified_at` päivitetään eSinetin palauttamasta nimestä/syntymäajasta, tenancy → `active`, `rs_rent_periods` generoidaan sopimuksen mukaan.
