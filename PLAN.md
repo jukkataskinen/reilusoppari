@@ -44,8 +44,10 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
       **ajettu live-Supabaseen ja RLS todennettu oikealla rivillä**
 - [x] Storage-bucketit `photos` ja `documents` (migraatio `0002`), private,
       kokorajat ja MIME-tyypit tietokannan tasolla
-- [ ] Auth0 passwordless (sähköpostikoodi), molemmat roolit, ei salasanoja
-- [ ] `rs_users`-rivin luonti ensimmäisellä kirjautumisella
+- [x] Auth0 passwordless (`connection=email`, `ui_locales=fi`, PKCE) —
+      `/auth/login` ohjaa oikein Auth0:aan; selainläpivienti Jukan testattava
+- [x] `rs_users`-rivin luonti ensimmäisellä kirjautumisella (`session.ts`,
+      upsert `auth0_sub`-avaimella)
 - [ ] `lib/esinetti/`: rajapinta + **mock** + oikea client (render, seal,
       rounds, verify, webhookit)
 - [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti
