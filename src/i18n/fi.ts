@@ -13,6 +13,8 @@ export const fi = {
   nav: {
     properties: "Asunnot",
     tenancies: "Vuokrasuhteet",
+    ownDetails: "Omat tiedot",
+    parties: "Osapuolten tiedot",
     settings: "Asetukset",
   },
   role: {

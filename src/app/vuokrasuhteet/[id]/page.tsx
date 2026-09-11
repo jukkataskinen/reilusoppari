@@ -73,6 +73,13 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
         Vuokrasopimus
       </Link>
 
+      <Link
+        href={`/vuokrasuhteet/${tenancy.id}/osapuolet`}
+        className="mt-3 ml-0 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm sm:ml-3 sm:mt-6"
+      >
+        {fi.nav.parties}
+      </Link>
+
       <section className="mt-10">
         <h2 className="text-lg">{tenants.length > 1 ? fi.tenancy.tenants : fi.tenancy.tenant}</h2>
 

@@ -9,6 +9,7 @@ import { createProperty } from "@/lib/db/properties";
 import { acceptInvite, createTenancy } from "@/lib/db/tenancies";
 import { getServiceClient, hasSupabaseCredentials } from "@/lib/db/supabase";
 import { buildRentalAgreementData } from "@/lib/tenancy/contract-document";
+import { listPartyDetails } from "@/lib/tenancy/party-details";
 
 /**
  * Sopimuksen ehdot.
@@ -43,7 +44,7 @@ describe("lomakkeen luku", () => {
     // Selain ei lähetä valitsematonta valintaruutua lainkaan. Jos se
     // tulkittaisiin todeksi, jokainen tallennus kääntäisi asetukset päälle.
     const parsed = contractTermsSchema.safeParse(
-      contractFormToInput(form({ landlordName: "Matti", tenantName0: "Maija" })),
+      contractFormToInput(form({ noticePeriodMonths: "1" })),
     );
     expect(parsed.success).toBe(true);
     if (parsed.success) {
@@ -52,12 +53,10 @@ describe("lomakkeen luku", () => {
     }
   });
 
-  it("lukee valintaruudut ja nimet", () => {
+  it("lukee valintaruudut", () => {
     const parsed = contractTermsSchema.safeParse(
       contractFormToInput(
         form({
-          landlordName: "Matti Virtanen",
-          tenantName0: "Maija Meikäläinen",
           tenantName1: "Matti Meikäläinen",
           noticePeriodMonths: "3",
           keysCount: "3",
@@ -70,8 +69,6 @@ describe("lomakkeen luku", () => {
 
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
-    expect(parsed.data.landlordName).toBe("Matti Virtanen");
-    expect(parsed.data.tenantNames).toEqual(["Maija Meikäläinen", "Matti Meikäläinen"]);
     expect(parsed.data.noticePeriodMonths).toBe(3);
     expect(parsed.data.keysCount).toBe(3);
     expect(parsed.data.smokingAllowed).toBe(true);
@@ -160,9 +157,11 @@ describe.skipIf(!RUN)("sopimus (integraatio, live Supabase)", () => {
 
     const contract = await getContract(landlord, tenancy.id);
     expect(contract).not.toBeNull();
-    // Nimi annettiin vuokrasuhteen luonnissa; ilman tätä se katoaisi, koska
-    // osapuolitaulu tallentaa vain sähköpostin.
-    expect(contract!.terms.tenantNames).toEqual(["Maija Meikäläinen"]);
+    // Nimi annettiin vuokrasuhteen luonnissa ja se tallentuu osapuoliriville,
+    // ei sopimuksen ehtoihin: allekirjoitusrivillä ei saa lukea eri nimi kuin
+    // osapuolitiedoissa.
+    const parties = await listPartyDetails(landlord, tenancy.id);
+    expect(parties.find((party) => party.role === "tenant")?.name).toBe("Maija Meikäläinen");
   });
 
   it("vain vuokranantaja voi tallentaa ehdot", async () => {
@@ -170,8 +169,6 @@ describe.skipIf(!RUN)("sopimus (integraatio, live Supabase)", () => {
 
     const saved = await saveContractTerms(landlord, tenancy.id, {
       ...DEFAULT_CONTRACT_TERMS,
-      landlordName: "Matti Virtanen",
-      tenantNames: ["Maija Meikäläinen"],
       petsAllowed: true,
     });
     expect(saved?.terms.petsAllowed).toBe(true);
@@ -181,12 +178,11 @@ describe.skipIf(!RUN)("sopimus (integraatio, live Supabase)", () => {
     expect(
       await saveContractTerms(tenant, tenancy.id, {
         ...DEFAULT_CONTRACT_TERMS,
-        landlordName: "Väärä",
-        tenantNames: [],
+        petsAllowed: false,
       }),
     ).toBeNull();
 
-    expect((await getContractTerms(tenant, tenancy.id)).landlordName).toBe("Matti Virtanen");
+    expect((await getContractTerms(tenant, tenancy.id)).petsAllowed).toBe(true);
   });
 
   it("ulkopuolinen ei näe sopimusta", async () => {
@@ -198,17 +194,15 @@ describe.skipIf(!RUN)("sopimus (integraatio, live Supabase)", () => {
 
   it("asiakirjan tiedot kootaan molemmille osapuolille", async () => {
     const { landlord, tenant, tenancy } = await setup();
-    await saveContractTerms(landlord, tenancy.id, {
-      ...DEFAULT_CONTRACT_TERMS,
-      landlordName: "Matti Virtanen",
-      tenantNames: ["Maija Meikäläinen"],
-    });
+    await saveContractTerms(landlord, tenancy.id, DEFAULT_CONTRACT_TERMS);
 
     for (const userId of [landlord, tenant]) {
       const data = await buildRentalAgreementData(userId, tenancy.id);
       expect(data).not.toBeNull();
       expect(data!.property.street).toBe("Testikatu 1");
-      expect(data!.landlordName).toBe("Matti Virtanen");
+      expect(data!.parties.find((party) => party.role === "tenant")?.name).toBe(
+        "Maija Meikäläinen",
+      );
       expect(data!.rentAmount).toBe(850);
       // Päiväys on vuokrasuhteen alkupäivä eikä kuluva päivä, jotta
       // esikatselun tiiviste on vakaa.

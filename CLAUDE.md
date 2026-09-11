@@ -16,7 +16,7 @@ Vuokranantaja luo asunnon ja vuokrasuhteen, täyttää huoneenvuokralain mukaise
 |---|---|
 | Repo ja runko | `reilusoppari`, Next.js 15 App Router, TypeScript, Tailwind, shadcn/ui, PWA (`next-pwa` tai manuaalinen manifest + service worker). Mobiili ensin: kaikki näkymät suunnitellaan 390 px leveydelle, työpöytä on laajennus. |
 | Tietokanta | Oma Supabase-projekti (EU), taulut etuliitteellä `rs_`, RLS ja eksplisiittiset GRANTit. Storage-bucketit `photos` ja `documents`, molemmat private. |
-| Kirjautuminen | Auth0 passwordless (sähköpostikoodi) molemmille rooleille. Ei salasanoja. Vuokralaiselle tili syntyy automaattisesti, kun hän avaa kutsulinkin; vahva henkilöllisyys tulee eSinetin tunnistuksesta allekirjoituksen yhteydessä ja tallennetaan tiliin (`identity_verified_at`, nimi, syntymäaika – ei hetua). |
+| Kirjautuminen | Auth0 passwordless (sähköpostikoodi) molemmille rooleille. Ei salasanoja. Vuokralaiselle tili syntyy automaattisesti, kun hän avaa kutsulinkin; vahva henkilöllisyys tulee eSinetin tunnistuksesta allekirjoituksen yhteydessä ja tallennetaan tiliin (`identity_verified_at`, nimi, syntymäaika). Sopimuksen osapuolitiedot (henkilö- tai y-tunnus, puhelin, sähköposti) ovat eri asia: ne kirjoitetaan lomakkeelle ja tallennetaan salattuna, ks. kohta 6. |
 | eSinetti-liitäntä | eSinetin REST-API tenantille `reilusoppari` API-avaimella. **Reilusoppari on eSinetin "käyttötapa 2" -asiakas (Jukan linjaus 2026-09-11): se tekee allekirjoitettavan PDF:n itse valmiiksi, ja eSinetti vain kerää allekirjoitukset ja toimittaa allekirjoitetut asiakirjat.** Käytettävät endpointit: `POST /rounds`, `GET /rounds/{id}`, download, `POST /documents/seal` (sinetöinti ilman allekirjoittajia — allekirjoittamattomat todistukset), `GET /verify`. Webhookit kierrosten tiloista. `POST /documents/render` EI ole käytössä. Kaikki eSinetti-kutsut moduulissa `lib/esinetti/`, jolla on mock-toteutus testeihin. |
 | Sopimus- ja pöytäkirjapohjat | **Asiakirjat tehdään Reilusopparissa** (`src/documents/`, React-PDF) eikä eSinetin pohjina — ks. DECISIONS.md 2026-09-11. Asiakirjat: vuokrasopimus, alku- ja loppukatselmus, vuokratodistukset, verolaskelma. Ulkoasu: ei viranomaispaperia (`src/documents/README.md`). Juridinen sisältö Jukan vastuulla; julkaisu vasta hyväksynnän jälkeen. |
 | Kuvat | Otetaan selaimessa (`<input capture="environment">`), pakataan asiakaspäässä max 2000 px / ~1 MB, ladataan signed upload URL:lla. Palvelin poistaa EXIF:n (mukaan lukien sijainnin), tallentaa `taken_at_server = now()`, laskee SHA-256 tallennetusta tiedostosta ja kirjoittaa rivin `rs_photos`. Kuvaa ei voi muokata eikä poistaa kumpikaan osapuoli; virheellisen kuvan voi merkitä "ei kuulu tähän" molempien nähden. |
@@ -60,7 +60,11 @@ Kaikissa tauluissa `id uuid`, `created_at`, `updated_at`; RLS päällä; GRANTit
 ```sql
 rs_users (id, auth0_sub unique, email, name, phone, birthdate date null,
           identity_verified_at timestamptz null, free_tenancy_used bool default false,
-          stripe_customer_id, locale default 'fi')
+          stripe_customer_id, locale default 'fi',
+          -- Omat perustiedot: esitaytto uusiin vuokrasuhteisiin, EI sopimuksen
+          -- sisaltoa. Migraatio 0003.
+          party_type text default 'henkilo', party_id_encrypted text,
+          business_id text, signatory_name text)
 
 rs_properties (id, owner_user_id fk, name, street, postal_code, city, property_type text
                check (property_type in ('kerrostalo','rivitalo','omakotitalo','muu')),
@@ -79,6 +83,13 @@ rs_tenancies (id, property_id fk, landlord_user_id fk, status text, start_date d
 
 rs_tenancy_parties (id, tenancy_id fk, user_id fk null, role text check (role in ('landlord','tenant')),
                     invite_email text, invite_token_hash text, invite_expires_at, joined_at, position int,
+                    -- Sopimukseen tulostuvat tiedot. Nama ovat sopimuksen
+                    -- totuus: profiilin muokkaus ei muuta allekirjoitettua
+                    -- sopimusta takautuvasti. Migraatio 0003.
+                    party_name text, party_type text default 'henkilo',
+                    party_id_encrypted text,   -- salattu hetu tai y-tunnus
+                    business_id text, signatory_name text,
+                    phone text, contact_email text,
                     unique (tenancy_id, role, position))
 
 rs_contracts (id, tenancy_id fk unique, template_key text, template_version int, template_data jsonb,
@@ -254,7 +265,8 @@ koskee. Tämä on kirjattava myös käyttöehtoihin.
 - EXIF poistetaan aina (erityisesti GPS). Palvelimen aikaleima on ainoa aikaleima; asiakkaan ilmoittamaa kuvausaikaa ei tallenneta.
 - Osapuolen poistuminen: kumpikin voi pyytää omien tietojensa vientiä ja tilin sulkemista; vuokrasuhteen yhteiset asiakirjat (sopimus, pöytäkirjat, todistukset) säilyvät säilytysajan toisen osapuolen oikeutetun edun perusteella – kirjaa tämä tietosuojaselosteeseen ja käyttöehtoihin.
 - Todistuksen jakolinkki näyttää vain todistuksen, ei mitään muuta vuokrasuhteesta; katselukerrat lokiin ja omistajalle näkyviin.
-- Ei henkilötunnuksia missään Reilusopparin taulussa. eSinetti hoitaa tunnistuksen ja palauttaa vain nimen ja syntymäajan.
+- **Henkilötunnus on sopimuksessa** (Jukan päätös 2026-09-11, ks. DECISIONS.md). Peruste: tietosuojalaki 1050/2018 § 29 – osapuolten yksiselitteinen yksilöinti vuokrasuhteessa ja saatavan perinnässä. Ehdot, jotka eivät jousta: tallennus **vain salattuna** (`src/lib/identity/crypto.ts`, avain ympäristömuuttujassa eikä kannassa), ei indeksiä eikä hakua, käyttöliittymässä **aina peitettynä** (`131052-***T`), kokonaisena vain asiakirjassa. Ei koskaan lokiin, URL-osoitteeseen eikä analytiikkaan. Vahtina `npm run tarkista:tunnisteet` ja CI-työ `tunnisteet-eivat-vuoda`.
+- Vahva henkilöllisyys tulee silti eSinetin tunnistuksesta, ei lomakkeelta: lomakkeelle kirjoitettu tunnus on sopimuksen tieto, ei todiste siitä kuka allekirjoitti.
 - Rate limit kuvien latauksessa (100/h/käyttäjä) ja kutsulinkeissä.
 - Stripe-webhookit allekirjoitettuja; maksutiedot eivät koskaan Reilusopparin tietokantaan (vain `stripe_customer_id`, payment id).
 

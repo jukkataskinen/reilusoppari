@@ -22,8 +22,26 @@ import { inkedPixels, rasterizePage } from "../rasterize";
 
 const DATA: RentalAgreementData = {
   property: { street: "Mäkitie 12 A 4", postalCode: "40100", city: "Jyväskylä" },
-  landlordName: "Matti Virtanen",
-  tenantNames: ["Maija Meikäläinen"],
+  parties: [
+    {
+      role: "landlord" as const,
+      name: "Matti Virtanen",
+      partyType: "henkilo" as const,
+      identifier: "131052-308T",
+      signatoryName: null,
+      phone: "040 123 4567",
+      email: "matti.virtanen@example.com",
+    },
+    {
+      role: "tenant" as const,
+      name: "Maija Meikäläinen",
+      partyType: "henkilo" as const,
+      identifier: "010594Y123W",
+      signatoryName: null,
+      phone: "050 765 4321",
+      email: "maija.meikalainen@example.com",
+    },
+  ],
   startDate: "2026-09-01",
   endDate: null,
   rentAmount: 850,

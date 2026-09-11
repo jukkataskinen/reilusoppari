@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 import { saveContractAction, type ContractFormState } from "@/app/vuokrasuhteet/contract-actions";
 import type { ContractTerms } from "@/lib/tenancy/contract-schema";
@@ -15,11 +16,9 @@ const initialState: ContractFormState = { errors: {} };
 export function ContractForm({
   tenancyId,
   terms,
-  tenantCount,
 }: {
   tenancyId: string;
   terms: ContractTerms;
-  tenantCount: number;
 }) {
   const [state, formAction, pending] = useActionState(saveContractAction, initialState);
   const [hasMinimumTerm, setHasMinimumTerm] = useState(terms.minimumTermMonths !== null);
@@ -80,34 +79,21 @@ export function ContractForm({
         </p>
       ) : null}
 
-      <fieldset className="flex flex-col gap-4 border-0 p-0">
-        <legend className="text-sm font-medium">Osapuolten nimet sopimuksessa</legend>
-        <p className="text-sm text-ink/60">
-          Nimet tulevat asiakirjaan sellaisinaan. Allekirjoituksen yhteydessä ne tarkistetaan
-          vahvasta tunnistautumisesta.
-        </p>
-
-        <div>
-          <label htmlFor={`${prefix}-landlordName`} className="text-sm">
-            Sinun nimesi
-          </label>
-          <input {...field("landlordName")} defaultValue={terms.landlordName ?? ""} required />
-          <FieldError name="landlordName" />
-        </div>
-
-        {Array.from({ length: Math.max(tenantCount, terms.tenantNames.length, 1) }, (_, index) => (
-          <div key={index}>
-            <label htmlFor={`${prefix}-tenantName${index}`} className="text-sm">
-              {index === 0 ? "Vuokralainen" : "Toinen vuokralainen"}
-            </label>
-            <input
-              {...field(`tenantName${index}`)}
-              defaultValue={terms.tenantNames[index] ?? ""}
-              required={index === 0}
-            />
-          </div>
-        ))}
-      </fieldset>
+      {/*
+        Nimet ja tunnistetiedot eivät ole täällä vaan osapuolisivulla. Sama
+        tieto kahdella lomakkeella eroaisi ennen pitkää toisistaan, ja
+        sopimuksen allekirjoitusrivillä lukisi eri nimi kuin osapuolitiedoissa.
+      */}
+      <p className="rounded-[10px] border border-line bg-paper p-3 text-sm text-ink/70">
+        Osapuolten nimet, tunnukset ja yhteystiedot täytetään{" "}
+        <Link
+          href={`/vuokrasuhteet/${tenancyId}/osapuolet`}
+          className="underline underline-offset-4"
+        >
+          osapuolten tiedoissa
+        </Link>
+        .
+      </p>
 
       <div className="flex gap-4">
         <div className="w-[9rem]">

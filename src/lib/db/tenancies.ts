@@ -32,6 +32,7 @@ import {
   isInviteTokenShaped,
 } from "../tenancy/invite";
 import { generateRentPeriods } from "../tenancy/rent-periods";
+import { ownPartyDefaultColumns } from "../tenancy/party-details";
 import {
   CONTRACT_TEMPLATE_KEY,
   CONTRACT_TEMPLATE_VERSION,
@@ -169,6 +170,8 @@ export async function createTenancy(
   try {
     const invites: IssuedInvite[] = [];
 
+    const defaults = await ownPartyDefaultColumns(userId);
+
     const parties: Record<string, unknown>[] = [
       {
         tenancy_id: tenancy.id,
@@ -176,6 +179,10 @@ export async function createTenancy(
         role: "landlord",
         position: 0,
         joined_at: new Date().toISOString(),
+        // Vuokranantajan perustiedot kopioidaan tähän kerralla: ne pysyvät
+        // samoina vuokrasuhteesta toiseen. Kopio on kopio — perustietojen
+        // muokkaus ei muuta jo allekirjoitettuja sopimuksia.
+        ...defaults,
       },
     ];
 
@@ -189,6 +196,10 @@ export async function createTenancy(
         invite_email: tenant.email,
         invite_token_hash: invite.tokenHash,
         invite_expires_at: invite.expiresAt,
+        // Nimi ja sähköposti sopimukseen. Loput tunnistetiedot täydennetään
+        // osapuolisivulla — kumpi tahansa osapuoli voi tehdä sen.
+        party_name: tenant.name,
+        contact_email: tenant.email,
       });
     });
 
@@ -199,18 +210,15 @@ export async function createTenancy(
     }
 
     /*
-      Sopimusrivi luodaan heti oletusehdoilla ja luonnissa annetuilla
-      nimillä. Ilman tätä vuokralaisen nimi katoaisi: `rs_tenancy_parties`
-      tallentaa vain sähköpostin, ja sopimus tarvitsee nimen.
+      Sopimusrivi luodaan heti oletusehdoilla. Nimet eivät ole täällä vaan
+      osapuoliriveillä (`party-details.ts`): sopimuksen allekirjoitusrivillä
+      ei saa lukea eri nimi kuin osapuolitiedoissa.
     */
     const { error: contractError } = await supabase.from("rs_contracts").insert({
       tenancy_id: tenancy.id,
       template_key: CONTRACT_TEMPLATE_KEY,
       template_version: CONTRACT_TEMPLATE_VERSION,
-      template_data: {
-        ...DEFAULT_CONTRACT_TERMS,
-        tenantNames: input.tenants.map((tenant) => tenant.name),
-      },
+      template_data: DEFAULT_CONTRACT_TERMS,
     });
 
     if (contractError) {

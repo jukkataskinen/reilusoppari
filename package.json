@@ -13,7 +13,9 @@
     "test:e2e": "playwright test",
     "keys:vapid": "node scripts/generate-vapid-keys.mjs",
     "icons": "python scripts/generate-icons.py",
-    "samples": "vitest run --config vitest.samples.mts"
+    "samples": "vitest run --config vitest.samples.mts",
+    "tarkista:tunnisteet": "node scripts/tarkista-tunnisteet.mjs",
+    "keys:person": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.11.0",

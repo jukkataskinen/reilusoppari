@@ -50,6 +50,21 @@ const NAV: NavItem[] = [
       </svg>
     ),
   },
+  {
+    href: "/omat-tiedot",
+    label: fi.nav.ownDetails,
+    icon: (
+      <svg width={22} height={22} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx={12} cy={8.5} r={3.5} stroke="currentColor" strokeWidth={1.7} />
+        <path
+          d="M5 20 C5 16.4 8.1 14.5 12 14.5 C15.9 14.5 19 16.4 19 20"
+          stroke="currentColor"
+          strokeWidth={1.7}
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export function AppShell({

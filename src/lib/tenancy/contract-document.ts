@@ -10,6 +10,7 @@
 import type { RentalAgreementData } from "@/documents/RentalAgreement";
 import { getContractTerms } from "../db/contracts";
 import { getTenancy, getTenancyProperty } from "../db/tenancies";
+import { partyDetailsForDocument } from "./party-details";
 
 /**
  * Kokoaa sopimuksen asiakirjaa varten. `null` jos kutsuja ei ole osapuoli tai
@@ -22,9 +23,13 @@ export async function buildRentalAgreementData(
   const tenancy = await getTenancy(userId, tenancyId);
   if (!tenancy) return null;
 
-  const [property, terms] = await Promise.all([
+  const [property, terms, parties] = await Promise.all([
     getTenancyProperty(userId, tenancyId),
     getContractTerms(userId, tenancyId),
+    // Osapuolet luetaan vasta tässä, kun `getTenancy` on jo todennut kutsujan
+    // osapuoleksi. Tunnisteet tulevat kokonaisina — asiakirja on niiden
+    // ainoa käyttökohde.
+    partyDetailsForDocument(tenancyId),
   ]);
 
   if (!property) return null;
@@ -35,8 +40,18 @@ export async function buildRentalAgreementData(
     // noin 54 m²"), eikä sitä tarvitse kirjoittaa sopimuslomakkeella
     // uudelleen.
     property,
-    landlordName: terms.landlordName ?? "",
-    tenantNames: terms.tenantNames,
+    parties: parties.map((party) => ({
+      role: party.role,
+      // Nimetön osapuoli on luonnoksessa mahdollinen. Asiakirjaan se menee
+      // tyhjänä eikä paikanvaraajana: "Nimi puuttuu" näyttäisi sopimuksessa
+      // siltä kuin se olisi osapuolen nimi.
+      name: party.name ?? "",
+      partyType: party.partyType,
+      identifier: party.identifier,
+      signatoryName: party.signatoryName,
+      phone: party.phone,
+      email: party.email,
+    })),
 
     startDate: tenancy.startDate,
     endDate: tenancy.endDate,

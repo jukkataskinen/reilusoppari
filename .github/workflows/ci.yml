@@ -63,23 +63,17 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run test
 
-  # Reilusopparissa ei ole henkilötunnuksia missään (CLAUDE.md kohta 6).
-  # Tämä työ on olemassa sitä varten, että jos joku joskus lisää sellaisen,
-  # se ei mene läpi hiljaa.
-  ei-henkilotunnuksia:
+  # Henkilötunnus on sopimuksessa (Jukan päätös 2026-09-11, DECISIONS.md).
+  # Vahti ei siis enää kiellä sen olemassaoloa vaan sen vuotamisen: lokiin,
+  # listanäkymään tai selaimeen. Ks. scripts/tarkista-tunnisteet.mjs.
+  tunnisteet-eivat-vuoda:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Etsi hetu-sanastoa koodista ja migraatioista
-        # Kommenttirivit sallitaan: useassa tiedostossa selitetään nimenomaan,
-        # ettei hetuja käsitellä, ja se selitys saa jäädä. Koodirivi ei saa.
-        run: |
-          if grep -rniE "hetu|henkil[oö]tunnus|social_security" src/ supabase/ templates/ 2>/dev/null \
-            | grep -viE "^[^:]+:[0-9]+: *(\*|//|--|#)"; then
-            echo "LÖYTYI: henkilötunnukseen viittaavaa koodia. Reilusoppari ei käsittele hetuja."
-            exit 1
-          fi
-          echo "OK: ei hetu-viittauksia koodissa."
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm run tarkista:tunnisteet
 
   build:
     runs-on: ubuntu-latest
@@ -137,7 +131,16 @@ jobs:
       - run: npm ci
       - name: Asenna Playwright-selaimet
         run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      # Kutsusivu kysyy kutsun tietokannasta ennen kuin se voi näyttää
+      # mitään. Ilman avaimia `getServiceClient()` heittää, ja sivu vastaa
+      # 500 sen sijaan että kertoisi kutsun vanhentuneen. E2E ajaa oikeaa
+      # sovellusta, joten sillä on oltava samat avaimet kuin yksikkötyöllä.
+      - name: Aja e2e
+        env:
+          SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

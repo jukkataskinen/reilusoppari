@@ -37,8 +37,33 @@ import {
   type Term,
 } from "./components";
 import { HomeVignette, LeafSprig, PageDecoration } from "./decorations";
-import { addMonths, formatAddress, formatArea, formatCount, formatDate, formatEuro, formatNames } from "./format";
+import {
+  addMonths,
+  formatAddress,
+  formatArea,
+  formatCount,
+  formatDate,
+  formatEuro,
+} from "./format";
 import { colors, spacing, type as typeScale } from "./theme";
+
+/**
+ * Yksi sopimuksen osapuoli.
+ *
+ * `identifier` on henkilötunnus tai y-tunnus sen mukaan, kumpi osapuoli on.
+ * Se tulostuu asiakirjaan kokonaisena — juuri se on sen tarkoitus. Käyttö-
+ * liittymässä sama tieto näytetään peitettynä (`lib/identity/finnish-id.ts`).
+ */
+export interface DocumentParty {
+  role: "landlord" | "tenant";
+  name: string;
+  partyType: "henkilo" | "yritys";
+  identifier: string | null;
+  /** Yrityksen puolesta allekirjoittava ihminen. Yritys ei allekirjoita itse. */
+  signatoryName: string | null;
+  phone: string | null;
+  email: string | null;
+}
 
 export interface RentalAgreementData {
   property: {
@@ -49,8 +74,14 @@ export interface RentalAgreementData {
     rooms?: number | null;
     areaM2?: number | null;
   };
-  landlordName: string;
-  tenantNames: string[];
+  /**
+   * Sopimuksen osapuolet tunnistetietoineen.
+   *
+   * Nimet tulevat tästä eivätkä erillisestä kentästä: jos ne olisivat
+   * kahdessa paikassa, sopimuksen allekirjoitusrivillä voisi lukea eri nimi
+   * kuin osapuolitiedoissa.
+   */
+  parties: DocumentParty[];
 
   startDate: string;
   /** Määräaikaisen sopimuksen päättymispäivä. `null` = toistaiseksi voimassa. */
@@ -281,6 +312,28 @@ export function buildTerms(data: RentalAgreementData): Term[] {
   return terms;
 }
 
+/**
+ * Kuka nimensä allekirjoitusriville kirjoittaa.
+ *
+ * Yritys ei allekirjoita itse, vaan nimenkirjoittaja sen puolesta. Siksi
+ * riville tulee ihmisen nimi ja yritys sen perään — muuten allekirjoituksesta
+ * ei kävisi ilmi, kuka sen teki.
+ */
+export function signerName(party: DocumentParty): string {
+  if (party.partyType === "yritys" && party.signatoryName) {
+    return `${party.signatoryName} (${party.name})`;
+  }
+  return party.name;
+}
+
+/** Osapuolet roolin mukaan, sopimuksen järjestyksessä. */
+export function partiesByRole(
+  data: RentalAgreementData,
+  role: "landlord" | "tenant",
+): DocumentParty[] {
+  return data.parties.filter((party) => party.role === role);
+}
+
 function buildFacts(data: RentalAgreementData): Fact[] {
   return [
     {
@@ -304,19 +357,81 @@ function buildFacts(data: RentalAgreementData): Fact[] {
           : "Toistaiseksi voimassa",
     },
     {
-      icon: "henkilo",
-      label: data.tenantNames.length > 1 ? "Vuokralaiset" : "Vuokralainen",
-      value: formatNames(data.tenantNames),
-    },
-    {
       icon: "raha",
       label: "Vuokra",
       value: `${formatEuro(data.rentAmount)} / kk`,
       detail: `Eräpäivä ${data.rentDueDay}. päivä`,
     },
-    { icon: "henkilo", label: "Vuokranantaja", value: data.landlordName },
     { icon: "kilpi", label: "Vakuus", value: formatEuro(data.depositAmount) },
   ];
+}
+
+/**
+ * Yhden osapuolen tiedot asiakirjaan.
+ *
+ * Puuttuvaa riviä ei korvata viivalla eikä tekstillä "ei annettu": tyhjä
+ * kohta sopimuksessa näyttäisi siltä, että siihen kuuluisi kirjoittaa jotain
+ * kynällä. Jos tietoa ei ole, riviä ei ole.
+ */
+function PartyBlock({ party, label }: { party: DocumentParty; label: string }) {
+  const rows = [
+    party.partyType === "yritys"
+      ? party.identifier && { label: "Y-tunnus", value: party.identifier }
+      : party.identifier && { label: "Henkilötunnus", value: party.identifier },
+    party.partyType === "yritys" &&
+      party.signatoryName && { label: "Allekirjoittaja", value: party.signatoryName },
+    party.phone && { label: "Puhelin", value: party.phone },
+    party.email && { label: "Sähköposti", value: party.email },
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+  return (
+    <View style={{ width: "50%", paddingRight: 14, marginBottom: 10 }}>
+      <Text style={{ fontSize: typeScale.label, color: colors.inkFaint }}>{label}</Text>
+      <Text style={{ fontWeight: 600, marginTop: 2 }}>{party.name}</Text>
+
+      {rows.map((row) => (
+        <View key={row.label} style={{ flexDirection: "row", marginTop: 2 }}>
+          <Text style={{ fontSize: typeScale.small, color: colors.inkFaint, width: 78 }}>
+            {row.label}
+          </Text>
+          <Text style={{ fontSize: typeScale.small, color: colors.inkSoft, flex: 1 }}>
+            {row.value}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Sopimuksen osapuolet.
+ *
+ * Omana lohkonaan eikä tietolaatikossa, koska tunniste ja yhteystiedot ovat
+ * useampi rivi kumpaakin osapuolta kohden. Lohko pidetään yhdellä sivulla:
+ * puolikas osapuolitieto sivunvaihdon yli on se kohta, jota kukaan ei lue
+ * loppuun.
+ */
+function Parties({ data }: { data: RentalAgreementData }) {
+  const tenants = partiesByRole(data, "tenant");
+  const landlords = partiesByRole(data, "landlord");
+
+  return (
+    <View wrap={false} style={{ marginTop: spacing.block + 6 }}>
+      <Heading>Sopimuksen osapuolet</Heading>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+        {landlords.map((party, index) => (
+          <PartyBlock key={`l${index}`} party={party} label="Vuokranantaja" />
+        ))}
+        {tenants.map((party, index) => (
+          <PartyBlock
+            key={`t${index}`}
+            party={party}
+            label={tenants.length > 1 ? `Vuokralainen ${index + 1}` : "Vuokralainen"}
+          />
+        ))}
+      </View>
+    </View>
+  );
 }
 
 export function RentalAgreement({ data }: { data: RentalAgreementData }) {
@@ -344,6 +459,8 @@ export function RentalAgreement({ data }: { data: RentalAgreementData }) {
 
         <KeyFacts facts={buildFacts(data)} />
 
+        <Parties data={data} />
+
         <View style={{ marginTop: spacing.block + 6 }}>
           <Heading>Sopimuksen ehdot</Heading>
           <Terms terms={terms} />
@@ -359,8 +476,14 @@ export function RentalAgreement({ data }: { data: RentalAgreementData }) {
           place={data.place}
           date={formatDate(data.signedDate)}
           signatories={[
-            ...data.tenantNames.map((name) => ({ role: "Vuokralainen", name })),
-            { role: "Vuokranantaja", name: data.landlordName },
+            ...partiesByRole(data, "tenant").map((party) => ({
+              role: "Vuokralainen",
+              name: signerName(party),
+            })),
+            ...partiesByRole(data, "landlord").map((party) => ({
+              role: "Vuokranantaja",
+              name: signerName(party),
+            })),
           ]}
         />
 

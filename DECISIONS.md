@@ -549,3 +549,87 @@ vuokran vieressä — sitä ei pidä joutua etsimään ehtojen joukosta.
 
 Jos sopimus on määräaikainen, sitoutumisaikaa ei toisteta: sopimus päättyy
 joka tapauksessa sovittuna päivänä.
+
+
+## Henkilötunnus sopimukseen, salattuna kantaan (2026-09-11, Jukan päätös)
+
+Aiempi linjaus oli ehdoton: *"Ei henkilötunnuksia missään Reilusopparin
+taulussa"* (CLAUDE.md kohta 6), ja sitä vartioi CI-työ, joka kaatoi buildin
+pelkästä sanasta. Jukka muutti linjausta: sopimukseen tarvitaan kummankin
+osapuolen henkilö- tai y-tunnus, puhelin ja sähköposti.
+
+**Miksi.** Suomalaisessa vuokrasopimuksessa osapuolet yksilöidään
+henkilötunnuksella. Ilman sitä sopimus on juuri siinä tilanteessa heikko,
+jota varten se on kirjoitettu: perinnässä ja käräjäoikeudessa. Käsittelyn
+peruste on tietosuojalaki 1050/2018 § 29 — tunnusta saa käsitellä, kun
+rekisteröidyn yksiselitteinen yksilöinti on tärkeää osapuolten oikeuksien ja
+velvollisuuksien toteuttamiseksi.
+
+**Miten riski pidetään pienenä.** Vaihtoehto ei ollut "tallennetaan tai ei"
+vaan "tallennetaan huolimattomasti tai huolellisesti":
+
+1. **Salattuna, avain kannan ulkopuolella.** AES-256-GCM
+   (`src/lib/identity/crypto.ts`), avain `PERSON_DATA_KEY`-ympäristö-
+   muuttujassa. Tietokantavedos ei sisällä henkilötunnuksia, vain
+   `v1:`-alkuisia merkkijonoja. Salaus on sovelluksessa eikä `pgcrypto`-
+   funktioissa, koska SQL-parametrit päätyvät kannan kyselylokiin.
+2. **Satunnainen alkuvektori joka riville.** Sama tunnus salautuu eri arvoksi
+   eri riveillä, joten kannasta ei näe, ketkä kaksi osapuolta ovat sama
+   ihminen.
+3. **Käyttöliittymässä aina peitetty** (`131052-***T`), ja peittäminen
+   tehdään palvelimella. Selaimeen lähetetty kokonainen tunnus olisi sivun
+   lähdekoodissa riippumatta siitä, mitä ruudulla näkyy.
+4. **Kaksi erillistä lukufunktiota.** `listPartyDetails` peittää,
+   `partyDetailsForDocument` ei. Ne ovat eri funktioita eivätkä yksi funktio
+   `{ full: true }` -valitsimella: valitsin päätyisi ennen pitkää
+   listanäkymään.
+5. **Ei lokiin.** `npm run tarkista:tunnisteet` hylkää lokirivin, jolla
+   esiintyy tunniste, ja rajaa purkufunktion sallittuihin tiedostoihin.
+   CI-työ `ei-henkilotunnuksia` korvattiin työllä `tunnisteet-eivat-vuoda`:
+   kielto ei enää koske tunnuksen olemassaoloa vaan sen vuotamista.
+
+**Tarkistusmerkki lasketaan.** Sopimus allekirjoitetaan kerran; näppäilyvirhe
+jää sinetöityyn asiakirjaan pysyvästi. Sekä henkilötunnuksen että y-tunnuksen
+tarkistusmerkki lasketaan lomakkeella. Tarkistus ei kerro, onko tunnus
+olemassa — sen tekee vasta eSinetin vahva tunnistautuminen.
+
+**Tyhjä kenttä ei poista.** Tallennettu tunnus säilyy, jos kenttä jätetään
+tyhjäksi; poistaminen on oma valintansa. Muuten puhelinnumeron muutos
+pyyhkisi tunnuksen mennessään.
+
+**Jäljelle jäävä riski.** Avaimen ja tietokannan haltija saa tunnukset auki.
+Salaus siirtää riskin tietokantavedoksesta ympäristömuuttujien hallintaan —
+se on parempi paikka, muttei tyhjä.
+
+
+## Osapuolten tiedot ovat osapuoliriveillä, eivät sopimuksen ehdoissa (2026-09-11)
+
+Nimet olivat aiemmin `rs_contracts.template_data`-kentässä. Nyt ne ovat
+`rs_tenancy_parties`-riveillä tunnistetietojen kanssa, ja sopimuspohjan versio
+nousi 3:een.
+
+Syy on sama, jonka vuoksi osoite ja vuokra eivät ole sopimuksen ehdoissa: jos
+sama tieto on kahdessa paikassa, ne eroavat ennen pitkää toisistaan. Silloin
+sopimuksen allekirjoitusrivillä voisi lukea eri nimi kuin osapuolitiedoissa.
+
+Vuokranantajan tiedot syötetään **omissa perustiedoissa** (`/omat-tiedot`) ja
+kopioidaan uuden vuokrasuhteen osapuoliriville. Kopio on tarkoituksella kopio:
+perustietojen muokkaus ei muuta jo allekirjoitettuja sopimuksia takautuvasti.
+
+Vuokralainen näkee molempien tiedot mutta muokkaa vain omiaan. Vuokranantaja
+saa täyttää myös vuokralaisen tiedot — sopimus kirjoitetaan käytännössä
+valmiiksi ennen kuin vuokralainen on kirjautunut.
+
+
+## CI:n e2e-työ tarvitsee tietokanta-avaimet (2026-09-11)
+
+E2E kaatui `kutsulinkki aukeaa ilman kirjautumista` -testeihin. Syy ei ollut
+testeissä: e2e ajaa oikeaa sovellusta (`npm run build && npm run start`),
+ja kutsusivu kysyy kutsun tietokannasta ennen kuin se voi näyttää mitään.
+Ilman avaimia `getServiceClient()` heittää, ja sivu vastaa 500 sen sijaan
+että kertoisi kutsun vanhentuneen.
+
+Vaihtoehto olisi ollut nielaista tietokantavirhe ja näyttää "kutsu ei ole
+voimassa". Sitä ei tehty: silloin oikea vuokralainen saisi oikeasta
+katkoksesta viestin, että hänen kutsunsa on kuollut. E2E-työlle annettiin
+samat `TEST_SUPABASE_*`-avaimet kuin yksikkötyölle.

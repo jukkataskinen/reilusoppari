@@ -14,9 +14,11 @@
  * ensilukemalla — ilman että sisältö kevenee.
  * ===========================================================================
  *
- * Osoite, osapuolet, alkupäivä, vuokra, eräpäivä ja vakuuden määrä tulevat
- * vuokrasuhteesta (`tenancy/schema.ts`) eivätkä ole täällä. Jos ne olisivat
- * kahdessa paikassa, ne voisivat erota toisistaan.
+ * Osoite, alkupäivä, vuokra, eräpäivä ja vakuuden määrä tulevat
+ * vuokrasuhteesta (`tenancy/schema.ts`) eivätkä ole täällä. Osapuolten nimet
+ * ja tunnistetiedot ovat `party-details.ts`:ssä. Jos ne olisivat kahdessa
+ * paikassa, ne voisivat erota toisistaan — ja allekirjoitusrivillä voisi
+ * lukea eri nimi kuin osapuolitiedoissa.
  */
 
 import { z } from "zod";
@@ -25,23 +27,6 @@ const optionalNumber = (max: number) =>
   z.coerce.number().min(0).max(max).nullable().optional().default(null);
 
 export const contractTermsSchema = z.object({
-  /**
-   * Osapuolten nimet.
-   *
-   * `rs_users.name` täyttyy vasta eSinetin tunnistuksesta allekirjoituksen
-   * yhteydessä (CLAUDE.md kohta 2) — mutta sopimus on kirjoitettava ja
-   * esikatseltava ennen sitä. Nimet ovat siis sopimuksen dataa, jonka
-   * vuokranantaja kirjoittaa itse. Allekirjoituksen jälkeen tunnistuksesta
-   * saatu nimi on se, joka pätee.
-   */
-  landlordName: z
-    .string()
-    .trim()
-    .max(200)
-    .transform((value) => (value === "" ? null : value))
-    .nullable(),
-  tenantNames: z.array(z.string().trim().max(200)).max(2),
-
   /** Kalustettu vai ei. Vaikuttaa siihen, mitä asunnosta luovutetaan. */
   furnished: z.boolean().default(false),
 
@@ -135,8 +120,12 @@ export type ContractTerms = z.infer<typeof contractTermsSchema>;
 
 /** Pohjan avain ja versio. Versio nousee, kun sopimustekstit muuttuvat. */
 export const CONTRACT_TEMPLATE_KEY = "vuokrasopimus_asuinhuoneisto";
-/** 2 = mallisopimuksen kattavuus, oma kieli (2026-09-11). */
-export const CONTRACT_TEMPLATE_VERSION = 2;
+/**
+ * 2 = mallisopimuksen kattavuus, oma kieli (2026-09-11).
+ * 3 = osapuolten nimet ja tunnistetiedot siirtyivät `rs_tenancy_parties`-
+ *     riveille, pois sopimuksen ehdoista (2026-09-11).
+ */
+export const CONTRACT_TEMPLATE_VERSION = 3;
 
 /**
  * Oletusehdot uudelle sopimukselle.
@@ -147,8 +136,6 @@ export const CONTRACT_TEMPLATE_VERSION = 2;
  * tavallisempaa olisi päinvastoin.
  */
 export const DEFAULT_CONTRACT_TERMS: ContractTerms = {
-  landlordName: null,
-  tenantNames: [],
   furnished: false,
   noticePeriodMonths: 1,
   minimumTermMonths: null,
@@ -179,15 +166,7 @@ export function contractFormToInput(form: FormData): Record<string, unknown> {
     return value === null ? null : value.replace(",", ".");
   };
 
-  const tenantNames: string[] = [];
-  for (let index = 0; index < 2; index += 1) {
-    const name = text(`tenantName${index}`);
-    if (name) tenantNames.push(name);
-  }
-
   return {
-    landlordName: text("landlordName"),
-    tenantNames,
     furnished: checkbox("furnished"),
     noticePeriodMonths: text("noticePeriodMonths") || "0",
     // Kuukausimäärä luetaan vain jos rajoitus on rastitettu. Muuten kenttään

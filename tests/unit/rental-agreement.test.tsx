@@ -1,13 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { RentalAgreement, buildTerms, type RentalAgreementData } from "@/documents/RentalAgreement";
+import { RentalAgreement, partiesByRole, signerName, buildTerms, type RentalAgreementData } from "@/documents/RentalAgreement";
 import { layoutTermRows } from "@/documents/components";
 import { renderDocumentPdf } from "@/documents/render";
 import { formatEuro, formatDate, formatNames } from "@/documents/format";
 
 const DATA: RentalAgreementData = {
   property: { street: "Mäkitie 12 A 4", postalCode: "40100", city: "Jyväskylä" },
-  landlordName: "Matti Virtanen",
-  tenantNames: ["Maija Meikäläinen"],
+  parties: [
+    {
+      role: "landlord" as const,
+      name: "Matti Virtanen",
+      partyType: "henkilo" as const,
+      identifier: "131052-308T",
+      signatoryName: null,
+      phone: "040 123 4567",
+      email: "matti.virtanen@example.com",
+    },
+    {
+      role: "tenant" as const,
+      name: "Maija Meikäläinen",
+      partyType: "henkilo" as const,
+      identifier: "010594Y123W",
+      signatoryName: null,
+      phone: "050 765 4321",
+      email: "maija.meikalainen@example.com",
+    },
+  ],
   startDate: "2026-09-01",
   endDate: null,
   rentAmount: 850,
@@ -124,7 +142,24 @@ describe("sopimuksen renderöinti", () => {
 
   it("kaksi vuokralaista mahtuu allekirjoitusriville", async () => {
     const result = await renderDocumentPdf(
-      <RentalAgreement data={{ ...DATA, tenantNames: ["Maija Meikäläinen", "Matti Meikäläinen"] }} />);
+      <RentalAgreement
+        data={{
+          ...DATA,
+          parties: [
+            ...DATA.parties,
+            {
+              role: "tenant",
+              name: "Matti Meikäläinen",
+              partyType: "henkilo",
+              identifier: "020304A6069",
+              signatoryName: null,
+              phone: null,
+              email: null,
+            },
+          ],
+        }}
+      />,
+    );
     expect(result.sizeBytes).toBeGreaterThan(2000);
   });
 });
@@ -276,5 +311,44 @@ describe("mallisopimuksesta otetut ehdot", () => {
     ]) {
       expect(kaikki, virkakieli).not.toContain(virkakieli);
     }
+  });
+});
+
+describe("osapuolet asiakirjassa", () => {
+  const yritys = {
+    role: "landlord" as const,
+    name: "Kiinteistö Oy Mäkitie",
+    partyType: "yritys" as const,
+    identifier: "2617416-4",
+    signatoryName: "Matti Virtanen",
+    phone: null,
+    email: null,
+  };
+
+  it("yrityksen puolesta allekirjoittaa ihminen", () => {
+    // Pelkkä yrityksen nimi allekirjoitusrivillä ei kerro, kuka sopimuksen
+    // teki. Nimenkirjoittaja on se, joka rivillä lukee.
+    expect(signerName(yritys)).toBe("Matti Virtanen (Kiinteistö Oy Mäkitie)");
+  });
+
+  it("henkilö allekirjoittaa omalla nimellään", () => {
+    expect(signerName(DATA.parties[0])).toBe("Matti Virtanen");
+  });
+
+  it("yritys ilman allekirjoittajaa ei keksi nimeä", () => {
+    // Puuttuva tieto ei saa muuttua paikanvaraajaksi asiakirjassa.
+    expect(signerName({ ...yritys, signatoryName: null })).toBe("Kiinteistö Oy Mäkitie");
+  });
+
+  it("erottaa osapuolet roolin mukaan", () => {
+    expect(partiesByRole(DATA, "tenant").map((p) => p.name)).toEqual(["Maija Meikäläinen"]);
+    expect(partiesByRole(DATA, "landlord")).toHaveLength(1);
+  });
+
+  it("yritysosapuoli renderöityy", async () => {
+    const result = await renderDocumentPdf(
+      <RentalAgreement data={{ ...DATA, parties: [yritys, DATA.parties[1]] }} />,
+    );
+    expect(result.sizeBytes).toBeGreaterThan(2000);
   });
 });

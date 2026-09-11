@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getContractTerms } from "@/lib/db/contracts";
-import { getTenancy, listParties } from "@/lib/db/tenancies";
+import { getTenancy } from "@/lib/db/tenancies";
 import { ContractForm } from "./ContractForm";
 import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
@@ -26,12 +26,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [terms, parties] = await Promise.all([
-    getContractTerms(user.id, id),
-    listParties(user.id, id),
-  ]);
-
-  const tenantCount = parties.filter((party) => party.role === "tenant").length;
+  const terms = await getContractTerms(user.id, id);
 
   return (
     <AppShell>
@@ -58,7 +53,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
       </div>
 
       {isLandlord ? (
-        <ContractForm tenancyId={id} terms={terms} tenantCount={tenantCount} />
+        <ContractForm tenancyId={id} terms={terms} />
       ) : (
         <div className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <p className="font-medium">Haluatko muutoksia?</p>

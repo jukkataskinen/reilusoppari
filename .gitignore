@@ -65,3 +65,6 @@ sealer/*.pdf
 # Esimerkkitulosteet (ei koskaan gitiin)
 allekirjoitussivu-esimerkki.pdf
 esimerkit/
+
+# Katselukuvat esimerkki-PDF:istä (scripts/pdf-to-png.mjs)
+sivu-*.png
