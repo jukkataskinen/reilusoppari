@@ -59,3 +59,25 @@ export function inkedPixels(
   }
   return count;
 }
+
+/**
+ * Montako pikseliä alueella on kylläisen sinistä?
+ *
+ * Erottaa kuvituksen taustamuodoista: taustamuodot ovat hyvin haaleita
+ * (#eaf1fb), kuvituksen korostusväri on kylläinen (#3d8bff). Tämä on se ero,
+ * jolla testi näkee onko asiakirjassa kuvitusta vai pelkkä pehmeä tausta.
+ */
+export function saturatedPixels(
+  page: RasterPage,
+  area: { x0: number; y0: number; x1: number; y1: number },
+): number {
+  let count = 0;
+  for (let y = area.y0; y < area.y1; y += 1) {
+    for (let x = area.x0; x < area.x1; x += 1) {
+      const i = (y * page.width + x) * 4;
+      const [r, g, b] = [page.data[i], page.data[i + 1], page.data[i + 2]];
+      if (b > 180 && b - r > 70 && b - g > 40) count += 1;
+    }
+  }
+  return count;
+}

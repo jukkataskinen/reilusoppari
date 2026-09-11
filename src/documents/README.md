@@ -14,6 +14,18 @@ Juridinen sisältö on Jukan vastuulla. Tämä tiedosto koskee ulkoasua ja kielt
 | `fonts.ts` | Plus Jakarta Sans 400 / 600 / 700, upotettuna |
 | `fonts/*.ttf` | Staattiset leikkaukset. Muunnettu `@fontsource`-paketista; React-PDF ei lue woff2:ta eikä muuttuvia fontteja. |
 | `render.ts` | `renderDocumentPdf()` — PDF + SHA-256, deterministinen |
+| `components.tsx` | `DocumentRoot`, ylä- ja alatunniste, avaintiedot, ehtolista, allekirjoitukset |
+| `decorations.tsx` | Taustamuodot kaikkiin, vinjetti vain sopimukseen ja todistuksiin |
+| `RentalAgreement.tsx` | Vuokrasopimus |
+| `InspectionProtocol.tsx` | Alku- ja loppukatselmus |
+
+## Esimerkit
+
+    npm run samples                                    → esimerkit/*.pdf
+    node scripts/pdf-to-png.mjs esimerkit/x.pdf sivu   → sivu-1.png, sivu-2.png …
+
+Toinen komento on olennainen: asiakirjan ulkoasua ei voi arvioida lukematta
+sitä, eikä PDF:ää näe päätteestä.
 
 ---
 
@@ -125,9 +137,9 @@ QR-palvelua ei käytetä. QR piirretään Reilusopparissa.
 
 | Asiakirja | Reitti eSinettiin | Tila |
 |---|---|---|
-| Vuokrasopimus | allekirjoituskierros | kirjoittamatta |
-| Alkukatselmus | allekirjoituskierros | kirjoittamatta |
-| Loppukatselmus | allekirjoituskierros | kirjoittamatta |
+| Vuokrasopimus | allekirjoituskierros | **valmis**, juridinen sisältö Jukan tarkistettavana |
+| Alkukatselmus | allekirjoituskierros | **valmis** |
+| Loppukatselmus | allekirjoituskierros | **valmis** (sama komponentti, `kind: "final"`) |
 | Vuokratodistus, vuokralainen | kierros tai sinetöinti¹ | kirjoittamatta |
 | Vuokratodistus, vuokranantaja | kierros tai sinetöinti¹ | kirjoittamatta |
 | Verolaskelma | sinetöinti | kirjoittamatta |
@@ -143,3 +155,19 @@ jälkeenpäin `GET /verify`-haulla tiivisteellä. (Jukan tarkennus 2026-09-11.)
 Se ei ole sopimus vaan rakenne: kutsuja ei voi unohtaa sitä. Syy on se, että
 asiakirjan SHA-256 päätyy pöytäkirjaan, webhookiin ja todistukseen — jos sama
 sisältö tuottaisi eri tavut joka ajolla, tiiviste ei tarkoittaisi mitään.
+
+
+## Tiedossa oleva rajoite: kuvien saavutettavuus
+
+Katselmuspöytäkirjan todistusaineisto on kuvia, eikä React-PDF tuota tagattua
+PDF:ää — kuville ei siis voi antaa vaihtoehtoista tekstiä. Näkövammainen
+osapuoli ei pääse kuviin käsiksi ruudunlukijalla.
+
+Lieventävänä tekijänä kaikki kuvan ympärillä oleva on tekstiä: kohdan nimi,
+huone, kuvaaja, palvelimen vastaanottoaika, tiiviste ja kuvaajan huomautus.
+Pöytäkirjasta saa siis selville mitä on kuvattu, kuka kuvasi ja milloin,
+vaikka itse kuvaa ei näkisi.
+
+Tämä ei ole ratkaisu vaan rajoite. Jos se osoittautuu ongelmaksi, oikea
+korjaus on vaatia huomautus jokaiseen kuvaan — silloin jokaisella kuvalla on
+sanallinen kuvaus. Se on tuotepäätös, ei tekninen.

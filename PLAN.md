@@ -60,9 +60,10 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [x] ~~`templates/` ja `templates:push`~~ → **korvattu**: Reilusoppari tekee
       PDF:nsä itse (DECISIONS.md 2026-09-11). `src/documents/`: React-PDF,
       fontit, teema, deterministinen renderöinti ja 5 testiä
-- [ ] Asiakirjat `src/documents/`: vuokrasopimus ja katselmuspöytäkirja
-      (vaihe 1 tarvitsee ne). **Ulkoasu: ei viranomaispaperia** —
-      ks. `src/documents/README.md`
+- [x] Asiakirjat `src/documents/`: **vuokrasopimus** ja **katselmuspöytäkirja**
+      (alku ja loppu). Kuvitus Jukan luonnoksen mukaan; pöytäkirjassa ei
+      kuvitusta, koska siinä kuva on todiste. Juridinen sisältö Jukan
+      tarkistettavana
 - [x] Asunnon luonti (`rs_properties`) ja lista: lomake, listaus, asunnon
       näkymä kohtalistoineen, arkistointi. 6 IDOR-integraatiotestiä ja 9
       lomaketestiä
@@ -91,8 +92,9 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 - [ ] Palvelin: EXIF pois (myös GPS), `taken_at_server`, SHA-256, `rs_photos`
 - [ ] Katselmuksen lukitus — **lukitusnappi estetty** kunnes vuokralainen on
       valmis tai 24 h kulunut hänen ensimmäisestä kirjautumisestaan
-- [ ] Katselmuspöytäkirjan renderöinti: kohta, kuvat, kuvaaja, aika, tiiviste;
-      pöytäkirjasta käy ilmi kumpi lisäsi kohdan ja kumpi otti kuvan
+- [x] Katselmuspöytäkirjan renderöinti: kohta, kuvat, kuvaaja, aika, tiiviste;
+      pöytäkirjasta käy ilmi kumpi lisäsi kohdan ja kumpi otti kuvan.
+      Täydet tiivisteet omalla sivullaan
 - [ ] Allekirjoituskierros eSinettiin: kaksi asiakirjaa, 2–3 allekirjoittajaa
 - [ ] Webhook `round.completed`: sinetöidyt PDF:t, `identity_verified_at`,
       tenancy → `active`, `rs_rent_periods` generoidaan
