@@ -697,3 +697,46 @@ Korjaus: `TYHJA_OSAPUOLI`-pohja, jonka päälle molempien rivien tiedot
 kirjoitetaan. Sääntö on yleinen: **saman insert-taulukon riveillä on oltava
 samat avaimet.** Tämä ei ole tämän taulun erityispiirre vaan koskee jokaista
 monirivistä inserttiä.
+
+
+## Sovelluksen hitaus: funktiot väärällä mantereella (2026-09-11, Jukan havainto)
+
+*"Äppi reagoi aika hitaasti."*
+
+Vercelin funktiot ajavat oletuksena `iad1`-alueella eli Washingtonissa.
+Supabase on EU:ssa (CLAUDE.md kohta 2). Jokainen tietokantakysely ylitti siis
+Atlantin kahdesti, noin 100 ms suuntaansa — ja yksi sivu tekee useita
+kyselyjä peräkkäin, koska osapuolirajaus on oma kyselynsä ennen varsinaista
+hakua.
+
+Sivulataus, jossa on kolme kyselyä, maksoi pelkkää verkkoviivettä yli puoli
+sekuntia ennen kuin mitään ehti tapahtua.
+
+`vercel.json` asettaa alueeksi `arn1` (Tukholma). Se on lähin alue Suomeen ja
+samalla mantereella tietokannan kanssa.
+
+Samalla `getCurrentUser` muutettiin: se teki `upsert`-kirjoituksen
+**jokaisella sivulatauksella**, vaikka mikään ei muuttunut. Nyt rivi luetaan
+ja kirjoitetaan vain ensimmäisellä kirjautumisella. Kierroksia on yhtä monta,
+mutta kirjoitus on kalliimpi kuin luku.
+
+Jäljelle jää kylmäkäynnistys: harvoin käytetty funktio herää sekunnissa tai
+kahdessa. Sitä ei poisteta koodilla.
+
+
+## Esikatselusta on päästävä takaisin (2026-09-11, Jukan havainto)
+
+*"Vuokrasopimus-esikatselusta ei voi peruuttaa pois."*
+
+Linkki vei suoraan PDF-reittiin. Kotinäytölle asennetussa sovelluksessa ei ole
+selaimen osoiteriviä eikä takaisin-painiketta, joten asiakirja avautui
+näkymään, josta ei päässyt pois muuten kuin sulkemalla koko sovellus.
+
+PDF siirtyi osoitteeseen `.../esikatselu/pdf`, ja `.../esikatselu` on nyt
+sovelluksen sivu, jolla on aina tie takaisin. Asiakirja näytetään siinä
+upotettuna `object`-elementissä — ei `iframe`, koska `object` näyttää
+varatekstin, jos selain ei osaa näyttää PDF:ää; tyhjä laatikko ei kertoisi
+mitään.
+
+Linkki erilliseen välilehteen on silti jäljellä: puhelimessa upotuksesta
+näkyy usein vain ensimmäinen sivu, ja koko sopimus on voitava lukea.

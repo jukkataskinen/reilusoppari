@@ -356,7 +356,7 @@ export function partiesByRole(
 }
 
 function buildFacts(data: RentalAgreementData): Fact[] {
-  return [
+  const facts: Fact[] = [
     {
       icon: "koti",
       label: "Koti",
@@ -385,6 +385,15 @@ function buildFacts(data: RentalAgreementData): Fact[] {
     },
     { icon: "kilpi", label: "Vakuus", value: formatEuro(data.depositAmount) },
   ];
+
+  // Tili myös yhteenvetoon: se on ehdoissa siinä kohdassa, joka kertoo
+  // maksamisesta, mutta yhteenveto on se, mihin katse ensin osuu.
+  const tili = landlordBankAccount(data);
+  if (tili) {
+    facts.push({ icon: "raha", label: "Vuokra maksetaan tilille", value: tili });
+  }
+
+  return facts;
 }
 
 /**

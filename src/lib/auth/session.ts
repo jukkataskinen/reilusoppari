@@ -54,19 +54,44 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (!sub || !email) return null;
 
   const supabase = getServiceClient();
+  const COLUMNS = "id, email, name, identity_verified_at, free_tenancy_used";
 
-  const { data, error } = await supabase
+  /*
+    Luku ensin, kirjoitus vain tarvittaessa.
+
+    Aiemmin tämä oli `upsert`, joka kirjoittaa rivin JOKAISELLA sivulatauksella
+    — myös silloin kun mikään ei muutu. Kierroksia tietokantaan on yhtä monta,
+    mutta kirjoitus on kalliimpi kuin luku, ja se tehtiin jokaisesta
+    pyynnöstä. Rivi luodaan vain ensimmäisellä kirjautumisella.
+  */
+  const { data: existing, error: readError } = await supabase
     .from("rs_users")
-    .upsert(
-      { auth0_sub: sub, email },
-      { onConflict: "auth0_sub", ignoreDuplicates: false },
-    )
-    .select("id, email, name, identity_verified_at, free_tenancy_used")
-    .single();
+    .select(COLUMNS)
+    .eq("auth0_sub", sub)
+    .maybeSingle();
+
+  if (readError) {
+    // Ei paljasteta tietokannan virhettä käyttäjälle (esinetti 0.1 kohta 6).
+    console.error("[auth] rs_users-rivin haku epäonnistui:", readError.message);
+    throw new Error("Käyttäjätietojen haku epäonnistui.");
+  }
+
+  /*
+    `upsert` eikä `insert`: kaksi rinnakkaista ensimmäistä pyyntöä voi molempi
+    todeta rivin puuttuvan. `auth0_sub`-uniikkirajoite ratkaisee kilpajuoksun,
+    ja `onConflict` tekee siitä idempotentin sen sijaan että toinen pyyntö
+    kaatuisi.
+  */
+  const { data, error } = existing
+    ? { data: existing, error: null }
+    : await supabase
+        .from("rs_users")
+        .upsert({ auth0_sub: sub, email }, { onConflict: "auth0_sub", ignoreDuplicates: false })
+        .select(COLUMNS)
+        .single();
 
   if (error || !data) {
-    // Ei paljasteta tietokannan virhettä käyttäjälle (esinetti 0.1 kohta 6).
-    console.error("[auth] rs_users-rivin haku tai luonti epäonnistui:", error?.message);
+    console.error("[auth] rs_users-rivin luonti epäonnistui:", error?.message);
     throw new Error("Käyttäjätietojen haku epäonnistui.");
   }
 

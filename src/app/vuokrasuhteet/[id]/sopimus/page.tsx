@@ -69,14 +69,17 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         <p className="mt-2 text-sm text-ink/70">
           Asiakirja avautuu PDF:nä. Se on sama asiakirja, joka allekirjoitetaan.
         </p>
-        <a
+        {/*
+          Sovelluksen sisäinen linkki eikä uusi välilehti: kotinäytölle
+          asennetussa sovelluksessa ei ole takaisin-painiketta, ja suoraan
+          PDF:ään vievästä näkymästä ei päässyt pois.
+        */}
+        <Link
           href={`/vuokrasuhteet/${id}/sopimus/esikatselu`}
-          target="_blank"
-          rel="noreferrer"
           className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >
           Avaa esikatselu
-        </a>
+        </Link>
       </div>
 
       {isLandlord ? (
