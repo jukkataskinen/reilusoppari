@@ -236,3 +236,28 @@ tarjous kannattaa pyytää ennen kuin hinta lyödään lukkoon.
 > Luo PLAN.md kohdan 8 pohjalta ja aloita vaihe 0. BLOCKERS.md:n kohdat 1–3
 > on ratkaistu; jäljellä on ympäristö (kohta 3 alempana) ja Jukan omat
 > sisältötehtävät.
+
+
+## Tuotanto pystyssä 2026-09-11
+
+`app.reilusoppari.fi` on julkaistu ja todennettu läpi koko ketjun: kirjautuminen,
+tietokanta, kutsulinkit, PDF:n tuottaminen ja PWA-asennus kotivalikkoon.
+Ympäristömuuttujat ovat Vercelissä ja Auth0 sallii tuotanto-osoitteen.
+
+### Korjattu samalla
+
+Sopimuksen esikatselu kaatui tuotannossa mutta toimi paikallisesti: pdfkitin
+vakiofontit puuttuivat funktiopaketista, koska Next.js ei näe niiden
+dynaamista latausta. CI tarkistaa tämän nyt jokaisella käännöksellä.
+
+### Auth0:n ilme
+
+Tehty: tenantin nimi, kieli suomeksi, logo ja värit kirjautumissivulla.
+`dev-qanv0hdzfjjsybgm` ei enää näy käyttäjälle.
+
+**Jäljellä: kirjautumissähköposti.** Se on edelleen englanniksi ja tulee
+osoitteesta `root@auth0.com`. Auth0 sallii sähköpostipohjien muokkaamisen
+vasta, kun tenantille on määritetty oma sähköpostipalvelu — käytännössä
+Resend, jonka domain on todennettava. Tämä on tehtävä ennen lanseerausta,
+koska kirjautumissähköposti on ensimmäinen asia jonka vuokralainen saa.
+Ks. myös EU-siirron muistilista yllä.

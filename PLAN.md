@@ -85,7 +85,8 @@ ovat pelkkää tekstiä. Tehtävä:
 - [ ] Sovelluksen ylätunniste: merkki ja nimi, sama kuin asiakirjoissa
 - [ ] Navigaatio puhelimessa: asunnot, vuokrasuhteet, asetukset
 - [ ] Tyhjien näkymien ilme (ei vielä asuntoja / ei vielä vuokrasuhteita)
-- [ ] Kirjautumisnäkymän ilme — se on ensimmäinen mitä vuokralainen näkee
+- [x] ~~Kirjautumisnäkymän ilme~~ — Auth0:n kirjautumissivu on nyt suomeksi,
+      logolla ja Reilusopparin väreillä (2026-09-11)
 
 ## Vaihe 1 — Sopimus, katselmus, allekirjoitus
 
