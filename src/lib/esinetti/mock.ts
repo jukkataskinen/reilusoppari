@@ -38,6 +38,9 @@ import type {
   RoundSignerState,
   SealDocumentInput,
   SealDocumentResult,
+  TemplateInfo,
+  UpsertTemplateAction,
+  UpsertTemplateInput,
   VerifyResult,
 } from "./types";
 
@@ -70,11 +73,14 @@ interface RoundRecord extends Round {
 const rounds = new Map<string, RoundRecord>();
 /** Avaimena sinetöity tiiviste — juuri niin kuin `GET /verify` hakee. */
 const sealed = new Map<string, SealedRecord>();
+/** Avaimena `<key>@<version>`. */
+const templates = new Map<string, TemplateInfo>();
 
 /** Tyhjentää mockin tilan. Kutsu testin `beforeEach`issä, jotta testit eivät vuoda toisiinsa. */
 export function resetMockEsinetti(): void {
   rounds.clear();
   sealed.clear();
+  templates.clear();
 }
 
 function toPublicRound(record: RoundRecord): Round {
@@ -277,6 +283,42 @@ export class EsinettiMockClient implements EsinettiClient {
     // Sinetöity, jos se on olemassa — muuten alkuperäinen. Sama sääntö kuin
     // eSinetissä: sinetöityä ei ole ennen kuin kierros on valmis.
     return bytes.sealed ?? bytes.original;
+  }
+
+  async listTemplates(): Promise<TemplateInfo[]> {
+    return [...templates.values()].sort(
+      (a, b) => a.key.localeCompare(b.key) || b.version - a.version,
+    );
+  }
+
+  /**
+   * Mock julkaisee pohjan heti, oikea eSinetti ei.
+   *
+   * Oikeassa palvelussa `published` jää epätodeksi, kunnes juridinen sisältö
+   * on tarkistettu — ja se on tarkoitus. Mockissa sama portti estäisi
+   * vaiheiden 0 ja 1 etenemisen kokonaan, koska julkaisua ei olisi kukaan
+   * tekemässä. Ero on siis tietoinen, ja se on syytä muistaa: **se, että
+   * mockilla renderöinti onnistuu, ei tarkoita että se onnistuu tuotannossa.**
+   */
+  async upsertTemplate(
+    input: UpsertTemplateInput,
+  ): Promise<{ template: TemplateInfo; action: UpsertTemplateAction }> {
+    const mapKey = input.key + "@" + input.version;
+    const existing = templates.get(mapKey);
+
+    const template: TemplateInfo = {
+      id: existing?.id ?? randomUUID(),
+      key: input.key,
+      name: input.name,
+      version: input.version,
+      published: true,
+      owner: "tenant",
+      usable: true,
+      updatedAt: new Date().toISOString(),
+    };
+
+    templates.set(mapKey, template);
+    return { template, action: existing ? "updated" : "created" };
   }
 
   async verifyDocument(sha256: string): Promise<VerifyResult> {

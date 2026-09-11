@@ -36,6 +36,9 @@ import type {
   Round,
   SealDocumentInput,
   SealDocumentResult,
+  TemplateInfo,
+  UpsertTemplateAction,
+  UpsertTemplateInput,
   VerifyResult,
 } from "./types";
 
@@ -112,7 +115,7 @@ export class EsinettiHttpClient implements EsinettiClient {
    * tarpeettomasti.
    */
   private async request<T>(
-    method: "GET" | "POST",
+    method: "GET" | "POST" | "PUT",
     path: string,
     options: { body?: unknown; authenticated?: boolean } = {},
   ): Promise<T> {
@@ -328,6 +331,31 @@ export class EsinettiHttpClient implements EsinettiClient {
     return new Uint8Array(await response.arrayBuffer());
   }
 
+  async listTemplates(): Promise<TemplateInfo[]> {
+    const payload = await this.request<{ data: TemplateWire[] }>("GET", "/templates");
+    return payload.data.map(templateFromWire);
+  }
+
+  async upsertTemplate(
+    input: UpsertTemplateInput,
+  ): Promise<{ template: TemplateInfo; action: UpsertTemplateAction }> {
+    const payload = await this.request<TemplateWire & { action: UpsertTemplateAction }>(
+      "PUT",
+      "/templates",
+      {
+        body: {
+          key: input.key,
+          name: input.name,
+          version: input.version,
+          html: input.html,
+          schema: input.schema,
+          legal_basis: input.legalBasis,
+        },
+      },
+    );
+    return { template: templateFromWire(payload), action: payload.action };
+  }
+
   async verifyDocument(sha256: string): Promise<VerifyResult> {
     // Julkinen reitti: API-avainta ei lähetetä.
     const payload = await this.request<VerifyWire>(
@@ -445,5 +473,29 @@ export function verifyFromWire(wire: VerifyWire): VerifyResult {
       signedAt: s.signed_at,
       providerTransactionId: s.provider_transaction_id,
     })),
+  };
+}
+
+interface TemplateWire {
+  id: string;
+  key: string;
+  name: string;
+  version: number;
+  published: boolean;
+  owner: "system" | "tenant";
+  usable: boolean;
+  updated_at: string;
+}
+
+export function templateFromWire(wire: TemplateWire): TemplateInfo {
+  return {
+    id: wire.id,
+    key: wire.key,
+    name: wire.name,
+    version: wire.version,
+    published: wire.published,
+    owner: wire.owner,
+    usable: wire.usable,
+    updatedAt: wire.updated_at,
   };
 }

@@ -208,6 +208,34 @@ export type VerifyResult =
       }>;
     };
 
+/** Pohja eSinetissä. `usable` kertoo, voiko siitä tuottaa asiakirjan juuri nyt. */
+export interface TemplateInfo {
+  id: string;
+  key: string;
+  name: string;
+  version: number;
+  published: boolean;
+  owner: "system" | "tenant";
+  /**
+   * Julkaisematonta pohjaa ei voi käyttää renderöintiin. Julkaisu tehdään
+   * eSinetissä juridisen sisällön tarkistuksen jälkeen, joten `templates:push`
+   * jälkeen tämä on epätosi kunnes Jukka on hyväksynyt pohjan.
+   */
+  usable: boolean;
+  updatedAt: string;
+}
+
+export interface UpsertTemplateInput {
+  key: string;
+  name: string;
+  version: number;
+  html: string;
+  schema?: Record<string, unknown>;
+  legalBasis?: string;
+}
+
+export type UpsertTemplateAction = "created" | "updated" | "skipped_published";
+
 /**
  * eSinetti-liitännän sopimus. Sekä oikea client että mock toteuttavat tämän,
  * eikä sovelluskoodi saa tietää kumpi on käytössä.
@@ -223,4 +251,10 @@ export interface EsinettiClient {
   /** Lataa kierroksen asiakirjan tavut (sinetöity, jos kierros on valmis). */
   downloadRoundDocument(roundId: string, documentId: string): Promise<Uint8Array>;
   verifyDocument(sha256: string): Promise<VerifyResult>;
+  /** Kaikki käytettävissä olevat pohjat, myös julkaisua odottavat. */
+  listTemplates(): Promise<TemplateInfo[]>;
+  /** Vie pohjan eSinettiin. Käytetään vain `npm run templates:push` -skriptistä. */
+  upsertTemplate(
+    input: UpsertTemplateInput,
+  ): Promise<{ template: TemplateInfo; action: UpsertTemplateAction }>;
 }
