@@ -244,3 +244,42 @@ kerran läpi hylättynä. Lokakuun lanseeraus tarkoittaa käytännössä, että
 **web ja PWA julkaistaan ensin ja kaupat perässä** — tai että kauppatilit ja
 kuoret aloitetaan heti rinnalla. Tämä on Jukan valinta; `PLAN.md` vaihe 7 on
 kirjoitettu niin, että se voi tapahtua kummin päin tahansa.
+
+
+## Asiakirjat eivät saa näyttää viranomaispapereilta (2026-09-11, Jukan linjaus)
+
+Jukka: "kaikkien dokumenttien pitää olla niin sanotusti mukavia: niiden ei
+siis tule näyttää viranomaisdokumenteilta vaikka asiaa ovatkin."
+
+Tämä koskee kaikkia `templates/`-pohjia: vuokrasopimusta, katselmus-
+pöytäkirjoja, todistuksia ja verolaskelmaa.
+
+**Miksi tämä ei ole makuasia.** Vuokrasopimus allekirjoitetaan tilanteessa,
+jossa toinen osapuoli on usein nuori ja ensi kertaa vuokralla, ja toinen on
+yksityishenkilö eikä ammattivuokranantaja. Viranomaisen näköinen paperi tekee
+tilanteesta vastakkainasettelun: se viestii, että nyt varaudutaan riitaan.
+Reilusopparin koko lupaus on päinvastainen — sovitaan asiat etukäteen, jotta
+riitaa ei tule. Asiakirjan ulkoasu on osa sitä lupausta.
+
+**Mitä se tarkoittaa käytännössä.**
+
+| Ei | Vaan |
+|---|---|
+| Versaalit otsikot, "LIITE 1 / KOHTA 3.2" | Selkeät suomenkieliset otsikot |
+| Viitenumerot ja pykäläviittaukset joka rivillä | Lakiviittaus vain siellä missä se oikeasti pitää olla |
+| Tiheä, harmaa, marginaaliton taitto | Ilmava taitto, riittävä riviväli |
+| Times New Roman ja kehykset | Sama Plus Jakarta Sans kuin sovelluksessa ja sivustolla |
+| "Allekirjoittaja vakuuttaa täten…" | "Olemme käyneet asunnon yhdessä läpi." |
+| Harmaa ja musta | Sama paletti kuin sovelluksessa, maltillisesti |
+
+**Mikä ei jousta.** Asiakirjan on silti oltava todistusvoimainen: kaikki
+juridisesti tarpeellinen sisältö, päiväykset, tiivisteet ja allekirjoitus-
+tiedot ovat mukana. "Mukava" koskee ulkoasua ja kieltä, ei sisältöä. Jos
+jokin tieto on oltava, se on — mutta se kirjoitetaan ihmiselle luettavaksi.
+
+**Mittari.** Katselmuspöytäkirja pitää voida lähettää vuokralaiselle ilman,
+että hän säikähtää sitä. Jos asiakirja näyttää siltä, että sen voisi saada
+ulosottovirastolta, se on väärä.
+
+Pohjien juridinen sisältö on Jukan vastuulla, ulkoasu ja kieli tämän
+linjauksen mukaan.

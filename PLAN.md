@@ -38,8 +38,10 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [x] **Mobiili ensin:** 390 px perusleveys, kosketuskohde 44 px, zoomaus sallittu
 - [x] CSP noncella ja `strict-dynamic`, Permissions-Policy (kamera sallittu,
       paikannus ei), 9 yksikkötestiä + e2e-savutesti tuotantokäännöstä vasten
-- [ ] PWA: service worker ja ikonit (manifest tehty) — myös pohja
-      sovelluskaupoille, ks. vaihe 7
+- [x] PWA: service worker, kuvakkeet (192/512/maskable/apple-touch),
+      manifest, offline-sivu. **HTML:ää ei välimuistiteta koskaan** —
+      sivut sisältävät vuokrasuhteen tietoja. Pohja sovelluskaupoille,
+      ks. vaihe 7
 - [x] Supabase kytketty: `src/lib/db/supabase.ts` (service + anon) ja
       `src/lib/db/access.ts` (osapuolirajaus yhdessä paikassa), 4
       IDOR-integraatiotestiä live-kantaa vasten
@@ -54,7 +56,10 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [x] `lib/esinetti/`: rajapinta + **mock** + oikea client (render, seal,
       rounds, verify, webhookit) — 29 yksikkötestiä. Mock tuottaa aidon
       avautuvan PDF:n, joten vaiheet 0–1 etenevät ilman eSinetti-tunnuksia
-- [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti
+- [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti.
+      **Ulkoasu: ei viranomaispaperia** — ks. DECISIONS.md 2026-09-11.
+      Sama fontti ja paletti kuin sovelluksessa, ilmava taitto, ihmisen
+      kieli. Sisältö silti täysin todistusvoimainen
 - [x] Asunnon luonti (`rs_properties`) ja lista: lomake, listaus, asunnon
       näkymä kohtalistoineen, arkistointi. 6 IDOR-integraatiotestiä ja 9
       lomaketestiä
