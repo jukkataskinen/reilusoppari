@@ -629,10 +629,32 @@ ja kutsusivu kysyy kutsun tietokannasta ennen kuin se voi näyttää mitään.
 Ilman avaimia `getServiceClient()` heittää, ja sivu vastaa 500 sen sijaan
 että kertoisi kutsun vanhentuneen.
 
-Vaihtoehto olisi ollut nielaista tietokantavirhe ja näyttää "kutsu ei ole
-voimassa". Sitä ei tehty: silloin oikea vuokralainen saisi oikeasta
-katkoksesta viestin, että hänen kutsunsa on kuollut. E2E-työlle annettiin
-samat `TEST_SUPABASE_*`-avaimet kuin yksikkötyölle.
+**Ensimmäinen korjaus ei toiminut.** E2E-työlle annettiin samat
+`TEST_SUPABASE_*`-avaimet kuin yksikkötyölle, mutta niitä ei ole olemassa:
+salaisuuksia ei ole koskaan luotu. Yksikkötyö on silti vihreä, koska
+tietokantatestit ovat `describe.skipIf`-ohituksen takana — CI on siis ollut
+vihreä myös silloin, kun 17 integraatiotestiä ei ole ajanut lainkaan.
+
+**Toinen korjaus: puuttuva kokoonpano ja katkos ovat eri asioita.**
+`findTenancyByInvite` erottaa ne nyt:
+
+- **Ei Supabase-avaimia lainkaan** → `null`, eli "kutsu ei ole voimassa".
+  Tämä ei ole katkoksen vaimennus vaan puuttuva asennus: ilman avaimia
+  sovellusta ei ole asennettu loppuun eikä yksikään sen sivu toimisi. CI ajaa
+  savutestit juuri tässä tilassa.
+- **Kyselyvirhe** → heitetään. Aiemmin se palautti hiljaa `null`:in, jolloin
+  oikea vuokralainen olisi saanut tietokantakatkoksesta viestin, että hänen
+  kutsunsa on kuollut — ja luopunut linkistä, joka on kunnossa. Tämä oli
+  olemassa oleva vika, jonka CI-selvittely paljasti.
+
+Näin kaikki kolme kutsusivun e2e-testiä ajetaan myös CI:ssä ilman
+tietokantaa, eikä yhtäkään tarvitse ohittaa. Todennettu ajamalla e2e
+paikallisesti tyhjennetyillä Supabase-muuttujilla: 26 läpi, 2 ohitettu
+(Auth0).
+
+**Jäljelle jäävä aukko:** ne 17 integraatiotestiä ajetaan edelleen vain
+paikallisesti. Jukan päätös 2026-09-11: erillistä testikantaa ei perusteta
+nyt. Tämä on tiedossa oleva aukko, ei unohdus.
 
 
 ## Maksutili sopimukseen, ei salattuna (2026-09-11, Jukan pyyntö)

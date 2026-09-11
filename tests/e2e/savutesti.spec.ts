@@ -123,12 +123,24 @@ test("asuntosivut vaativat kirjautumisen", async ({ page }) => {
   }
 });
 
-test("kutsulinkki aukeaa ilman kirjautumista", async ({ page }) => {
-  /*
-    Kutsulinkki EI saa vaatia kirjautumista: vuokralaisella ei ole vielä
-    tiliä, ja jos sivu ohjaisi kirjautumiseen, hän ei näkisi mihin häntä
-    kutsutaan. Tuntematon tunniste antaa saman vastauksen kuin vanhentunut.
-  */
+/*
+  Kutsulinkki EI saa vaatia kirjautumista: vuokralaisella ei ole vielä tiliä,
+  ja kirjautumiseen ohjaava kutsulinkki olisi hänelle umpikuja.
+
+  Nämä ajetaan myös CI:ssä, jolla ei ole tietokanta-avaimia. Se on
+  mahdollista, koska kutsun haku erottaa puuttuvan kokoonpanon
+  tietokantakatkoksesta (`db/tenancies.ts`): ilman avaimia kutsuja ei ole,
+  mutta katkos heitetään eikä näy käyttäjälle vanhentuneena kutsuna.
+*/
+test("kutsulinkki ei ohjaa kirjautumiseen", async ({ page }) => {
+  const response = await page.request.get("/kutsu/" + "a".repeat(64), { maxRedirects: 0 });
+
+  expect(response.status(), "kutsusivu ei saa olla uudelleenohjaus").toBeLessThan(300);
+  expect(response.headers()["location"] ?? "").not.toContain("/auth/login");
+});
+
+test("tuntematon kutsu ei paljasta mitään", async ({ page }) => {
+  // Tuntematon tunniste antaa saman vastauksen kuin vanhentunut.
   const response = await page.goto("/kutsu/" + "a".repeat(64));
   expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "Kutsu ei ole voimassa" })).toBeVisible();

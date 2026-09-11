@@ -23,7 +23,7 @@
  * ===========================================================================
  */
 
-import { getServiceClient } from "./supabase";
+import { getServiceClient, hasSupabaseCredentials } from "./supabase";
 import { getProperty } from "./properties";
 import {
   createInvite,
@@ -383,6 +383,19 @@ export async function findTenancyByInvite(token: string): Promise<InvitePreview 
   // tietokantaan asti.
   if (!isInviteTokenShaped(token)) return null;
 
+  /*
+    Ilman tietokantaa ei ole kutsuja.
+
+    Tämä ei ole käyntikatkoksen vaimennus vaan puuttuva kokoonpano: jos
+    Supabase-avaimia ei ole lainkaan, sovellusta ei ole asennettu loppuun
+    eikä yksikään sen sivu toimisi. CI ajaa e2e-savutestit juuri tässä
+    tilassa (DECISIONS.md 2026-09-11), ja kutsusivun on silloin kerrottava,
+    ettei kutsu ole voimassa — eikä vastattava 500.
+
+    Oikea katkos on eri asia, ja se heitetään alla.
+  */
+  if (!hasSupabaseCredentials()) return null;
+
   const supabase = getServiceClient();
 
   const { data: party, error } = await supabase
@@ -394,8 +407,15 @@ export async function findTenancyByInvite(token: string): Promise<InvitePreview 
     .maybeSingle();
 
   if (error) {
+    /*
+      Kyselyvirhe heitetään, ei niellä.
+
+      `null` näyttäisi sivulla samalta kuin "kutsua ei ole", ja oikea
+      vuokralainen saisi tietokantakatkoksesta viestin, että hänen kutsunsa
+      on kuollut. Hän luopuisi linkistä, joka on kunnossa.
+    */
     console.error("[tenancies] kutsun haku epäonnistui:", error.message);
-    return null;
+    throw new Error("Kutsun haku epäonnistui.");
   }
   if (!party) return null;
 
