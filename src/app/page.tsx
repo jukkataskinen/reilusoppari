@@ -25,6 +25,12 @@ export default async function HomePage() {
             >
               {fi.nav.properties}
             </Link>
+            <Link
+              href="/vuokrasuhteet"
+              className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+            >
+              {fi.nav.tenancies}
+            </Link>
             <a
               href="/auth/logout"
               className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"

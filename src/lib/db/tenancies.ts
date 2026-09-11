@@ -414,15 +414,40 @@ export async function findTenancyByInvite(token: string): Promise<InvitePreview 
   };
 }
 
+/** Miksi kutsun hyväksyntä epäonnistui. Käyttöliittymä kertoo eri viestin. */
+export type AcceptInviteResult =
+  | { ok: true; tenancyId: string }
+  | { ok: false; reason: "invalid" | "wrong_account" };
+
 /**
  * Liittää kirjautuneen käyttäjän kutsuttuun osapuoleen.
+ *
+ * ===========================================================================
+ * SÄHKÖPOSTIN ON TÄSMÄTTÄVÄ
+ *
+ * Kutsu on osoitettu tietylle osoitteelle, ja kirjautuminen tapahtuu sillä
+ * (CLAUDE.md 5.2). Jos kuka tahansa kirjautunut voisi lunastaa linkin,
+ * eteenpäin välitetty linkki liittäisi väärän ihmisen vuokrasuhteeseen — ja
+ * hänen nimensä päätyisi allekirjoitettuun sopimukseen.
+ *
+ * Väärällä tilillä avattu kutsu EI kulu: se jää voimaan oikeaa henkilöä
+ * varten.
+ * ===========================================================================
  *
  * Idempotentti: jo liittynyt kutsu ei tee mitään eikä heitä. Käyttäjä voi
  * avata saman linkin uudelleen, eikä sen pidä näyttää virheeltä.
  */
-export async function acceptInvite(token: string, userId: string): Promise<string | null> {
+export async function acceptInvite(
+  token: string,
+  userId: string,
+  userEmail: string,
+): Promise<AcceptInviteResult> {
   const preview = await findTenancyByInvite(token);
-  if (!preview) return null;
+  if (!preview) return { ok: false, reason: "invalid" };
+
+  if (preview.inviteEmail.toLowerCase() !== userEmail.trim().toLowerCase()) {
+    return { ok: false, reason: "wrong_account" };
+  }
 
   const supabase = getServiceClient();
 
@@ -434,13 +459,13 @@ export async function acceptInvite(token: string, userId: string): Promise<strin
 
   if (error) {
     console.error("[tenancies] kutsun hyväksyntä epäonnistui:", error.message);
-    return null;
+    return { ok: false, reason: "invalid" };
   }
 
   const existing = (data as { user_id: string | null } | null)?.user_id ?? null;
   if (existing && existing !== userId) {
     // Kutsu on jo käytetty toisella tilillä. Ei kerrota kenen.
-    return null;
+    return { ok: false, reason: "invalid" };
   }
 
   if (!existing) {
@@ -452,11 +477,11 @@ export async function acceptInvite(token: string, userId: string): Promise<strin
 
     if (updateError) {
       console.error("[tenancies] kutsun hyväksyntä epäonnistui:", updateError.message);
-      return null;
+      return { ok: false, reason: "invalid" };
     }
   }
 
-  return preview.tenancyId;
+  return { ok: true, tenancyId: preview.tenancyId };
 }
 
 /**
@@ -495,4 +520,74 @@ export async function createRentPeriods(tenancyId: string, tenancy: Tenancy): Pr
   }
 
   return periods.length;
+}
+
+/**
+ * Luo uuden kutsun samalle osapuolelle.
+ *
+ * ===========================================================================
+ * MIKSI TÄMÄ ON PAKKO OLLA
+ *
+ * Selkokielinen tunniste palautetaan vain luonnissa, koska tietokantaan
+ * tallennetaan vain tiiviste. Jos vuokranantaja sulkee välilehden ennen kuin
+ * ehtii kopioida linkin, se on menetetty pysyvästi — eikä sitä voi palauttaa,
+ * eikä pidäkään voida.
+ *
+ * Uudelleenlähetys on siis ainoa tie ulos, ja se **mitätöi vanhan linkin**:
+ * uusi tiiviste korvaa vanhan, joten aiemmin jaettu linkki lakkaa toimimasta.
+ * Se on tarkoitus — muuten vanha linkki jäisi elämään esimerkiksi väärään
+ * sähköpostiosoitteeseen lähetettynä.
+ * ===========================================================================
+ *
+ * Vain vuokranantaja voi lähettää kutsun uudelleen, eikä jo liittyneelle
+ * osapuolelle luoda uutta kutsua: se poistaisi häneltä pääsyn.
+ */
+export async function reissueInvite(
+  userId: string,
+  tenancyId: string,
+  partyId: string,
+): Promise<IssuedInvite | null> {
+  const tenancy = await getTenancy(userId, tenancyId);
+  if (!tenancy || tenancy.landlordUserId !== userId) return null;
+
+  const supabase = getServiceClient();
+
+  const { data, error } = await supabase
+    .from("rs_tenancy_parties")
+    .select("id, role, invite_email, user_id")
+    .eq("id", partyId)
+    .eq("tenancy_id", tenancyId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const party = data as {
+    id: string;
+    role: string;
+    invite_email: string | null;
+    user_id: string | null;
+  };
+
+  // Jo liittynyt osapuoli ei tarvitse kutsua, ja uusi kutsu ei saa syrjäyttää
+  // häntä.
+  if (party.role !== "tenant" || party.user_id) return null;
+
+  const invite = createInvite();
+
+  const { error: updateError } = await supabase
+    .from("rs_tenancy_parties")
+    .update({
+      invite_token_hash: invite.tokenHash,
+      invite_expires_at: invite.expiresAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", partyId)
+    .is("user_id", null);
+
+  if (updateError) {
+    console.error("[tenancies] kutsun uudelleenluonti epäonnistui:", updateError.message);
+    return null;
+  }
+
+  return { email: party.invite_email ?? "", name: "", token: invite.token };
 }

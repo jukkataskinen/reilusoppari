@@ -49,6 +49,13 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
       <h1 className="text-2xl">{property.name ?? formatAddress(property)}</h1>
       {property.name ? <p className="mt-1 text-ink/70">{formatAddress(property)}</p> : null}
 
+      <Link
+        href={`/asunnot/${property.id}/vuokrasuhde/uusi`}
+        className="mt-5 inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
+      >
+        {fi.tenancy.new}
+      </Link>
+
       <dl className="mt-6 grid grid-cols-2 gap-4 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <div>
           <dt className="text-sm text-ink/60">Tyyppi</dt>

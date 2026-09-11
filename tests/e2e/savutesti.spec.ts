@@ -104,11 +104,34 @@ test("asuntosivut vaativat kirjautumisen", async ({ page }) => {
   // Suojaus tehdään sivukohtaisesti eikä middlewaressa (ks. src/middleware.ts),
   // joten jokainen suojattu reitti on syytä todeta erikseen. Yksi unohdettu
   // `getCurrentUser()` näkyisi vain tässä.
-  for (const path of ["/asunnot", "/asunnot/uusi", "/asunnot/00000000-0000-4000-8000-000000000000"]) {
+  for (const path of [
+    "/asunnot",
+    "/asunnot/uusi",
+    "/asunnot/00000000-0000-4000-8000-000000000000",
+    "/asunnot/00000000-0000-4000-8000-000000000000/vuokrasuhde/uusi",
+    "/vuokrasuhteet",
+    "/vuokrasuhteet/00000000-0000-4000-8000-000000000000",
+  ]) {
     const response = await page.request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(307);
     expect(response.headers()["location"], path).toContain("/auth/login");
   }
+});
+
+test("kutsulinkki aukeaa ilman kirjautumista", async ({ page }) => {
+  /*
+    Kutsulinkki EI saa vaatia kirjautumista: vuokralaisella ei ole vielä
+    tiliä, ja jos sivu ohjaisi kirjautumiseen, hän ei näkisi mihin häntä
+    kutsutaan. Tuntematon tunniste antaa saman vastauksen kuin vanhentunut.
+  */
+  const response = await page.goto("/kutsu/" + "a".repeat(64));
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Kutsu ei ole voimassa" })).toBeVisible();
+});
+
+test("kutsusivua ei indeksoida", async ({ page }) => {
+  await page.goto("/kutsu/" + "b".repeat(64));
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
 });
 
 test("tuntematon polku on 404 eikä paljasta mitään", async ({ page }) => {

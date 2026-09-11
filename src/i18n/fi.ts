@@ -44,6 +44,29 @@ export const fi = {
     notYet: "Ei vielä",
     partial: "Osittain",
   },
+  tenancy: {
+    new: "Uusi vuokrasuhde",
+    tenant: "Vuokralainen",
+    tenants: "Vuokralaiset",
+    startDate: "Alkupäivä",
+    endDate: "Päättymispäivä",
+    rent: "Vuokra",
+    dueDay: "Eräpäivä",
+    deposit: "Vakuus",
+    fixedTerm: "Määräaikainen",
+    openEnded: "Toistaiseksi voimassa",
+    invitePending: "Kutsu lähettämättä",
+    inviteSent: "Kutsu lähetetty",
+    joined: "Liittynyt",
+  },
+  invite: {
+    title: "Sinut on kutsuttu vuokrasuhteeseen",
+    signIn: "Kirjaudu ja liity",
+    expired:
+      "Tämä kutsulinkki ei ole voimassa. Pyydä vuokranantajaa lähettämään uusi.",
+    wrongAccount:
+      "Tämä kutsu on tarkoitettu toiselle sähköpostiosoitteelle. Kirjaudu sillä osoitteella, johon kutsu lähetettiin.",
+  },
   certificate: {
     // Kerrotaan jo alussa, ei lopussa (DECISIONS.md 2026-09-10).
     upfrontNotice:

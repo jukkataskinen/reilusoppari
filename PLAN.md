@@ -77,14 +77,16 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 
 Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 
-- [ ] Vuokrasuhteen luonti: vuokralaisen nimi ja sähköposti, alkupäivä, vuokra,
-      eräpäivä, vakuus
-- [ ] **Ilmoitus loppuarviosta** luontinäkymässä ja kutsulinkin takana
-      (DECISIONS.md: tämä ei saa tulla yllätyksenä lopussa)
+- [x] Vuokrasuhteen luonti: vuokralaisen nimi ja sähköposti, alkupäivä, vuokra,
+      eräpäivä, vakuus. 1–2 vuokralaista, määräaikainen tai toistaiseksi
+- [x] **Ilmoitus loppuarviosta** luontinäkymässä ja kutsulinkin takana —
+      sama komponentti kaikissa kolmessa paikassa, jottei teksti erkaannu
 - [ ] Sopimuslomake `vuokrasopimus_asuinhuoneisto`-schemalla
 - [ ] Esikatselu PDF:nä eSinetin `/documents/render`-kutsulla
-- [ ] Kutsulinkki vuokralaiselle, `rs_tenancy_parties` + token
-- [ ] Vuokralaisen liittyminen: kirjautuminen, sopimusluonnos, kommentointi
+- [x] Kutsulinkki vuokralaiselle, `rs_tenancy_parties` + token. Tunniste vain
+      tiivisteenä, uudelleenlähetys mitätöi vanhan, sähköpostin on täsmättävä
+- [x] Vuokralaisen liittyminen: julkinen kutsusivu, kirjautuminen, liittyminen
+- [ ] Vuokralaisen näkymä sopimusluonnokseen ja kommentointi
 - [ ] Alkukatselmus: checkpoint-lista huoneittain, kummankin oma kuvausnäkymä
 - [ ] **Kumpi tahansa voi lisätä oman kohtansa** (`added_by_user_id`) ja kuvata
       ilman checkpointia — oletuslista on muistin tueksi, ei rajoite

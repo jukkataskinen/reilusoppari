@@ -9,6 +9,7 @@ import {
   getTenancy,
   listParties,
   listTenancies,
+  reissueInvite,
 } from "@/lib/db/tenancies";
 import type { TenancyInput } from "@/lib/tenancy/schema";
 
@@ -33,6 +34,9 @@ async function createUser(label: string): Promise<string> {
   created.users.push(data.id);
   return data.id;
 }
+
+/** Kutsu on osoitettu tälle osoitteelle, joten liittyminen tapahtuu sillä. */
+const TENANT_EMAIL = `${PREFIX}-tenant@example.invalid`;
 
 async function createTestProperty(ownerId: string): Promise<string> {
   const property = await createProperty(ownerId, {
@@ -152,13 +156,19 @@ describe.skipIf(!RUN)("vuokrasuhteet (integraatio, live Supabase)", () => {
     const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
     created.tenancies.push(tenancy.id);
 
-    expect(await acceptInvite(invites[0].token, tenant)).toBe(tenancy.id);
+    expect(await acceptInvite(invites[0].token, tenant, TENANT_EMAIL)).toEqual({
+      ok: true,
+      tenancyId: tenancy.id,
+    });
 
     // Vuokralainen näkee vuokrasuhteen vasta liityttyään.
     expect(await getTenancy(tenant, tenancy.id)).not.toBeNull();
 
     // Sama linkki uudelleen ei ole virhe.
-    expect(await acceptInvite(invites[0].token, tenant)).toBe(tenancy.id);
+    expect(await acceptInvite(invites[0].token, tenant, TENANT_EMAIL)).toEqual({
+      ok: true,
+      tenancyId: tenancy.id,
+    });
   });
 
   it("toinen käyttäjä ei voi kaapata jo käytettyä kutsua", async () => {
@@ -169,10 +179,34 @@ describe.skipIf(!RUN)("vuokrasuhteet (integraatio, live Supabase)", () => {
     const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
     created.tenancies.push(tenancy.id);
 
-    await acceptInvite(invites[0].token, tenant);
+    await acceptInvite(invites[0].token, tenant, TENANT_EMAIL);
 
-    expect(await acceptInvite(invites[0].token, kaappaaja)).toBeNull();
+    // Kaappaajalla on eri osoite, joten kutsu ei kelpaa hänelle.
+    expect(await acceptInvite(invites[0].token, kaappaaja, TENANT_EMAIL)).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
     expect(await getTenancy(kaappaaja, tenancy.id)).toBeNull();
+  });
+
+  it("väärällä sähköpostilla kutsua ei voi lunastaa eikä se kulu", async () => {
+    const landlord = await createUser("l6b");
+    const vaara = await createUser("x6b");
+    const oikea = await createUser("t6b");
+    const propertyId = await createTestProperty(landlord);
+    const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
+    created.tenancies.push(tenancy.id);
+
+    expect(
+      await acceptInvite(invites[0].token, vaara, `${PREFIX}-x6b@example.invalid`),
+    ).toEqual({ ok: false, reason: "wrong_account" });
+    expect(await getTenancy(vaara, tenancy.id)).toBeNull();
+
+    // Kutsu jää voimaan oikeaa henkilöä varten.
+    expect(await acceptInvite(invites[0].token, oikea, TENANT_EMAIL)).toEqual({
+      ok: true,
+      tenancyId: tenancy.id,
+    });
   });
 
   it("kaksi vuokralaista saa kumpikin oman kutsunsa", async () => {
@@ -205,7 +239,7 @@ describe.skipIf(!RUN)("vuokrasuhteet (integraatio, live Supabase)", () => {
     const propertyId = await createTestProperty(landlord);
     const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
     created.tenancies.push(tenancy.id);
-    await acceptInvite(invites[0].token, tenant);
+    await acceptInvite(invites[0].token, tenant, TENANT_EMAIL);
 
     expect((await listTenancies(landlord)).map((t) => t.id)).toContain(tenancy.id);
     expect((await listTenancies(tenant)).map((t) => t.id)).toContain(tenancy.id);
@@ -234,5 +268,54 @@ describe.skipIf(!RUN)("vuokrasuhteet (integraatio, live Supabase)", () => {
 
     const after = await supabase.from("rs_rent_periods").select("id").eq("tenancy_id", tenancy.id);
     expect(after.data).toHaveLength(6);
+  });
+});
+
+describe.skipIf(!RUN)("kutsun uudelleenlähetys", () => {
+  it("mitätöi vanhan linkin ja antaa uuden", async () => {
+    const landlord = await createUser("r1");
+    const propertyId = await createTestProperty(landlord);
+    const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
+    created.tenancies.push(tenancy.id);
+
+    const parties = await listParties(landlord, tenancy.id);
+    const tenantParty = parties.find((p) => p.role === "tenant")!;
+
+    const uusi = await reissueInvite(landlord, tenancy.id, tenantParty.id);
+    expect(uusi).not.toBeNull();
+    expect(uusi!.token).not.toBe(invites[0].token);
+
+    // Vanha linkki lakkaa toimimasta.
+    expect(await findTenancyByInvite(invites[0].token)).toBeNull();
+    expect(await findTenancyByInvite(uusi!.token)).not.toBeNull();
+  });
+
+  it("vain vuokranantaja voi lähettää uudelleen", async () => {
+    const landlord = await createUser("r2");
+    const outsider = await createUser("x-r2");
+    const propertyId = await createTestProperty(landlord);
+    const { tenancy } = await createTenancy(landlord, input(propertyId));
+    created.tenancies.push(tenancy.id);
+
+    const parties = await listParties(landlord, tenancy.id);
+    const tenantParty = parties.find((p) => p.role === "tenant")!;
+
+    expect(await reissueInvite(outsider, tenancy.id, tenantParty.id)).toBeNull();
+  });
+
+  it("jo liittyneelle ei luoda uutta kutsua", async () => {
+    // Uusi kutsu poistaisi häneltä pääsyn.
+    const landlord = await createUser("r3");
+    const tenant = await createUser("t-r3");
+    const propertyId = await createTestProperty(landlord);
+    const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
+    created.tenancies.push(tenancy.id);
+
+    await acceptInvite(invites[0].token, tenant, TENANT_EMAIL);
+    const parties = await listParties(landlord, tenancy.id);
+    const tenantParty = parties.find((p) => p.role === "tenant")!;
+
+    expect(await reissueInvite(landlord, tenancy.id, tenantParty.id)).toBeNull();
+    expect(await getTenancy(tenant, tenancy.id)).not.toBeNull();
   });
 });
