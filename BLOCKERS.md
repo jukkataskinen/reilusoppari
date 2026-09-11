@@ -185,6 +185,21 @@ vuokrasuhteisiinsa.
 Ennen lanseerausta. Luonteva hetki on **ennen kuin Reilusopparilla on oikeita
 käyttäjiä** — jokainen uusi tili kasvattaa kartoitustyötä kohdassa 2.
 
+## eSinetissä ei ole reittiä pohjien listaamiseen (2026-09-11)
+
+`POST /documents/render` ottaa vastaan `template_id`:n (uuid), mutta eSinetin
+API:ssa ei ole `GET /templates`-reittiä. Reilusoppari tuntee pohjat nimellä
+(`vuokrasopimus_asuinhuoneisto`), joten yhdistämistä ei voi tehdä ajossa.
+
+Kierto toistaiseksi: `npm run templates:push` tulostaa kartan avain → uuid, ja
+se asetetaan ympäristömuuttujaan `ESINETTI_TEMPLATE_IDS`
+(`src/lib/esinetti/template-ids.ts`).
+
+Tämä toimii mutta on hauras: pohjan uudelleenluonti eSinetissä vaihtaa uuid:n,
+ja muuttuja jää vanhaksi ilman että mikään kertoo siitä. Kunnollinen korjaus on
+lisätä eSinettiin `GET /v1/templates`, jolloin tämä tiedosto poistuu. Kirjattu
+myös `esinetti/BLOCKERS.md`:hen.
+
 ## 4. Jukan tehtävät (CLAUDE.md kohta 9)
 
 | # | Tehtävä | Tila |

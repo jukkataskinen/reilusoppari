@@ -49,8 +49,9 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
       `/auth/login` ohjaa oikein Auth0:aan; selainläpivienti Jukan testattava
 - [x] `rs_users`-rivin luonti ensimmäisellä kirjautumisella (`session.ts`,
       upsert `auth0_sub`-avaimella)
-- [ ] `lib/esinetti/`: rajapinta + **mock** + oikea client (render, seal,
-      rounds, verify, webhookit)
+- [x] `lib/esinetti/`: rajapinta + **mock** + oikea client (render, seal,
+      rounds, verify, webhookit) — 29 yksikkötestiä. Mock tuottaa aidon
+      avautuvan PDF:n, joten vaiheet 0–1 etenevät ilman eSinetti-tunnuksia
 - [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti
 - [ ] Asunnon luonti (`rs_properties`) ja lista
 - [x] Oletus-checkpointien generointi asuntotyypin ja huoneluvun mukaan,
