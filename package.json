@@ -1,0 +1,40 @@
+{
+  "name": "reilusoppari",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "keys:vapid": "node scripts/generate-vapid-keys.mjs",
+    "templates:push": "tsx scripts/push-templates.ts"
+  },
+  "dependencies": {
+    "@auth0/nextjs-auth0": "^4.11.0",
+    "@supabase/supabase-js": "^2.60.0",
+    "next": "^15.5.25",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "web-push": "^3.6.7",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.25",
+    "tailwindcss": "^4",
+    "tsx": "^4.19.2",
+    "typescript": "^5",
+    "vitest": "^5.0.0"
+  }
+}
