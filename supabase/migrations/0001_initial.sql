@@ -45,32 +45,6 @@ language sql stable as $$
   select nullif(current_setting('app.current_user_id', true), '')::uuid;
 $$;
 
-/**
- * Onko nykyinen käyttäjä tämän vuokrasuhteen osapuoli?
- *
- * `security definer`, jotta policy voi lukea `rs_tenancy_parties`-taulua
- * ilman että käyttäjällä on siihen omaa oikeutta – muuten policy kutsuisi
- * itseään rekursiivisesti.
- */
-create or replace function rs_is_party(p_tenancy_id uuid) returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1
-    from rs_tenancy_parties p
-    where p.tenancy_id = p_tenancy_id
-      and p.user_id = rs_current_user_id()
-  );
-$$;
-
-/** Omistaako nykyinen käyttäjä asunnon? Salkkunäkymät eivät kulje tenancyn kautta. */
-create or replace function rs_owns_property(p_property_id uuid) returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1 from rs_properties pr
-    where pr.id = p_property_id and pr.owner_user_id = rs_current_user_id()
-  );
-$$;
-
 -- ---------------------------------------------------------------------------
 -- Käyttäjät ja asunnot
 -- ---------------------------------------------------------------------------
@@ -530,6 +504,40 @@ begin
     );
   end loop;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Pääsyfunktiot
+--
+-- Nämä on määriteltävä VASTA taulujen jälkeen: Postgres tarkistaa
+-- `language sql` -funktion rungon jo luontihetkellä, joten funktio joka
+-- viittaa `rs_tenancy_parties`-tauluun ei voi syntyä ennen sitä.
+-- ---------------------------------------------------------------------------
+
+/**
+ * Onko nykyinen käyttäjä tämän vuokrasuhteen osapuoli?
+ *
+ * `security definer`, jotta policy voi lukea `rs_tenancy_parties`-taulua
+ * ilman että käyttäjällä on siihen omaa oikeutta – muuten policy kutsuisi
+ * itseään rekursiivisesti.
+ */
+create or replace function rs_is_party(p_tenancy_id uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1
+    from rs_tenancy_parties p
+    where p.tenancy_id = p_tenancy_id
+      and p.user_id = rs_current_user_id()
+  );
+$$;
+
+/** Omistaako nykyinen käyttäjä asunnon? Salkkunäkymät eivät kulje tenancyn kautta. */
+create or replace function rs_owns_property(p_property_id uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from rs_properties pr
+    where pr.id = p_property_id and pr.owner_user_id = rs_current_user_id()
+  );
+$$;
 
 -- ---------------------------------------------------------------------------
 -- RLS ja GRANTit
