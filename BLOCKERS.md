@@ -91,6 +91,48 @@ julkaistu sivu on paikanvaraaja, mutta heti kun tietokantakerros otetaan
 käyttöön näkymissä, deploy tarvitsee ainakin `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY` ja `SUPABASE_ANON_KEY`.
 
+## Kirjautumissähköposti on nykyisellään huono — korjattava ennen lanseerausta
+
+Havaittu 2026-09-11 oikeasta viestistä. Neljä erillistä ongelmaa, joista
+ensimmäinen on vakavin:
+
+**1. Vastaanottajan sähköposti varoittaa väärennöksestä.** Viesti tulee
+osoitteesta `root@auth0.com`, eikä lähettäjää voi vahvistaa. Outlook näytti
+punaisen palkin: *"Emme pysty vahvistamaan, että tämä sähköposti on peräisin
+sen väitetyltä lähettäjältä."* Kuluttajatuotteessa tämä on paha: kirjautumis-
+koodi, jota sähköposti epäilee huijaukseksi, jää avaamatta tai päätyy roskiin.
+
+**2. Teksti on englanniksi.** "Welcome to Reilusoppari!", "Your verification
+code is". Sivuston sävy on suomi ja sinuttelu.
+
+**3. Viestissä näkyy tenantin tekninen nimi.** *"You have an account in
+dev-qanv0hdzfjjsybgm"* näyttää itsessään kalasteluviestiltä.
+
+**4. Ulkoasu on Auth0:n oletus**, ei Reilusopparin.
+
+### Korjaus, oikeassa järjestyksessä
+
+Järjestys ei jousta: **Auth0 ohittaa muokatut pohjat, kunnes oma
+sähköpostipalvelin on konfiguroitu.** Tämä lukee Auth0:n omassa varoituksessa
+pohjan muokkausnäkymässä. Templaten kääntäminen ensin olisi hukkaan heitettyä
+työtä.
+
+1. **Oma sähköpostipalvelin Auth0:aan.** Resend on jo pinossa (`.env.example`).
+   Auth0: Branding → Email Provider → Resend/SMTP, lähettäjäksi
+   `noreply@reilusoppari.fi`.
+2. **Resendin domain-vahvistus.** SPF-, DKIM- ja DMARC-tietueet lisätään
+   **Vercelin DNS-hallintaan**, koska nimipalvelimet ovat siellä. Tämä on se,
+   joka poistaa kohdan 1 varoituksen — ei pelkkä lähettäjäosoitteen vaihto.
+3. **Pohja suomeksi:** Branding → Email Templates → Verification Code.
+4. **Tenantin Friendly Name.** Se näkyy viestissä (kohta 3). ⚠️ Sama tenant
+   palvelee eSinettiä, PPR:ää ja SKOGia, joten nimeksi EI sovi "Reilusoppari"
+   vaan jokin neutraali, esim. `Adepta`.
+
+Huom kohta 4: yhteinen tenant tarkoittaa myös yhteistä sähköpostipohjaa. Jos
+viestin on oltava Reilusopparin näköinen ja eSinetin viestin eSinetin
+näköinen, se vaatii joko tenantin jakamisen tai pohjan, joka käyttää
+`{{ application.name }}`-muuttujaa kaikkialla missä nyt on tenantin nimi.
+
 ## Auth0-tenant on Yhdysvalloissa — ratkaistava ennen lanseerausta
 
 Tenant on alueella US-5, mutta `esinetti.fi` ja `reilusoppari.fi` lupaavat
