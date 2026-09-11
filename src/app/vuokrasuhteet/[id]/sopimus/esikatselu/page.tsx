@@ -50,27 +50,24 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
         >
           {fi.common.back}
         </Link>
+        {/*
+          Lataus, ei avaus uuteen välilehteen.
+
+          `target="_blank"` avasi kotinäytölle asennetussa sovelluksessa
+          näkymän, jossa ei ole sulkemispainiketta lainkaan — vain
+          sivunumerointi (Jukan havainto 2026-09-11). Siitä ei päässyt pois
+          kuin sulkemalla koko sovellus. Lataus ei korvaa näkymää, joten
+          umpikujaa ei synny: asiakirja menee laitteen tiedostoihin ja
+          sovellus jää auki siihen mihin se jäi.
+        */}
         <a
           href={pdf}
-          target="_blank"
-          rel="noreferrer"
+          download="vuokrasopimus-luonnos.pdf"
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >
-          Avaa erillisenä
+          Tallenna PDF
         </a>
       </div>
-
-      {/*
-        Poistumisohje sanotaan ääneen.
-
-        Erillinen näkymä on käyttöjärjestelmän oma, eikä sovellus voi lisätä
-        siihen omaa takaisin-painiketta. Jukka joutui kysymään, miten sieltä
-        pääsee pois — ja jos hän joutui, niin joutuu vuokralainenkin.
-      */}
-      <p className="mt-3 text-sm text-ink/60">
-        Erillisestä näkymästä palaat takaisin sen omalla painikkeella: Valmis (iPhone) tai ✕
-        (Android). Selaimessa back-painike toimii tavalliseen tapaan.
-      </p>
 
       {/*
         `object` eikä `iframe`: jos selain ei osaa näyttää PDF:ää, `object`
@@ -85,14 +82,15 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
         <div className="p-5">
           <p className="font-medium">Selain ei näytä asiakirjaa tässä</p>
           <p className="mt-2 text-sm text-ink/70">
-            Avaa se erillisenä yllä olevasta painikkeesta. Asiakirja on sama.
+            Tallenna se yllä olevasta painikkeesta ja avaa laitteen omasta tiedostonäkymästä.
+            Asiakirja on sama.
           </p>
         </div>
       </object>
 
       <p className="mt-6 text-sm text-ink/60">
-        Puhelimessa asiakirjasta näkyy usein vain ensimmäinen sivu. Koko sopimuksen näet
-        avaamalla sen erillisenä.
+        Jos asiakirjasta näkyy tässä vain ensimmäinen sivu, tallenna se ja avaa laitteen omasta
+        tiedostonäkymästä. Asiakirja on sama.
       </p>
     </AppShell>
   );

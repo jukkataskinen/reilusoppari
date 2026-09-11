@@ -738,5 +738,17 @@ upotettuna `object`-elementissä — ei `iframe`, koska `object` näyttää
 varatekstin, jos selain ei osaa näyttää PDF:ää; tyhjä laatikko ei kertoisi
 mitään.
 
-Linkki erilliseen välilehteen on silti jäljellä: puhelimessa upotuksesta
-näkyy usein vain ensimmäinen sivu, ja koko sopimus on voitava lukea.
+**Ensimmäinen yritys oli väärä.** Jätin sivulle linkin `target="_blank"` ja
+kirjoitin ohjeeksi, että erillisestä näkymästä pääsee pois sen omalla
+Valmis- tai ✕-painikkeella. Jukan puhelimessa sellaista painiketta ei ole
+lainkaan: *"vasemmassa yläkulmassa on sivunumerointi, ei muuta."* Ohje oli
+siis väärä, ja umpikuja oli edelleen olemassa.
+
+Linkki on nyt **lataus** (`download`) eikä avaus. Lataus ei korvaa näkymää,
+joten umpikujaa ei voi syntyä: asiakirja menee laitteen tiedostoihin ja
+sovellus jää auki siihen mihin se jäi.
+
+Opetus, joka kannattaa muistaa muissakin kohdissa: käyttöjärjestelmän omaan
+näkymään ei voi lisätä omaa takaisin-painiketta, eikä sen olemassaoloon voi
+luottaa. Jos sovelluksesta poistutaan, siitä on päästävä takaisin ilman
+sovelluksen sulkemista.
