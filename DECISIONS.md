@@ -381,3 +381,36 @@ ajolla. `renderDocumentPdf` asettaa aikaleimat itse kutsujan antamasta
 päiväyksestä — kutsuja ei voi unohtaa sitä. Testit varmistavat, että sama
 sisältö ja päiväys tuottavat samat tavut ja että eri päiväys tuottaa eri
 tiivisteen.
+
+
+## Koristekuvitus: valokuvat myöhemmin, vektori nyt (2026-09-11)
+
+Jukka: *"Edelleen haluaisin koristeiksi oikeita kuvia vektoreiden sijaan,
+mutta sen voi tehdä jossakin myöhemmässä vaiheessa. Voin ostaa jotain kuvia
+ettei copyright-asiat muodostu ongelmaksi. Tai voin kuvata itse jotain kotini
+nurkkaa sopimuksen koristeeksi."*
+
+Vektorikuvitus on siis väliaikainen. Kun valokuvat vaihdetaan tilalle, neljä
+asiaa on hoidettava — ne on helpompi tietää etukäteen kuin selvittää silloin.
+
+**1. Kuva on upotettava, ei linkitettävä.** Sama sääntö kuin nyt: asiakirja ei
+saa hakea mitään verkosta. Tiedosto tulee repoon (`src/documents/photos/`) ja
+`next.config.ts`:n `outputFileTracingIncludes`-listalle, kuten fontit.
+
+**2. Lisenssi talteen repoon.** Jos kuva ostetaan, lisenssitodistus samaan
+hakemistoon. Asiakirja on juridinen ja se päätyy tuhansiin koteihin; kolmen
+vuoden päästä kukaan ei muista mistä kuva tuli.
+
+**3. Kuvan on oltava yksityiskohta, ei huone.** Tämä on se, mitä vektorissa ei
+tarvinnut miettiä: **vuokrasopimuksessa oleva sisustuskuva voi näyttää siltä,
+että se on kuva vuokrattavasta asunnosta.** Se ei ole, ja väärinkäsitys olisi
+ikävä juuri tässä asiakirjassa. Turvallinen valinta on rajattu yksityiskohta —
+ikkunanurkka, huonekasvi, kahvikuppi pöydällä — ei tunnistettava huone.
+Jukan oman kodin nurkka käy hyvin, kunhan se on yksityiskohta.
+
+**4. Ei koskaan katselmuspöytäkirjaan.** Sama raja kuin nyt ja tärkeämpi
+valokuvien kanssa: pöytäkirjassa kuva on todiste.
+
+Tekniset mitat kun ajankohtaista: vinjetti on 118 × 118 pt, eli 150 dpi:llä
+noin 250 × 250 px. JPEG, alle 100 kt. Kuva rajataan aina samaan laatikkoon
+(`objectFit: "cover"`), joten kuvasuhde ei ole kriittinen.

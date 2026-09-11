@@ -122,10 +122,13 @@ Polku 5.8. DoD: koko e2e-kaari läpi.
 - [ ] Loppupöytäkirja: vakuuden palautusehdotus ja perusteet huoltokirjasta
 - [ ] Allekirjoitus eSinetissä, tila `ended`
 - [ ] Vakuuden palautuksen kirjaus (pvm, summa)
+- [x] Vuokratodistus (`src/documents/TenancyCertificate.tsx`): molemmat roolit,
+      QR-aitoustarkistus, tilastot ilman luottotietosanastoa
 - [ ] Arviot: **`recommend` tai ei arviota** — kielteistä vaihtoehtoa ei ole
 - [ ] Vastine 7 päivän kuluessa; todistus syntyy aina
-- [ ] **Puuttuva suositus ei näy todistuksessa mitenkään** — ei tyhjää kohtaa,
-      ei mainintaa, ei eri asettelua (DECISIONS.md: tämä on päätöksen ydin)
+- [x] **Puuttuva suositus ei näy todistuksessa mitenkään** — toteutettu ja
+      testattu pikselitasolla: paneelin taustaväriä ei ole sivulla lainkaan,
+      kun suositusta ei ole (DECISIONS.md: tämä on päätöksen ydin)
 - [ ] `stats` kuittauksista ja katselmuksista
 - [ ] Sinetöinti eSinetin `/documents/seal`-kutsulla
 - [ ] Jakolinkit (30 pv, mitätöitävissä), katselukerrat omistajalle näkyviin

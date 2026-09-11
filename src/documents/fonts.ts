@@ -12,6 +12,19 @@ import { FONT_FAMILY, weight } from "./theme";
 
 const WEIGHTS = [weight.regular, weight.medium, weight.bold] as const;
 
+/**
+ * Kursiivi vain yhdessä leikkauksessa.
+ *
+ * Sitä käytetään todistuksen korostusrivissä (”kolme vuotta yhdessä sovittua
+ * arkea”), joka Jukan luonnoksessa oli käsinkirjoitusta muistuttava. Erillinen
+ * käsialafontti olisi ollut neljäs tiedosto pelkkää koristetta varten;
+ * kursiivi on lähes yhtä lämmin ja sitä tarvitaan muutenkin.
+ *
+ * Rekisteröinti ei maksa mitään asiakirjoille, jotka eivät käytä sitä:
+ * PDF:ään upotetaan vain ne merkit, joita oikeasti piirretään.
+ */
+const ITALIC_WEIGHT = weight.medium;
+
 let registered = false;
 let loaded: Promise<void> | null = null;
 
@@ -38,7 +51,14 @@ function registerDocumentFonts(): void {
 
   Font.register({
     family: FONT_FAMILY,
-    fonts: WEIGHTS.map((fontWeight) => ({ src: fontPath(fontWeight), fontWeight })),
+    fonts: [
+      ...WEIGHTS.map((fontWeight) => ({ src: fontPath(fontWeight), fontWeight })),
+      {
+        src: path.join(process.cwd(), "src/documents/fonts", "plus-jakarta-sans-500-italic.ttf"),
+        fontWeight: ITALIC_WEIGHT,
+        fontStyle: "italic" as const,
+      },
+    ],
   });
 
   registered = true;
@@ -64,9 +84,10 @@ export async function ensureDocumentFonts(): Promise<void> {
   registerDocumentFonts();
 
   if (!loaded) {
-    loaded = Promise.all(
-      WEIGHTS.map((fontWeight) => Font.load({ fontFamily: FONT_FAMILY, fontWeight })),
-    ).then(() => undefined);
+    loaded = Promise.all([
+      ...WEIGHTS.map((fontWeight) => Font.load({ fontFamily: FONT_FAMILY, fontWeight })),
+      Font.load({ fontFamily: FONT_FAMILY, fontWeight: ITALIC_WEIGHT, fontStyle: "italic" }),
+    ]).then(() => undefined);
   }
 
   await loaded;

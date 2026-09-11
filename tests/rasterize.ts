@@ -81,3 +81,39 @@ export function saturatedPixels(
   }
   return count;
 }
+
+/**
+ * Montako pikseliä alueella on annettua väriä?
+ *
+ * Käytetään paneelin taustan tunnistamiseen: paneeli on yhtenäinen vaalean
+ * sininen alue, ja sen olemassaolon voi todeta laskemalla juuri sen sävyn
+ * pikselit. Tekstin tai tyhjän tilan laskeminen ei kelpaisi — ilman
+ * suositusta samassa kohdassa on muuta sisältöä.
+ */
+export function colorPixels(
+  page: RasterPage,
+  area: { x0: number; y0: number; x1: number; y1: number },
+  hex: string,
+  tolerance = 6,
+): number {
+  const target = [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+
+  let count = 0;
+  for (let y = area.y0; y < area.y1; y += 1) {
+    for (let x = area.x0; x < area.x1; x += 1) {
+      const i = (y * page.width + x) * 4;
+      if (
+        Math.abs(page.data[i] - target[0]) <= tolerance &&
+        Math.abs(page.data[i + 1] - target[1]) <= tolerance &&
+        Math.abs(page.data[i + 2] - target[2]) <= tolerance
+      ) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+}

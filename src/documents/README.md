@@ -18,6 +18,8 @@ Juridinen sisältö on Jukan vastuulla. Tämä tiedosto koskee ulkoasua ja kielt
 | `decorations.tsx` | Taustamuodot kaikkiin, vinjetti vain sopimukseen ja todistuksiin |
 | `RentalAgreement.tsx` | Vuokrasopimus |
 | `InspectionProtocol.tsx` | Alku- ja loppukatselmus |
+| `TenancyCertificate.tsx` | Vuokratodistus molemmille rooleille |
+| `qr.tsx` | QR-koodi vektorina, ei ulkoista palvelua |
 
 ## Esimerkit
 
@@ -140,8 +142,8 @@ QR-palvelua ei käytetä. QR piirretään Reilusopparissa.
 | Vuokrasopimus | allekirjoituskierros | **valmis**, juridinen sisältö Jukan tarkistettavana |
 | Alkukatselmus | allekirjoituskierros | **valmis** |
 | Loppukatselmus | allekirjoituskierros | **valmis** (sama komponentti, `kind: "final"`) |
-| Vuokratodistus, vuokralainen | kierros tai sinetöinti¹ | kirjoittamatta |
-| Vuokratodistus, vuokranantaja | kierros tai sinetöinti¹ | kirjoittamatta |
+| Vuokratodistus, vuokralainen | kierros tai sinetöinti¹ | **valmis** |
+| Vuokratodistus, vuokranantaja | kierros tai sinetöinti¹ | **valmis** (sama komponentti, `for: "landlord"`) |
 | Verolaskelma | sinetöinti | kirjoittamatta |
 
 ¹ Optimitilanteessa todistus allekirjoitetaan — vuokralainen esimerkiksi

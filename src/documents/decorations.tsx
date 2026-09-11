@@ -26,7 +26,7 @@
  */
 
 import { Circle, Path, Rect, Svg, View } from "@react-pdf/renderer";
-import { spacing } from "./theme";
+import { A4_HEIGHT, spacing } from "./theme";
 
 /**
  * Taustamuodot: pehmeä muoto oikeassa ylänurkassa ja kevyempi vasemmassa
@@ -46,13 +46,25 @@ import { spacing } from "./theme";
  * juuri niin kuin vuotavan taustan kuuluukin toimia.
  * ===========================================================================
  *
+ * ==========================================================================
+ * `fixed` ON PAKOLLINEN, EI TYYLIVALINTA
+ *
+ * Ilman sitä muodot osallistuvat sivutukseen, vaikka ovat absoluuttisesti
+ * sijoitettuja. Kun sisältö ylitti sivun juuri ja juuri, seurauksena oli
+ * kaksi tyhjää sivua ja koko sisältö kolmannella — eikä mitään virhettä.
+ * `fixed` ottaa elementin pois sivutuksesta kokonaan.
+ *
+ * Sivuvaikutus: muodot toistuvat joka sivulla. Ne ovat riittävän haaleita,
+ * ettei se häiritse, ja monisivuisessa asiakirjassa se on itse asiassa
+ * johdonmukaisempaa kuin koriste vain ensimmäisellä sivulla.
+ * ==========================================================================
+ *
  * Renderöidään sivun ensimmäisenä lapsena, jotta sisältö piirtyy päälle.
- * Ei `fixed`: toistuva taustakuvio joka sivulla olisi rauhaton.
  */
 export function PageDecoration() {
   return (
     <>
-      <View style={{ position: "absolute", top: -spacing.page, right: -spacing.page }}>
+      <View style={{ position: "absolute", top: -spacing.page, right: -spacing.page }} fixed>
         <Svg width={215} height={215} viewBox="0 0 215 215">
           <Path
             d="M215 -10 L215 185 C168 205 104 190 79 148 C53 104 87 44 149 28 C171 22 196 12 215 -10 Z"
@@ -61,7 +73,16 @@ export function PageDecoration() {
         </Svg>
       </View>
 
-      <View style={{ position: "absolute", bottom: -spacing.page - 18, left: -spacing.page }}>
+      <View
+        style={{
+          position: "absolute",
+          // `top` eikä `bottom`: sama syy kuin alatunnisteessa
+          // (`components.tsx`) — `bottom` ei sijoita luotettavasti.
+          top: A4_HEIGHT - spacing.page - 95,
+          left: -spacing.page,
+        }}
+        fixed
+      >
         <Svg width={125} height={95} viewBox="0 0 125 95">
           <Path d="M0 95 L0 18 C40 4 86 16 106 46 C120 67 120 84 115 95 Z" fill="#f1f6fd" />
         </Svg>

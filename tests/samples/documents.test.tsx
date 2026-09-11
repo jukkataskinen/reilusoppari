@@ -3,6 +3,7 @@ import path from "node:path";
 import { it } from "vitest";
 import { InspectionProtocol, type InspectionProtocolData } from "@/documents/InspectionProtocol";
 import { RentalAgreement, type RentalAgreementData } from "@/documents/RentalAgreement";
+import { TenancyCertificate, type CertificateData } from "@/documents/TenancyCertificate";
 import { renderDocumentPdf } from "@/documents/render";
 import { fakePhoto } from "./fake-photo";
 
@@ -137,4 +138,45 @@ it("alkukatselmus", async () => {
   mkdirSync(OUT, { recursive: true });
   const result = await renderDocumentPdf(<InspectionProtocol data={KATSELMUS} />);
   writeFileSync(path.join(OUT, "alkukatselmus.pdf"), result.bytes);
+}, 30_000);
+
+const TODISTUS: CertificateData = {
+  for: "tenant",
+  subjectName: "Maija Meikäläinen",
+  issuerName: "Matti Virtanen, vuokranantaja",
+  property: { street: "Mäkitie 12 A 4", postalCode: "40100", city: "Jyväskylä" },
+  startDate: "2023-09-01",
+  endDate: "2026-08-31",
+  rating: "recommend",
+  comment:
+    "Maija on ollut luotettava ja mukava vuokralainen. Asioista on sovittu aina hyvässä hengessä, ja asunto jäi siihen kuntoon kuin se oli alussakin.",
+  reply: null,
+  stats: {
+    months: 36,
+    rentConfirmedOnTime: 36,
+    rentPeriods: 36,
+    depositReturnedFull: true,
+  },
+  verifyUrl: "https://reilusoppari.fi/todistus/8f2a1c7d9e",
+  sealedDate: "2026-09-08",
+};
+
+it("vuokratodistus", async () => {
+  mkdirSync(OUT, { recursive: true });
+  const result = await renderDocumentPdf(<TenancyCertificate data={TODISTUS} />);
+  writeFileSync(path.join(OUT, "vuokratodistus.pdf"), result.bytes);
+}, 30_000);
+
+/**
+ * Sama todistus ilman suositusta ja ilman tervehdystä.
+ *
+ * Tämä on olemassa siksi, että näitä kahta voi katsoa vierekkäin: puuttuvan
+ * suosituksen EI pidä näkyä mitenkään (DECISIONS.md).
+ */
+it("vuokratodistus ilman suositusta", async () => {
+  mkdirSync(OUT, { recursive: true });
+  const result = await renderDocumentPdf(
+    <TenancyCertificate data={{ ...TODISTUS, rating: null, comment: null }} />,
+  );
+  writeFileSync(path.join(OUT, "vuokratodistus-ilman-suositusta.pdf"), result.bytes);
 }, 30_000);
