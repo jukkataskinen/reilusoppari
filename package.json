@@ -12,10 +12,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "keys:vapid": "node scripts/generate-vapid-keys.mjs",
-    "templates:push": "tsx scripts/push-templates.ts"
+    "icons": "python scripts/generate-icons.py"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.11.0",
+    "@react-pdf/renderer": "^4.9.0",
     "@supabase/supabase-js": "^2.60.0",
     "next": "^15.5.25",
     "react": "19.2.8",
@@ -24,6 +25,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.3",
@@ -35,6 +37,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "typescript": "^5",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "wawoff2": "^2.0.1"
   }
 }

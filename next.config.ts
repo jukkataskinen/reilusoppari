@@ -24,6 +24,14 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * Asiakirjojen fontit luetaan levyltä ajon aikana (`src/documents/fonts.ts`).
+   * Ilman tätä ne eivät päädy Vercelin funktiopakettiin, ja PDF:n tuottaminen
+   * kaatuisi vasta tuotannossa — paikallisesti kaikki toimisi.
+   */
+  outputFileTracingIncludes: {
+    "/**": ["./src/documents/fonts/**"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

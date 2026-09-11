@@ -27,20 +27,14 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { EsinettiError } from "./errors";
-import { buildMockPdf } from "./mock-pdf";
 import type {
   CreateRoundInput,
   EsinettiClient,
-  RenderDocumentInput,
-  RenderDocumentResult,
   Round,
   RoundDocument,
   RoundSignerState,
   SealDocumentInput,
   SealDocumentResult,
-  TemplateInfo,
-  UpsertTemplateAction,
-  UpsertTemplateInput,
   VerifyResult,
 } from "./types";
 
@@ -73,14 +67,11 @@ interface RoundRecord extends Round {
 const rounds = new Map<string, RoundRecord>();
 /** Avaimena sinetöity tiiviste — juuri niin kuin `GET /verify` hakee. */
 const sealed = new Map<string, SealedRecord>();
-/** Avaimena `<key>@<version>`. */
-const templates = new Map<string, TemplateInfo>();
 
 /** Tyhjentää mockin tilan. Kutsu testin `beforeEach`issä, jotta testit eivät vuoda toisiinsa. */
 export function resetMockEsinetti(): void {
   rounds.clear();
   sealed.clear();
-  templates.clear();
 }
 
 function toPublicRound(record: RoundRecord): Round {
@@ -104,51 +95,6 @@ function requireRound(roundId: string): RoundRecord {
 }
 
 export class EsinettiMockClient implements EsinettiClient {
-  async renderDocument(input: RenderDocumentInput): Promise<RenderDocumentResult> {
-    const lines: string[] = [
-      "Tämä on mock-renderöinti. Sisältö ei ole oikea asiakirja.",
-      "",
-      "Osapuoli: " + input.entityName,
-    ];
-    if (input.entityIdentifier) lines.push("Tunnus: " + input.entityIdentifier);
-    if (input.entityDomicile) lines.push("Kotipaikka: " + input.entityDomicile);
-    lines.push("Päiväys: " + (input.today ?? "(ei annettu)"));
-    lines.push("Pohja: " + input.templateId);
-
-    const data = input.data ?? {};
-    const keys = Object.keys(data).sort();
-    if (keys.length > 0) {
-      lines.push("", "Kentät:");
-      for (const key of keys) lines.push("  " + key + ": " + String(data[key]));
-    }
-
-    if (input.items && input.items.length > 0) {
-      lines.push("", "Rivit (" + input.items.length + " kpl):");
-      input.items.forEach((item, index) => {
-        const parts = Object.keys(item)
-          .sort()
-          .map((k) => k + "=" + String(item[k]));
-        lines.push("  " + (index + 1) + ". " + parts.join(", "));
-      });
-    }
-
-    if (input.assets && input.assets.length > 0) {
-      // Kuvia ei piirretä, mutta niiden olemassaolo näytetään: jos pohjaan
-      // unohtuu kuva, se näkyy tässä eikä vasta tuotannossa.
-      lines.push("", "Liitteet: " + input.assets.map((a) => a.key).join(", "));
-    }
-
-    const pdfBytes = buildMockPdf({ title: "Reilusoppari – mock-asiakirja", lines });
-
-    return {
-      pdfBytes,
-      sha256: sha256Hex(pdfBytes),
-      sizeBytes: pdfBytes.length,
-      template: { id: input.templateId, key: "mock", version: 1 },
-      missingPlaceholders: [],
-    };
-  }
-
   async sealDocument(input: SealDocumentInput): Promise<SealDocumentResult> {
     if (input.pdfBytes.length === 0) {
       throw new EsinettiError("validation_failed", "Sinetöitävä asiakirja on tyhjä.");
@@ -283,42 +229,6 @@ export class EsinettiMockClient implements EsinettiClient {
     // Sinetöity, jos se on olemassa — muuten alkuperäinen. Sama sääntö kuin
     // eSinetissä: sinetöityä ei ole ennen kuin kierros on valmis.
     return bytes.sealed ?? bytes.original;
-  }
-
-  async listTemplates(): Promise<TemplateInfo[]> {
-    return [...templates.values()].sort(
-      (a, b) => a.key.localeCompare(b.key) || b.version - a.version,
-    );
-  }
-
-  /**
-   * Mock julkaisee pohjan heti, oikea eSinetti ei.
-   *
-   * Oikeassa palvelussa `published` jää epätodeksi, kunnes juridinen sisältö
-   * on tarkistettu — ja se on tarkoitus. Mockissa sama portti estäisi
-   * vaiheiden 0 ja 1 etenemisen kokonaan, koska julkaisua ei olisi kukaan
-   * tekemässä. Ero on siis tietoinen, ja se on syytä muistaa: **se, että
-   * mockilla renderöinti onnistuu, ei tarkoita että se onnistuu tuotannossa.**
-   */
-  async upsertTemplate(
-    input: UpsertTemplateInput,
-  ): Promise<{ template: TemplateInfo; action: UpsertTemplateAction }> {
-    const mapKey = input.key + "@" + input.version;
-    const existing = templates.get(mapKey);
-
-    const template: TemplateInfo = {
-      id: existing?.id ?? randomUUID(),
-      key: input.key,
-      name: input.name,
-      version: input.version,
-      published: true,
-      owner: "tenant",
-      usable: true,
-      updatedAt: new Date().toISOString(),
-    };
-
-    templates.set(mapKey, template);
-    return { template, action: existing ? "updated" : "created" };
   }
 
   async verifyDocument(sha256: string): Promise<VerifyResult> {

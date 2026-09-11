@@ -5,6 +5,16 @@
  * Nämä tyypit kuvaavat sen rajapinnan, jonka takana eSinetti on — ja vain sen.
  *
  * ===========================================================================
+ * MITÄ TÄSSÄ EI OLE: RENDERÖINTI
+ *
+ * Reilusoppari on eSinetin "käyttötapa 2" -asiakas (Jukan linjaus 2026-09-11):
+ * se tekee allekirjoitettavan PDF:n itse valmiiksi, ja eSinetti vain kerää
+ * allekirjoitukset ja toimittaa allekirjoitetut asiakirjat. eSinetti ei tiedä
+ * Reilusopparin asiakirjapohjista mitään, eikä tässä siksi ole
+ * renderöintiä — se on `src/documents/`.
+ * ===========================================================================
+ *
+ * ===========================================================================
  * SUOMENKIELISET NIMET, snake_case VAIN LANGALLA
  *
  * eSinetin REST-API käyttää snake_casea (`template_id`, `sealed_sha256`).
@@ -20,70 +30,6 @@
  * välittää sen vain jos se on jo tiedossa sopimukselta.
  * ===========================================================================
  */
-
-/** Pohjat, jotka Reilusoppari ylläpitää `templates/`-hakemistossa (CLAUDE.md kohta 2). */
-export type TemplateKey =
-  | "vuokrasopimus_asuinhuoneisto"
-  | "alkukatselmus"
-  | "loppukatselmus"
-  | "vuokratodistus_vuokralainen"
-  | "vuokratodistus_vuokranantaja"
-  | "verolaskelma";
-
-export const TEMPLATE_KEYS: readonly TemplateKey[] = [
-  "vuokrasopimus_asuinhuoneisto",
-  "alkukatselmus",
-  "loppukatselmus",
-  "vuokratodistus_vuokralainen",
-  "vuokratodistus_vuokranantaja",
-  "verolaskelma",
-];
-
-/** Pohjan kenttien arvot. Skalaareja: pohjassa ei ole syntaksia sisäkkäisille rakenteille. */
-export type TemplateData = Record<string, string | number | boolean>;
-
-/** Toistuva rivi pohjassa (esim. katselmuksen kohdat). */
-export type TemplateItem = Record<string, string | number | boolean | null>;
-
-/**
- * Kuva tai muu liite renderöintiin base64:na.
- *
- * Base64 EIKÄ URL siksi, että eSinetin renderöijä ei hae ulkoisia resursseja
- * lainkaan (`sealer/rendering.py`, `_forbidden_url_fetcher`). Katselmuksen
- * kuvat on siis luettava Supabase Storagesta ja välitettävä tässä.
- */
-export interface RenderAsset {
-  /** Pohjassa käytetty avain, esim. `kuva_keittio_1`. */
-  key: string;
-  mediaType: "image/png" | "image/jpeg";
-  contentBase64: string;
-}
-
-export interface RenderDocumentInput {
-  templateId: string;
-  data?: TemplateData;
-  items?: TemplateItem[];
-  /** Kenen nimissä asiakirja on. Vuokrasuhteessa vuokranantaja. */
-  entityName: string;
-  entityIdentifier?: string;
-  entityDomicile?: string;
-  /** Determinismi: sama syöte + sama päivä → sama PDF. Anna aina, jos PDF:ää verrataan tiivisteellä. */
-  today?: string;
-  assets?: RenderAsset[];
-}
-
-export interface RenderDocumentResult {
-  pdfBytes: Uint8Array;
-  sha256: string;
-  sizeBytes: number;
-  template: { id: string; key: string; version: number };
-  /**
-   * Paikanvaraajat, joille ei löytynyt arvoa. Ei virhe — pohjassa voi olla
-   * valinnaisia kohtia. Kutsujan on silti syytä lokittaa nämä, koska
-   * kirjoitusvirhe kentän nimessä näkyy juuri tässä.
-   */
-  missingPlaceholders: string[];
-}
 
 export interface SealDocumentInput {
   name: string;
@@ -208,40 +154,11 @@ export type VerifyResult =
       }>;
     };
 
-/** Pohja eSinetissä. `usable` kertoo, voiko siitä tuottaa asiakirjan juuri nyt. */
-export interface TemplateInfo {
-  id: string;
-  key: string;
-  name: string;
-  version: number;
-  published: boolean;
-  owner: "system" | "tenant";
-  /**
-   * Julkaisematonta pohjaa ei voi käyttää renderöintiin. Julkaisu tehdään
-   * eSinetissä juridisen sisällön tarkistuksen jälkeen, joten `templates:push`
-   * jälkeen tämä on epätosi kunnes Jukka on hyväksynyt pohjan.
-   */
-  usable: boolean;
-  updatedAt: string;
-}
-
-export interface UpsertTemplateInput {
-  key: string;
-  name: string;
-  version: number;
-  html: string;
-  schema?: Record<string, unknown>;
-  legalBasis?: string;
-}
-
-export type UpsertTemplateAction = "created" | "updated" | "skipped_published";
-
 /**
  * eSinetti-liitännän sopimus. Sekä oikea client että mock toteuttavat tämän,
  * eikä sovelluskoodi saa tietää kumpi on käytössä.
  */
 export interface EsinettiClient {
-  renderDocument(input: RenderDocumentInput): Promise<RenderDocumentResult>;
   sealDocument(input: SealDocumentInput): Promise<SealDocumentResult>;
   createRound(input: CreateRoundInput): Promise<Round>;
   getRound(roundId: string): Promise<Round>;
@@ -251,10 +168,4 @@ export interface EsinettiClient {
   /** Lataa kierroksen asiakirjan tavut (sinetöity, jos kierros on valmis). */
   downloadRoundDocument(roundId: string, documentId: string): Promise<Uint8Array>;
   verifyDocument(sha256: string): Promise<VerifyResult>;
-  /** Kaikki käytettävissä olevat pohjat, myös julkaisua odottavat. */
-  listTemplates(): Promise<TemplateInfo[]>;
-  /** Vie pohjan eSinettiin. Käytetään vain `npm run templates:push` -skriptistä. */
-  upsertTemplate(
-    input: UpsertTemplateInput,
-  ): Promise<{ template: TemplateInfo; action: UpsertTemplateAction }>;
 }

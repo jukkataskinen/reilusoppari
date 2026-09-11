@@ -85,7 +85,6 @@ export function resetEsinettiClientForTests(): void {
 }
 
 export { EsinettiError, isEsinettiError, type EsinettiErrorCode } from "./errors";
-export { resolveTemplateId, getTemplateStatus, resetTemplateCache } from "./templates";
 export {
   buildExternalRef,
   isKnownWebhookEvent,
@@ -99,9 +98,6 @@ export {
 export type {
   CreateRoundInput,
   EsinettiClient,
-  RenderAsset,
-  RenderDocumentInput,
-  RenderDocumentResult,
   Round,
   RoundDocument,
   RoundDocumentInput,
@@ -111,12 +107,5 @@ export type {
   SealDocumentInput,
   SealDocumentResult,
   SignerStatus,
-  TemplateData,
-  TemplateInfo,
-  TemplateItem,
-  TemplateKey,
-  UpsertTemplateAction,
-  UpsertTemplateInput,
   VerifyResult,
 } from "./types";
-export { TEMPLATE_KEYS } from "./types";

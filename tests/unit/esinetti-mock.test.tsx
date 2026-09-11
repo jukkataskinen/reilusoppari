@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
+import { Document, Page, Text } from "@react-pdf/renderer";
+import { renderDocumentPdf } from "@/documents/render";
 import {
   completeMockRound,
   EsinettiMockClient,
@@ -13,26 +15,33 @@ import type { RoundDocumentInput } from "@/lib/esinetti/types";
  * Mockin testit. Nämä eivät testaa eSinettiä vaan sitä, että mock käyttäytyy
  * riittävän samalla tavalla, jotta vaiheiden 0 ja 1 päälle voi rakentaa.
  *
- * Tärkein yksittäinen väite on `renderDocument`-testin PDF-rakenteen tarkistus:
- * jos mock palauttaisi tavuja jotka eivät ole PDF, esikatselunäkymää ei voisi
- * kehittää ilman eSinetti-tunnuksia — ja koko mockin olemassaolon syy
- * katoaisi.
+ * Asiakirjat tehdään oikealla renderöijällä, koska juuri se on tuotannon
+ * polku: Reilusoppari tekee PDF:n valmiiksi ja eSinetti vain allekirjoittaa.
  */
 
 const client = new EsinettiMockClient();
-const TEMPLATE_ID = "11111111-1111-4111-8111-111111111111";
+const PAIVAYS = new Date("2026-10-01T00:00:00.000Z");
 
 function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
+/**
+ * Testiasiakirja tehdään OIKEALLA renderöijällä eikä valeavuilla.
+ *
+ * Reilusoppari tekee PDF:nsä itse ja lähettää ne eSinettiin valmiina
+ * (DECISIONS.md 2026-09-11), joten juuri tuo polku on se, jota mockin pitää
+ * kestää — ei jokin testiä varten keksitty tavujono.
+ */
 async function renderSample() {
-  return client.renderDocument({
-    templateId: TEMPLATE_ID,
-    entityName: "Jukka Taskinen",
-    today: "2026-10-01",
-    data: { vuokra: 850, osoite: "Testikatu 1 A 4", määräaikainen: false },
-  });
+  return renderDocumentPdf(
+    <Document title="Vuokrasopimus">
+      <Page size="A4">
+        <Text>Testikatu 1 A 4 – vuokra 850 €/kk</Text>
+      </Page>
+    </Document>,
+    { documentDate: PAIVAYS },
+  );
 }
 
 function pdfDoc(name: string, bytes: Uint8Array): RoundDocumentInput {
@@ -43,55 +52,12 @@ beforeEach(() => {
   resetMockEsinetti();
 });
 
-describe("mock-renderöinti tuottaa aidon PDF:n", () => {
-  it("alkaa PDF-otsikolla ja päättyy EOF-merkintään", async () => {
-    const result = await renderSample();
-    const text = Buffer.from(result.pdfBytes).toString("latin1");
-
-    expect(text.startsWith("%PDF-1.")).toBe(true);
-    expect(text.trimEnd().endsWith("%%EOF")).toBe(true);
-    expect(result.sizeBytes).toBe(result.pdfBytes.length);
-    expect(result.sha256).toBe(sha256(result.pdfBytes));
-  });
-
-  it("xref-taulun siirtymät osoittavat oikeisiin objekteihin", async () => {
-    // Tämä on se kohta, jossa käsin kirjoitettu PDF yleensä menee rikki:
-    // väärä tavusiirtymä näyttää oikealta tekstinä mutta ei avaudu.
-    const text = Buffer.from((await renderSample()).pdfBytes).toString("latin1");
-
-    const startxref = /startxref\s+(\d+)/.exec(text);
-    expect(startxref).not.toBeNull();
-    expect(text.slice(Number(startxref![1]), Number(startxref![1]) + 4)).toBe("xref");
-
-    const offsets = [...text.matchAll(/^(\d{10}) 00000 n $/gm)].map((m) => Number(m[1]));
-    expect(offsets).toHaveLength(5);
-    offsets.forEach((offset, index) => {
-      expect(text.slice(offset)).toMatch(new RegExp("^" + (index + 1) + " 0 obj"));
-    });
-  });
-
-  it("sisältää annetut arvot ja on deterministinen", async () => {
-    const first = await renderSample();
-    const second = await renderSample();
-
-    // Sama syöte → sama tiiviste. Ilman tätä esikatselun ja allekirjoitettavan
-    // asiakirjan vertaaminen tiivisteellä ei tarkoittaisi mitään.
-    expect(second.sha256).toBe(first.sha256);
-
-    const text = Buffer.from(first.pdfBytes).toString("latin1");
-    expect(text).toContain("Jukka Taskinen");
-    expect(text).toContain("2026-10-01");
-    // ä on WinAnsi-oktaalina, ei raakana merkkinä.
-    expect(text).toContain("m\\344\\344r\\344aikainen");
-  });
-});
-
 describe("mock-sinetöinti", () => {
   it("muuttaa tiivisteen ja tekee asiakirjasta löydettävän", async () => {
     const rendered = await renderSample();
     const sealedDoc = await client.sealDocument({
       name: "Vuokratodistus",
-      pdfBytes: rendered.pdfBytes,
+      pdfBytes: rendered.bytes,
       metadata: { tenancy_id: "abc" },
     });
 
@@ -111,7 +77,7 @@ describe("mock-sinetöinti", () => {
 
   it("latauslinkistä saa samat tavut kuin sinetöitiin", async () => {
     const rendered = await renderSample();
-    const sealedDoc = await client.sealDocument({ name: "Todistus", pdfBytes: rendered.pdfBytes });
+    const sealedDoc = await client.sealDocument({ name: "Todistus", pdfBytes: rendered.bytes });
 
     // data:-URL, jotta sovelluskoodi voi käyttää samaa `fetch`iä kuin oikeassa
     // maailmassa allekirjoitettua Storage-linkkiä vasten.
@@ -138,8 +104,8 @@ describe("mock-allekirjoituskierros", () => {
       title: "Vuokrasopimus ja alkukatselmus",
       externalRef: "tenancy:22222222-2222-4222-8222-222222222222:alku",
       documents: [
-        pdfDoc("Vuokrasopimus", rendered.pdfBytes),
-        pdfDoc("Alkukatselmus", rendered.pdfBytes),
+        pdfDoc("Vuokrasopimus", rendered.bytes),
+        pdfDoc("Alkukatselmus", rendered.bytes),
       ],
       signers: [
         { name: "Vuokranantaja", email: "omistaja@example.invalid", roleLabel: "Vuokranantaja" },
@@ -230,7 +196,7 @@ describe("mock-allekirjoituskierros", () => {
     await expect(
       client.createRound({
         title: "Ei allekirjoittajia",
-        documents: [pdfDoc("Sopimus", rendered.pdfBytes)],
+        documents: [pdfDoc("Sopimus", rendered.bytes)],
         signers: [],
       }),
     ).rejects.toThrow(/allekirjoittaja/i);

@@ -1,10 +1,19 @@
-# Asiakirjapohjat
+# Asiakirjat
 
-Pohjien HTML ja schema ylläpidetään täällä ja viedään eSinettiin skriptillä
-`npm run templates:push`. eSinetti renderöi ne PDF:ksi WeasyPrintillä
-(`POST /documents/render`).
+Reilusoppari tekee PDF:nsä itse (React-PDF). eSinetti vain kerää
+allekirjoitukset ja sinetöi — se ei tiedä näistä asiakirjoista mitään.
+Ks. `DECISIONS.md` 2026-09-11.
 
 Juridinen sisältö on Jukan vastuulla. Tämä tiedosto koskee ulkoasua ja kieltä.
+
+## Tiedostot
+
+| | |
+|---|---|
+| `theme.ts` | Värit, pistekoot, välit. Ei korallinpunaista asiakirjoissa. |
+| `fonts.ts` | Plus Jakarta Sans 400 / 600 / 700, upotettuna |
+| `fonts/*.ttf` | Staattiset leikkaukset. Muunnettu `@fontsource`-paketista; React-PDF ei lue woff2:ta eikä muuttuvia fontteja. |
+| `render.ts` | `renderDocumentPdf()` — PDF + SHA-256, deterministinen |
 
 ---
 
@@ -78,9 +87,6 @@ samalla sivulla tekisi rajasta epäselvän. Sääntö: koristekuvia vain
 vuokrasopimuksessa ja todistuksissa, ei kummassakaan katselmus-
 pöytäkirjassa.
 
-Kuva on upotettava base64:nä (`assets`-kenttä), koska eSinetin renderöijä ei
-hae ulkoisia resursseja lainkaan.
-
 **3. Puuttuva suositus ei saa jättää aukkoa.**
 Luonnoksessa "Vuokranantajan tervehdys" on näkyvä paneeli. Kun suositusta ei
 anneta, **koko paneelin on kadottava jäljettömiin** — ei tyhjää laatikkoa,
@@ -89,14 +95,14 @@ ydin). Taitto on siis rakennettava niin, että sivu näyttää valmiilta myös
 ilman sitä.
 
 **4. Käsinkirjoitusfontti maksaa painoa.**
-Korostusrivi vaatii toisen fontin, joka on upotettava jokaiseen PDF:ään.
-Vaihtoehto on tehdä sama korostus Plus Jakarta Sansin kursiivilla — halvempi
-ja lähes yhtä lämmin. Päätettävä ennen ensimmäistä pohjaa.
+Korostusrivi vaatii neljännen fonttitiedoston jokaiseen PDF:ään. Vaihtoehto
+on tehdä sama korostus Plus Jakarta Sansin kevyemmällä leikkauksella —
+halvempi ja lähes yhtä lämmin. Avoin, päätetään ensimmäisen asiakirjan
+yhteydessä.
 
 **5. QR-koodi generoidaan itse.**
-Ulkoista QR-palvelua ei voi käyttää (renderöijä ei hae ulkoisia
-resursseja eikä todistuksen tunnistetta saa lähettää kolmannelle).
-QR generoidaan Reilusopparissa ja välitetään `assets`-kentässä PNG:nä.
+Todistuksen tunnistetta ei lähetetä kolmannelle osapuolelle, joten ulkoista
+QR-palvelua ei käytetä. QR piirretään Reilusopparissa.
 
 ---
 
@@ -104,7 +110,7 @@ QR generoidaan Reilusopparissa ja välitetään `assets`-kentässä PNG:nä.
 
 | | |
 |---|---|
-| Fontti | Plus Jakarta Sans, sama kuin sovelluksessa ja sivustolla; upotettava |
+| Fontti | Plus Jakarta Sans 400 / 600 / 700, upotettuna (`fonts.ts`) |
 | Otsikko | 34–40 pt, `--color-ink`, normaali kirjainväli |
 | Alaotsikko | 13 pt, `--color-ink` 70 % |
 | Leipäteksti | 10–11 pt, riviväli 1,5 |
@@ -115,13 +121,25 @@ QR generoidaan Reilusopparissa ja välitetään `assets`-kentässä PNG:nä.
 
 ---
 
-## Pohjat
+## Asiakirjat
 
-| Avain | Tila |
-|---|---|
-| `vuokrasopimus_asuinhuoneisto` | kirjoittamatta |
-| `alkukatselmus` | kirjoittamatta |
-| `loppukatselmus` | kirjoittamatta |
-| `vuokratodistus_vuokralainen` | kirjoittamatta |
-| `vuokratodistus_vuokranantaja` | kirjoittamatta |
-| `verolaskelma` | kirjoittamatta |
+| Asiakirja | Reitti eSinettiin | Tila |
+|---|---|---|
+| Vuokrasopimus | allekirjoituskierros | kirjoittamatta |
+| Alkukatselmus | allekirjoituskierros | kirjoittamatta |
+| Loppukatselmus | allekirjoituskierros | kirjoittamatta |
+| Vuokratodistus, vuokralainen | kierros tai sinetöinti¹ | kirjoittamatta |
+| Vuokratodistus, vuokranantaja | kierros tai sinetöinti¹ | kirjoittamatta |
+| Verolaskelma | sinetöinti | kirjoittamatta |
+
+¹ Optimitilanteessa todistus allekirjoitetaan — vuokralainen esimerkiksi
+kuittaa saaneensa vakuutensa takaisin. Riitaisaa loppuraporttia ei kuittaa
+kukaan, joten se sinetöidään ilman allekirjoituksia. Kumpikin löytyy
+jälkeenpäin `GET /verify`-haulla tiivisteellä. (Jukan tarkennus 2026-09-11.)
+
+## Determinismi
+
+`renderDocumentPdf` asettaa PDF:n aikaleimat kutsujan antamasta päiväyksestä.
+Se ei ole sopimus vaan rakenne: kutsuja ei voi unohtaa sitä. Syy on se, että
+asiakirjan SHA-256 päätyy pöytäkirjaan, webhookiin ja todistukseen — jos sama
+sisältö tuottaisi eri tavut joka ajolla, tiiviste ei tarkoittaisi mitään.

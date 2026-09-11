@@ -319,3 +319,65 @@ ja tunnuslause *Reilua asumista. Yhdessä.*
 Avoin kysymys: korostusrivin käsinkirjoitusfontti vaatii toisen upotetun
 fontin jokaiseen PDF:ään. Halvempi vaihtoehto on Plus Jakarta Sansin
 kursiivi. Päätetään ennen ensimmäistä pohjaa.
+
+
+## Reilusoppari tekee PDF:nsä itse (2026-09-11, Jukan päätös)
+
+Jukan linjaus eSinetin arkkitehtuurista: *"eSinetin tarkoitus on olla 1.
+pöytäkirjakone 2. asennettavissa mihin tahansa palveluun, jolloin dokumentit
+luodaan ulkoisessa palvelussa ja vain allekirjoitetaan eSinetissä.
+Reilusoppari on yksi eSinetin asiakkaista."*
+
+Reilusoppari on siis **käyttötapa 2**: se tekee allekirjoitettavan PDF:n
+täysin valmiiksi, ja eSinetti kerää allekirjoitukset ja toimittaa
+allekirjoitetut asiakirjat allekirjoittajille.
+
+### Mitä tästä seurasi
+
+`CLAUDE.md` kohta 2 sanoi, että pohjat ylläpidetään `templates/`-hakemistossa
+ja synkronoidaan eSinettiin `npm run templates:push` -skriptillä. **Tämä ei
+enää pidä paikkaansa.** Pohjahakemisto, push-skripti, `ESINETTI_TEMPLATE_IDS`
+ja `lib/esinetti`:n `renderDocument`, `listTemplates` ja `upsertTemplate` on
+poistettu. Asiakirjat ovat `src/documents/`.
+
+eSinetistä käytetään vain: `POST /rounds`, `GET /rounds/{id}`, asiakirjan
+lataus, `POST /documents/seal`, `GET /verify` ja webhookit.
+
+### Miksi React-PDF eikä oma renderöintipalvelu
+
+Vaihtoehtoina olivat asiakirjan rakentaminen sovelluksen sisällä (React-PDF)
+tai erillinen HTML→PDF-palvelu (WeasyPrint, kuten eSinetissä). Jälkimmäinen
+olisi antanut luonnoksen HTML:n ja CSS:n sellaisenaan sekä paremman
+sivunvaihtojen hallinnan, mutta maksanut 5–10 €/kk ja tuonut toisen
+ylläpidettävän palvelimen ja toisen ohjelmointikielen.
+
+Jukan valinta: React-PDF. Perustelu on se, ettei Jukalla ole kehittäjää
+paikalla korjaamassa rikkinäistä palvelinta, eikä sivunvaihtojen hienosäätö
+ole sen arvoista.
+
+### Fontti ratkesi ilman latausta
+
+React-PDF ei lue woff2-muotoa eikä osaa muuttuvia fontteja, ja repossa oli
+vain `sans-variable.woff2`. Staattiset leikkaukset (400, 600, 700) saatiin
+npm-paketista `@fontsource/plus-jakarta-sans` ja muunnettiin TTF:ksi
+(`wawoff2`). Tiedostot ovat `src/documents/fonts/`, noin 30 kt kukin, ja
+kaikki tarvittavat merkit ovat mukana — myös ä, ö, å, €, – ja —.
+
+### Todistukset kulkevat molempia reittejä
+
+Jukan tarkennus: optimitilanteessa todistuskin allekirjoitetaan — vuokralainen
+esimerkiksi kuittaa saaneensa vakuutensa takaisin. Riitaisaa loppuraporttia ei
+kuittaa kukaan, joten se syntyy ilman allekirjoituksia.
+
+Molemmat reitit ovat siis käytössä: allekirjoitettava asiakirja menee
+`POST /rounds`-kierrokselle, allekirjoittamaton `POST /documents/seal`-reitille.
+Kumpikin löytyy jälkeenpäin `GET /verify`-haulla tiivisteellä.
+
+### Determinismi on rakenteellinen, ei sopimus
+
+Asiakirjasta lasketaan SHA-256, ja se päätyy pöytäkirjaan, webhookiin ja
+todistukseen. PDF:ään päätyy oletuksena luontiaika, joka muuttuisi joka
+ajolla. `renderDocumentPdf` asettaa aikaleimat itse kutsujan antamasta
+päiväyksestä — kutsuja ei voi unohtaa sitä. Testit varmistavat, että sama
+sisältö ja päiväys tuottavat samat tavut ja että eri päiväys tuottaa eri
+tiivisteen.

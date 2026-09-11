@@ -17,10 +17,11 @@ tekstit muutetaan silloin — laajuutta ei karsita etukäteen.
 
 | Mitä | Tila | Estää |
 |---|---|---|
-| eSinetin `POST /documents/render` | **valmis** (esinetti `96b4dd3`) | vaihe 1 |
+| ~~eSinetin `POST /documents/render`~~ | **ei käytössä** — Reilusoppari renderöi itse | – |
 | eSinetin `POST /documents/seal` | **valmis** (esinetti `96b4dd3`) | vaiheet 3 ja 4 |
 | Migraatio `0009` live-Supabaseen | odottaa Jukkaa | `/documents/seal` ajossa |
 | eSinetti-tenant `reilusoppari` + API-avain | odottaa Jukkaa | oikea eSinetti-yhteys (mock riittää siihen asti) |
+| ~~Migraatio `0009`~~ tarvitaan yhä | odottaa Jukkaa | `/documents/seal` (allekirjoittamattomat todistukset) |
 | Supabase, Auth0, Vercel, Stripe, VAPID | odottaa Jukkaa | vaihe 0:n DoD |
 
 Mock-toteutus `lib/esinetti/`:ssä tarkoittaa, että vaiheet 0–1 etenevät ilman
@@ -56,10 +57,12 @@ DoD: kirjautuminen onnistuu, asunnon luonti toimii, mock-render palauttaa PDF:n.
 - [x] `lib/esinetti/`: rajapinta + **mock** + oikea client (render, seal,
       rounds, verify, webhookit) — 29 yksikkötestiä. Mock tuottaa aidon
       avautuvan PDF:n, joten vaiheet 0–1 etenevät ilman eSinetti-tunnuksia
-- [ ] `templates/`-hakemisto ja `npm run templates:push` -skripti.
-      **Ulkoasu: ei viranomaispaperia** — ks. DECISIONS.md 2026-09-11.
-      Sama fontti ja paletti kuin sovelluksessa, ilmava taitto, ihmisen
-      kieli. Sisältö silti täysin todistusvoimainen
+- [x] ~~`templates/` ja `templates:push`~~ → **korvattu**: Reilusoppari tekee
+      PDF:nsä itse (DECISIONS.md 2026-09-11). `src/documents/`: React-PDF,
+      fontit, teema, deterministinen renderöinti ja 5 testiä
+- [ ] Asiakirjat `src/documents/`: vuokrasopimus ja katselmuspöytäkirja
+      (vaihe 1 tarvitsee ne). **Ulkoasu: ei viranomaispaperia** —
+      ks. `src/documents/README.md`
 - [x] Asunnon luonti (`rs_properties`) ja lista: lomake, listaus, asunnon
       näkymä kohtalistoineen, arkistointi. 6 IDOR-integraatiotestiä ja 9
       lomaketestiä

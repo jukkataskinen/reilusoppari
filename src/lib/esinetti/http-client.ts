@@ -31,14 +31,9 @@ import { EsinettiError, type EsinettiErrorCode } from "./errors";
 import type {
   CreateRoundInput,
   EsinettiClient,
-  RenderDocumentInput,
-  RenderDocumentResult,
   Round,
   SealDocumentInput,
   SealDocumentResult,
-  TemplateInfo,
-  UpsertTemplateAction,
-  UpsertTemplateInput,
   VerifyResult,
 } from "./types";
 
@@ -115,7 +110,7 @@ export class EsinettiHttpClient implements EsinettiClient {
    * tarpeettomasti.
    */
   private async request<T>(
-    method: "GET" | "POST" | "PUT",
+    method: "GET" | "POST",
     path: string,
     options: { body?: unknown; authenticated?: boolean } = {},
   ): Promise<T> {
@@ -171,39 +166,6 @@ export class EsinettiHttpClient implements EsinettiClient {
     }
 
     return json as T;
-  }
-
-  async renderDocument(input: RenderDocumentInput): Promise<RenderDocumentResult> {
-    const payload = await this.request<{
-      pdf_base64: string;
-      sha256: string;
-      size_bytes: number;
-      template: { id: string; key: string; version: number };
-      missing_placeholders: string[];
-    }>("POST", "/documents/render", {
-      body: {
-        template_id: input.templateId,
-        data: input.data,
-        items: input.items,
-        entity_name: input.entityName,
-        entity_identifier: input.entityIdentifier,
-        entity_domicile: input.entityDomicile,
-        today: input.today,
-        assets: input.assets?.map((a) => ({
-          key: a.key,
-          media_type: a.mediaType,
-          content_base64: a.contentBase64,
-        })),
-      },
-    });
-
-    return {
-      pdfBytes: Uint8Array.from(Buffer.from(payload.pdf_base64, "base64")),
-      sha256: payload.sha256,
-      sizeBytes: payload.size_bytes,
-      template: payload.template,
-      missingPlaceholders: payload.missing_placeholders ?? [],
-    };
   }
 
   async sealDocument(input: SealDocumentInput): Promise<SealDocumentResult> {
@@ -331,31 +293,6 @@ export class EsinettiHttpClient implements EsinettiClient {
     return new Uint8Array(await response.arrayBuffer());
   }
 
-  async listTemplates(): Promise<TemplateInfo[]> {
-    const payload = await this.request<{ data: TemplateWire[] }>("GET", "/templates");
-    return payload.data.map(templateFromWire);
-  }
-
-  async upsertTemplate(
-    input: UpsertTemplateInput,
-  ): Promise<{ template: TemplateInfo; action: UpsertTemplateAction }> {
-    const payload = await this.request<TemplateWire & { action: UpsertTemplateAction }>(
-      "PUT",
-      "/templates",
-      {
-        body: {
-          key: input.key,
-          name: input.name,
-          version: input.version,
-          html: input.html,
-          schema: input.schema,
-          legal_basis: input.legalBasis,
-        },
-      },
-    );
-    return { template: templateFromWire(payload), action: payload.action };
-  }
-
   async verifyDocument(sha256: string): Promise<VerifyResult> {
     // Julkinen reitti: API-avainta ei lähetetä.
     const payload = await this.request<VerifyWire>(
@@ -473,29 +410,5 @@ export function verifyFromWire(wire: VerifyWire): VerifyResult {
       signedAt: s.signed_at,
       providerTransactionId: s.provider_transaction_id,
     })),
-  };
-}
-
-interface TemplateWire {
-  id: string;
-  key: string;
-  name: string;
-  version: number;
-  published: boolean;
-  owner: "system" | "tenant";
-  usable: boolean;
-  updated_at: string;
-}
-
-export function templateFromWire(wire: TemplateWire): TemplateInfo {
-  return {
-    id: wire.id,
-    key: wire.key,
-    name: wire.name,
-    version: wire.version,
-    published: wire.published,
-    owner: wire.owner,
-    usable: wire.usable,
-    updatedAt: wire.updated_at,
   };
 }
