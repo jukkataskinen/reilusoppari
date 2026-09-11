@@ -33,6 +33,7 @@ import {
   normalizeHenkilotunnus,
   normalizeYTunnus,
 } from "../identity/finnish-id";
+import { formatIban, isValidIban, normalizeIban } from "../identity/iban";
 
 const optionalText = (max: number, message: string) =>
   z
@@ -57,6 +58,9 @@ export const partyDetailsSchema = z
     phone: optionalText(40, "Tarkista puhelinnumero"),
     email: optionalText(200, "Tarkista sähköpostiosoite"),
 
+    /** Tili, jolle vuokra maksetaan. Vain vuokranantajalla merkitystä. */
+    bankAccount: optionalText(42, "Tarkista tilinumero"),
+
     /**
      * Tyhjä `personalId` tarkoittaa "säilytä tallennettu" — muuten lomake
      * pyyhkisi tunnuksen joka kerta, kun käyttäjä muuttaa puhelinnumeroaan.
@@ -80,6 +84,16 @@ export const partyDetailsSchema = z
         code: "custom",
         path: ["businessId"],
         message: "Tarkista y-tunnus: tarkistusnumero ei täsmää.",
+      });
+    }
+
+    if (value.bankAccount && !isValidIban(value.bankAccount)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["bankAccount"],
+        // Väärä tilinumero on ikävämpi kuin väärä henkilötunnus: sen mukaan
+        // maksetaan.
+        message: "Tarkista tilinumero: tarkistusluku ei täsmää.",
       });
     }
 
@@ -113,6 +127,8 @@ export interface PartyDetailsView {
   signatoryName: string | null;
   phone: string | null;
   email: string | null;
+  /** Ryhmitelty luettavaksi: `FI21 1234 5600 0007 85`. */
+  bankAccount: string | null;
   /** Onko tämä kirjautuneen käyttäjän oma osapuolirivi? */
   isSelf: boolean;
 }
@@ -127,6 +143,8 @@ export interface PartyDetailsForDocument {
   signatoryName: string | null;
   phone: string | null;
   email: string | null;
+  /** Ryhmitelty luettavaksi: `FI21 1234 5600 0007 85`. */
+  bankAccount: string | null;
 }
 
 interface PartyRow {
@@ -142,11 +160,12 @@ interface PartyRow {
   phone: string | null;
   contact_email: string | null;
   invite_email: string | null;
+  bank_account: string | null;
 }
 
 const COLUMNS =
   "id, role, position, user_id, party_name, party_type, party_id_encrypted, " +
-  "business_id, signatory_name, phone, contact_email, invite_email";
+  "business_id, signatory_name, phone, contact_email, invite_email, bank_account";
 
 async function fetchPartyRows(tenancyId: string): Promise<PartyRow[]> {
   const { data, error } = await getServiceClient()
@@ -193,6 +212,7 @@ export async function listPartyDetails(
     signatoryName: row.signatory_name,
     phone: row.phone,
     email: row.contact_email ?? row.invite_email,
+    bankAccount: row.bank_account ? formatIban(row.bank_account) : null,
     isSelf: row.user_id === userId,
   }));
 }
@@ -221,6 +241,7 @@ export async function partyDetailsForDocument(
     signatoryName: row.signatory_name,
     phone: row.phone,
     email: row.contact_email ?? row.invite_email,
+    bankAccount: row.bank_account ? formatIban(row.bank_account) : null,
   }));
 }
 
@@ -249,6 +270,9 @@ function toColumns(input: PartyDetailsInput, existing: string | null) {
     signatory_name: input.signatoryName,
     phone: input.phone,
     contact_email: input.email,
+    // Tallennetaan välittömässä muodossa; ryhmitys tehdään luettaessa, jotta
+    // kannassa on yksi muoto eikä kahta.
+    bank_account: input.bankAccount ? normalizeIban(input.bankAccount) : null,
   };
 }
 
@@ -303,10 +327,11 @@ interface UserDefaultsRow {
   signatory_name: string | null;
   phone: string | null;
   email: string;
+  bank_account: string | null;
 }
 
 const USER_COLUMNS =
-  "name, party_type, party_id_encrypted, business_id, signatory_name, phone, email";
+  "name, party_type, party_id_encrypted, business_id, signatory_name, phone, email, bank_account";
 
 /**
  * Vuokranantajan omat perustiedot (`rs_users`).
@@ -345,6 +370,7 @@ export async function getOwnPartyDefaults(userId: string): Promise<PartyDetailsV
     signatoryName: row.signatory_name,
     phone: row.phone,
     email: row.email,
+    bankAccount: row.bank_account ? formatIban(row.bank_account) : null,
     isSelf: true,
   };
 }
@@ -373,6 +399,7 @@ export async function saveOwnPartyDefaults(
       business_id: columns.business_id,
       signatory_name: columns.signatory_name,
       phone: columns.phone,
+      bank_account: columns.bank_account,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);
@@ -412,6 +439,7 @@ export async function ownPartyDefaultColumns(
     signatory_name: row.signatory_name,
     phone: row.phone,
     contact_email: row.email,
+    bank_account: row.bank_account,
   };
 }
 
@@ -434,6 +462,7 @@ export function partyDetailsFormToInput(form: FormData, prefix = ""): Record<str
     signatoryName: isCompany ? text("signatoryName") : "",
     phone: text("phone"),
     email: text("email"),
+    bankAccount: text("bankAccount"),
     clearPersonalId: form.get(`${prefix}clearPersonalId`) === "on",
   };
 }

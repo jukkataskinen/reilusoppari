@@ -48,6 +48,9 @@ export function PartyDetailsForm({
           <Row label="Allekirjoittaja" value={details.signatoryName} />
         ) : null}
         <Row label="Puhelin" value={details.phone} />
+        {details.role === "landlord" ? (
+          <Row label="Tilinumero" value={details.bankAccount} />
+        ) : null}
         <Row label="Sähköposti" value={details.email} />
       </dl>
     );

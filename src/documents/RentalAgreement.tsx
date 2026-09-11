@@ -63,6 +63,8 @@ export interface DocumentParty {
   signatoryName: string | null;
   phone: string | null;
   email: string | null;
+  /** Tili, jolle vuokra maksetaan. Vain vuokranantajalla. */
+  bankAccount: string | null;
 }
 
 export interface RentalAgreementData {
@@ -146,7 +148,10 @@ export function buildTerms(data: RentalAgreementData): Term[] {
     title: "Vuokra ja maksaminen",
     body:
       `Vuokra on ${formatEuro(data.rentAmount)} kuukaudessa ja maksetaan viimeistään ` +
-      `jokaisen kuukauden ${data.rentDueDay}. päivä.` +
+      `jokaisen kuukauden ${data.rentDueDay}. päivä` +
+      // Tili on siinä ehdossa, joka kertoo maksamisesta. Sitä ei pidä joutua
+      // etsimään osapuolitiedoista silloin, kun on maksamassa.
+      (landlordBankAccount(data) ? ` tilille ${landlordBankAccount(data)}.` : ".") +
       (data.rentIncreaseTerm ? ` Vuokraa tarkistetaan ${data.rentIncreaseTerm}.` : "") +
       " Myöhässä maksetulle vuokralle kertyy korkolain mukaista viivästyskorkoa.",
   });
@@ -324,6 +329,22 @@ export function signerName(party: DocumentParty): string {
     return `${party.signatoryName} (${party.name})`;
   }
   return party.name;
+}
+
+/**
+ * Tili, jolle vuokra maksetaan.
+ *
+ * Vuokranantajan tili, ei kenen tahansa osapuolen: vuokralaisen riville
+ * kirjattu tili olisi sopimuksessa väärässä kohdassa ja johtaisi maksun
+ * väärään paikkaan.
+ */
+function landlordBankAccount(data: RentalAgreementData): string | null {
+  const tili =
+    partiesByRole(data, "landlord").find((party) => party.bankAccount)?.bankAccount ?? null;
+
+  // Sitovat välilyönnit ryhmien väliin: tilinumero luetaan ja kopioidaan, eikä
+  // se saa katketa kahdelle riville keskeltä.
+  return tili ? tili.replace(/ /g, " ") : null;
 }
 
 /** Osapuolet roolin mukaan, sopimuksen järjestyksessä. */

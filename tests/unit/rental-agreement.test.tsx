@@ -15,6 +15,7 @@ const DATA: RentalAgreementData = {
       signatoryName: null,
       phone: "040 123 4567",
       email: "matti.virtanen@example.com",
+      bankAccount: "FI21 1234 5600 0007 85",
     },
     {
       role: "tenant" as const,
@@ -24,6 +25,7 @@ const DATA: RentalAgreementData = {
       signatoryName: null,
       phone: "050 765 4321",
       email: "maija.meikalainen@example.com",
+      bankAccount: null,
     },
   ],
   startDate: "2026-09-01",
@@ -155,6 +157,7 @@ describe("sopimuksen renderöinti", () => {
               signatoryName: null,
               phone: null,
               email: null,
+              bankAccount: null,
             },
           ],
         }}
@@ -323,6 +326,7 @@ describe("osapuolet asiakirjassa", () => {
     signatoryName: "Matti Virtanen",
     phone: null,
     email: null,
+    bankAccount: "FI21 1234 5600 0007 85",
   };
 
   it("yrityksen puolesta allekirjoittaa ihminen", () => {
@@ -338,6 +342,36 @@ describe("osapuolet asiakirjassa", () => {
   it("yritys ilman allekirjoittajaa ei keksi nimeä", () => {
     // Puuttuva tieto ei saa muuttua paikanvaraajaksi asiakirjassa.
     expect(signerName({ ...yritys, signatoryName: null })).toBe("Kiinteistö Oy Mäkitie");
+  });
+
+  it("maksutili on siinä ehdossa, joka kertoo maksamisesta", () => {
+    // Ei osapuolitiedoissa: tiliä etsitään silloin, kun ollaan maksamassa.
+    const maksaminen = buildTerms(DATA).find((t) => t.title === "Vuokra ja maksaminen");
+    // Sitovat välilyönnit: numero ei saa katketa kahdelle riville.
+    expect(maksaminen?.body).toContain("tilille FI21 1234 5600 0007 85");
+  });
+
+  it("ilman tiliä ehto on ehjä lause", () => {
+    const ilman = buildTerms({
+      ...DATA,
+      parties: DATA.parties.map((p) => ({ ...p, bankAccount: null })),
+    }).find((t) => t.title === "Vuokra ja maksaminen");
+
+    expect(ilman?.body).toContain("kuukauden 5. päivä.");
+    expect(ilman?.body).not.toContain("tilille");
+  });
+
+  it("vuokralaisen riville kirjattu tili ei päädy sopimukseen", () => {
+    // Maksu ohjautuisi väärään paikkaan.
+    const vaarin = buildTerms({
+      ...DATA,
+      parties: DATA.parties.map((p) => ({
+        ...p,
+        bankAccount: p.role === "tenant" ? "FI21 1234 5600 0007 85" : null,
+      })),
+    }).find((t) => t.title === "Vuokra ja maksaminen");
+
+    expect(vaarin?.body).not.toContain("tilille");
   });
 
   it("erottaa osapuolet roolin mukaan", () => {

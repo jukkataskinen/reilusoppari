@@ -172,8 +172,33 @@ export async function createTenancy(
 
     const defaults = await ownPartyDefaultColumns(userId);
 
+    /*
+      Kaikilla riveillä on oltava SAMAT avaimet.
+
+      PostgREST vertaa insert-taulukon objekteja keskenään ja täyttää
+      puuttuvan avaimen NULLilla — ei sarakkeen oletusarvolla. Jos siis
+      vuokranantajan rivillä on `party_type` ja vuokralaisen rivillä ei,
+      vuokralainen saa NULLin ja not null -rajoite kaataa koko insertin.
+    */
+    const TYHJA_OSAPUOLI = {
+      party_name: null,
+      party_type: "henkilo",
+      party_id_encrypted: null,
+      business_id: null,
+      signatory_name: null,
+      phone: null,
+      contact_email: null,
+      bank_account: null,
+      user_id: null,
+      invite_email: null,
+      invite_token_hash: null,
+      invite_expires_at: null,
+      joined_at: null,
+    };
+
     const parties: Record<string, unknown>[] = [
       {
+        ...TYHJA_OSAPUOLI,
         tenancy_id: tenancy.id,
         user_id: userId,
         role: "landlord",
@@ -190,6 +215,7 @@ export async function createTenancy(
       const invite = createInvite();
       invites.push({ email: tenant.email, name: tenant.name, token: invite.token });
       parties.push({
+        ...TYHJA_OSAPUOLI,
         tenancy_id: tenancy.id,
         role: "tenant",
         position: index,

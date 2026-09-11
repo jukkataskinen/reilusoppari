@@ -633,3 +633,45 @@ Vaihtoehto olisi ollut nielaista tietokantavirhe ja näyttää "kutsu ei ole
 voimassa". Sitä ei tehty: silloin oikea vuokralainen saisi oikeasta
 katkoksesta viestin, että hänen kutsunsa on kuollut. E2E-työlle annettiin
 samat `TEST_SUPABASE_*`-avaimet kuin yksikkötyölle.
+
+
+## Maksutili sopimukseen, ei salattuna (2026-09-11, Jukan pyyntö)
+
+*"vuokrasopimuksessa pitää olla myös maksutili näkyvillä."*
+
+Tili on **ehdossa "Vuokra ja maksaminen"**, ei osapuolitiedoissa: tiliä
+etsitään silloin, kun ollaan maksamassa, ja silloin katse on siinä kohdassa,
+joka kertoo maksamisesta.
+
+Tarkistusluku lasketaan (ISO 13616, mod 97). Väärä tilinumero on ikävämpi
+kuin väärä henkilötunnus: sen mukaan maksetaan, ja maksu joko ei mene läpi tai
+menee jonnekin muualle.
+
+**Ei salattu**, toisin kuin henkilötunnus. Tilinumero on jokaisessa laskussa
+ja jokaisessa tilisiirrossa; salaus antaisi väärän kuvan siitä, kuinka
+salainen se on, ja monimutkaistaisi koodia ilman hyötyä. Osapuolirajaus
+koskee sitä silti kuten kaikkea muutakin.
+
+Tili luetaan **vuokranantajan** riviltä. Vuokralaisen riville kirjattu tili
+ohjaisi maksun väärään paikkaan, joten sitä ei lueta lainkaan, ja lomakkeella
+kenttä näkyy vain vuokranantajalle. Testi vartioi tätä.
+
+Numerossa on sitovat välilyönnit (`FI21 1234…`), koska rivinvaihto
+keskellä tilinumeroa tekee siitä vaikean lukea ja kopioida.
+
+
+## PostgREST täyttää puuttuvan avaimen NULLilla, ei oletusarvolla (2026-09-11)
+
+Vuokrasuhteen luonti alkoi kaatua virheeseen `null value in column
+"party_type" violates not-null constraint`, vaikka sarakkeella on
+`default 'henkilo'`.
+
+Syy: `insert`-taulukon objekteilla oli **eri avaimet**. Vuokranantajan rivillä
+oli `party_type` (perustiedoista kopioituna), vuokralaisen rivillä ei.
+PostgREST muodostaa taulukosta avainten yhdisteen ja täyttää puuttuvan avaimen
+**NULLilla** — ei sarakkeen oletusarvolla, jota se ei edes kysy kannasta.
+
+Korjaus: `TYHJA_OSAPUOLI`-pohja, jonka päälle molempien rivien tiedot
+kirjoitetaan. Sääntö on yleinen: **saman insert-taulukon riveillä on oltava
+samat avaimet.** Tämä ei ole tämän taulun erityispiirre vaan koskee jokaista
+monirivistä inserttiä.

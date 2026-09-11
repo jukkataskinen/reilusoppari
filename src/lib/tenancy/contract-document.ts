@@ -51,6 +51,7 @@ export async function buildRentalAgreementData(
       signatoryName: party.signatoryName,
       phone: party.phone,
       email: party.email,
+      bankAccount: party.bankAccount,
     })),
 
     startDate: tenancy.startDate,

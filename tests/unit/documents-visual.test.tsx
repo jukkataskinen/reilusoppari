@@ -31,6 +31,7 @@ const DATA: RentalAgreementData = {
       signatoryName: null,
       phone: "040 123 4567",
       email: "matti.virtanen@example.com",
+      bankAccount: "FI21 1234 5600 0007 85",
     },
     {
       role: "tenant" as const,
@@ -40,6 +41,7 @@ const DATA: RentalAgreementData = {
       signatoryName: null,
       phone: "050 765 4321",
       email: "maija.meikalainen@example.com",
+      bankAccount: null,
     },
   ],
   startDate: "2026-09-01",

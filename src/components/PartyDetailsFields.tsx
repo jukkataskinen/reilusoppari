@@ -188,6 +188,29 @@ export function PartyDetailsFields({
           <FieldError name="email" />
         </div>
       </div>
+
+      {/*
+        Maksutili vain vuokranantajalle. Vuokralaisen riville kirjattu tili
+        päätyisi sopimuksessa kohtaan, jossa kerrotaan minne vuokra maksetaan.
+      */}
+      {details.role === "landlord" ? (
+        <div>
+          <label htmlFor={`${domId}-bankAccount`} className="text-sm font-medium">
+            Tilinumero
+          </label>
+          <input
+            {...field("bankAccount")}
+            defaultValue={details.bankAccount ?? ""}
+            placeholder="FI21 1234 5600 0007 85"
+            spellCheck={false}
+          />
+          <p className="mt-1.5 text-sm text-ink/60">
+            Tälle tilille vuokra maksetaan. Numero tulee sopimukseen, jottei sitä tarvitse kysyä
+            erikseen ensimmäisen vuokran kohdalla.
+          </p>
+          <FieldError name="bankAccount" />
+        </div>
+      ) : null}
     </div>
   );
 }
