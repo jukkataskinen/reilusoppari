@@ -186,6 +186,8 @@ Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 
 - [x] Kulurivit luokittain (kohta 5.7), kuitti kuvana
 - [x] Kertakulu myös ilman vuokrasuhdetta, suoraan asunnolle (migraatio 0014)
+- [x] Kuvaa kuitti: kuva → luku Messages API:lla → asunnon valinta →
+      esitäytetty lomake (migraatio 0015, kutsuraja)
 - [x] Toistuvat kuukausikulut kausina: syötetään kerran, kone laskee
       vuosikulun; summan muutos aloittaa uuden kauden (Jukan linjaus
       2026-09-12, migraatio 0013)

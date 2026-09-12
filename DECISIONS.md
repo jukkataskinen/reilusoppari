@@ -1432,3 +1432,71 @@ näkyisi kahdella eri rajauksella.
 **Toistuvat kulut eivät ole samassa listassa.** Hoitovastike on kausi eikä
 kirjaus. Samassa listassa kausi näyttäisi yhdeltä kirjaukselta, ja lukija
 luulisi vastiketta kertamaksuksi.
+
+
+## Kuitin luku Anthropicin Messages API:lla (2026-09-12)
+
+Jukalla on toinen järjestelmä (KasaMaster), joka lukee vaakalappuja samalla
+rajapinnalla. Sen toteutus katsottiin läpi ja kolme kalliisti opittua asiaa
+siirrettiin tänne sellaisenaan:
+
+1. **Avain vain palvelimella.** KasaMasterissa kutsu tehtiin aluksi
+   selaimesta avaimella, jonka nimi alkoi Viten etuliitteellä — ja Vite
+   kirjoittaa sellaiset muuttujat käännösaikana selaimeen ladattavaan
+   koodiin. Avain oli kenen tahansa luettavissa. Tässä `ANTHROPIC_API_KEY`
+   luetaan vain palvelinpuolella, eikä `NEXT_PUBLIC_`-etuliitettä ole.
+2. **`max_tokens` kattaa ajattelun JA vastauksen.** Uusissa malleissa
+   ajattelu on oletuksena päällä, joten pelkälle JSON-vastaukselle riittävä
+   arvo katkaisisi vastauksen kesken — usein niin, ettei tekstiä tulisi
+   lainkaan. 1024 on sama arvo, jolla KasaMaster toimii.
+3. **Tilakoodi virheviestiin.** Ilman sitä vianetsintä on arvailua: 401 on
+   avain, 404 malli, 429 ruuhka.
+
+**SDK eikä REST, poikkeuksena tämän repon tapaan.** Stripe puhutaan täällä
+REST:llä ilman kirjastoa. Tässä otetaan `@anthropic-ai/sdk`, koska sen
+`maxRetries` uusii 429-, 529- ja 5xx-tilanteet kasvavalla odotuksella — juuri
+sitä logiikkaa ei kannata kirjoittaa itse maksavalle reitille — ja koska
+Jukan toinen järjestelmä käyttää samaa kirjastoa, jolloin korjaus toiseen on
+ymmärrettävissä toisessa.
+
+**Kululuokkaa EI lueta kuitilta.** Raja vuosikorjauksen ja perusparannuksen
+välillä on verotuksellinen arvio, ja väärin esitäytetty luokka siirtäisi
+summan hiljaa väärään osioon laskelmassa — juuri siihen, jonka erottelun
+rakensin erikseen. Malli lukee tosiasioita (summa, päivä, alv, myyjä), ihminen
+tekee päätökset.
+
+**Luettu arvo on ehdotus, ei tallennus.** Kentät ovat esitäytettyjä mutta
+muokattavia, ja tallennus vaatii painalluksen. Jäsennys hylkää lisäksi arvon,
+joka ei ole järkevä: negatiivinen summa, tulevaisuuden päivä, alv joka on
+suurempi kuin summa. Tyhjä kenttä on rehellinen; väärä luku valuisi
+verolaskelmaan asti.
+
+**Kuva ei tallennu lukuvaiheessa.** Se pysyy selaimen muistissa, kunnes kulu
+tallennetaan — muuten jokainen keskeytetty kuvaus jättäisi orvon tiedoston
+Storageen. Hinta on se, että selaimen sulkeminen kesken kadottaa kuvan; kulku
+on yksi näkymä, ja kuitti on yhä olemassa.
+
+**Kuitti ensin, kulu sitten.** Vanha järjestys oli nurinkurinen: ensin
+kirjattiin kulu ja sitten kuvattiin kuitti. Todellisuudessa kuitti on
+kädessä.
+
+
+## Kutsuraja (2026-09-12)
+
+Kuitin luku on ensimmäinen reitti, jossa yksi kutsu maksaa suoraan oikeaa
+rahaa. Kuvakoon raja rajoittaa yhden kutsun hintaa muttei kutsujen määrää.
+
+`rs_kutsurajat` + `rs_kasvata_kutsuraja` (migraatio 0015), rivi per
+(käyttäjä, endpoint, minuutti). Kasvatus tehdään tietokantafunktiossa, koska
+kaksi rinnakkaista pyyntöä voisi muuten lukea saman luvun ja päättää
+kumpikin, että tilaa on vielä yksi.
+
+**Puuttuva raja on parempi kuin rikki oleva toiminto.** Jos tarkistus
+epäonnistuu, kutsu päästetään läpi — vaihtoehto olisi, että tietokantahäiriö
+estäisi kuvaamisen keskellä katselmusta. Mutta se kirjataan lokiin, koska se
+tarkoittaa, ettei raja sillä hetkellä suojaa mitään. Sama linjaus kuin
+KasaMasterissa.
+
+Taulu on yhteinen kaikille rajoille: `endpoint` erottaa ne, joten CLAUDE.md
+kohdan 6 vaatimat rajat kuvien lataukseen ja kutsulinkkeihin eivät tarvitse
+uutta taulua.

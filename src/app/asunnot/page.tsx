@@ -40,6 +40,19 @@ export default async function PropertiesPage() {
         </Link>
       </div>
 
+      {/*
+        Kuitin kuvaus on tassa nakyvissa, koska kuitti on kadessa kaupan
+        ovella eika silloin muisteta minka asunnon alta kuvaus loytyy.
+      */}
+      {properties.length > 0 ? (
+        <Link
+          href="/kuitti"
+          className="mt-6 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+        >
+          Kuvaa kuitti
+        </Link>
+      ) : null}
+
       {properties.length === 0 ? (
         <div className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-6">
           <p className="font-medium">Ei vielä asuntoja</p>
