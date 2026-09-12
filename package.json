@@ -15,7 +15,8 @@
     "icons": "python scripts/generate-icons.py",
     "samples": "vitest run --config vitest.samples.mts",
     "tarkista:tunnisteet": "node scripts/tarkista-tunnisteet.mjs",
-    "keys:person": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
+    "keys:person": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
+    "tarkista:selainpaketti": "node scripts/tarkista-selainpaketti.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

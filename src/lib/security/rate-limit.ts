@@ -13,12 +13,21 @@
  * ei tietäisi. Sama linjaus kuin Jukan toisessa järjestelmässä
  * (`kasamaster/app/api/_kutsuraja.js`).
  *
- * RAJA ON MINUUTTIKOHTAINEN, EI LIUKUVA
+ * IKKUNA ON KIINTEÄ, EI LIUKUVA
  *
- * Minuutti pyöristetään alaspäin, joten sama arvo osuu koko minuutin ajan
+ * Ikkunan alku pyöristetään alaspäin, joten sama arvo osuu koko ikkunan ajan
  * samaan riviin. Liukuva ikkuna olisi tarkempi mutta vaatisi rivin per
  * kutsu. Tämä riittää siihen, mihin rajaa tarvitaan: pysäyttämään
- * rikkinäinen silmukka ennen kuin lasku kasvaa.
+ * rikkinäinen silmukka ennen kuin vahinko kasvaa.
+ *
+ * HUOM SARAKKEEN NIMESTÄ
+ *
+ * Tietokannassa sarake on `minuutti` (migraatio 0015), koska ensimmäinen
+ * käyttö oli minuuttikohtainen. Se pitää sisällään ikkunan alun ikkunan
+ * pituudesta riippumatta — tunnin ikkunassa se on tasatunti. Nimi on siis
+ * hieman kapeampi kuin sisältö. Sitä ei nimetä uudelleen pelkän nimen
+ * takia: migraatio on jo ajettu tuotantoon, ja sarakkeen uudelleennimeäminen
+ * on riski, jonka ainoa hyöty olisi kosmeettinen.
  * ===========================================================================
  */
 
@@ -31,19 +40,38 @@ export interface RateLimitResult {
 }
 
 /**
+ * Ikkunan alku pyöristettynä alaspäin.
+ *
+ * Minuutin ikkuna alkaa tasaminuutilta, tunnin ikkuna tasatunnilta. Sama
+ * arvo koko ikkunan ajan, joten kaikki sen kutsut osuvat samaan riviin.
+ */
+export function windowStart(now: Date, windowMinutes: number): Date {
+  const start = new Date(now);
+  start.setSeconds(0, 0);
+
+  if (windowMinutes > 1) {
+    const minutes = Math.floor(start.getMinutes() / windowMinutes) * windowMinutes;
+    start.setMinutes(minutes);
+  }
+
+  return start;
+}
+
+/**
  * Kasvattaa laskuria ja kertoo, ylittyikö raja.
  *
  * `endpoint` on vapaa tunniste: sama merkkijono kaikissa kutsuissa, joita
- * sama raja koskee.
+ * sama raja koskee. `windowMinutes` on ikkunan pituus — 1 tarkoittaa
+ * minuuttia, 60 tuntia.
  */
 export async function checkRateLimit(
   userId: string,
   endpoint: string,
-  perMinute: number,
+  limit: number,
+  windowMinutes = 1,
   now: Date = new Date(),
 ): Promise<RateLimitResult> {
-  const minute = new Date(now);
-  minute.setSeconds(0, 0);
+  const minute = windowStart(now, windowMinutes);
 
   try {
     const { data, error } = await getServiceClient().rpc("rs_kasvata_kutsuraja", {
@@ -63,7 +91,7 @@ export async function checkRateLimit(
       return { allowed: true, count: 0 };
     }
 
-    return { allowed: count <= perMinute, count };
+    return { allowed: count <= limit, count };
   } catch (err) {
     console.error(
       `[kutsuraja] ${endpoint}: tarkistus epäonnistui:`,

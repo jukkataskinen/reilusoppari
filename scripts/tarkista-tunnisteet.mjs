@@ -31,6 +31,27 @@ const SALLITUT = {
   partyDetailsForDocument: ["src/lib/tenancy/party-details.ts", "src/lib/tenancy/contract-document.ts"],
 };
 
+/**
+ * Palvelimen salaisuudet. Naita ei lueta selainkomponentissa.
+ *
+ * Lista on tarkoituksella nimenomainen eika hahmontunnistusta: uusi
+ * salaisuus lisataan tanne kasin, ja se on hyva hetki miettia, kuuluuko se
+ * selaimeen. Julkiset avaimet (VAPIDin julkinen, Supabasen anon, Stripen
+ * publishable) EIVAT ole tassa, koska ne ovat tarkoituksella selaimessa.
+ */
+const SALAISUUDET =
+  /(^|[^A-Z_])(ANTHROPIC_API_KEY|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|SUPABASE_SERVICE_ROLE_KEY|ESINETTI_API_KEY|ESINETTI_WEBHOOK_SECRET|PERSON_DATA_KEY|RESEND_API_KEY|VAPID_PRIVATE_KEY)/;
+
+/**
+ * Oikean avaimen nakoinen merkkijono.
+ *
+ * `sk-ant-` on Anthropicin, `sk_live_`/`sk_test_` Stripen, `whsec_` Stripen
+ * webhook-salaisuus, ja service_role-JWT alkaa `eyJ`:lla. Nama eivat osu
+ * tavalliseen koodiin.
+ */
+const KOVAKOODATTU_AVAIN =
+  /(sk-ant-[A-Za-z0-9_-]{10,}|sk_(live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{10,}|eyJ[A-Za-z0-9_-]{10,}[.][A-Za-z0-9_-]{10,}[.][A-Za-z0-9_-]{10,})/;
+
 const virheet = [];
 
 for (const tiedosto of LÄHTEET) {
@@ -70,8 +91,50 @@ for (const tiedosto of LÄHTEET) {
     takana.
   */
   rivit.forEach((rivi, index) => {
-    if (/NEXT_PUBLIC_[A-Z_]*(PERSON|SECRET|PRIVATE|SERVICE_ROLE)/.test(rivi)) {
+    if (/NEXT_PUBLIC_[A-Z_]*(PERSON|SECRET|PRIVATE|SERVICE_ROLE|API_KEY|ANTHROPIC|PASSWORD)/.test(rivi)) {
       virheet.push(`${polku}:${index + 1}  salainen avain näyttää päätyvän selaimeen.`);
+    }
+  });
+
+  /*
+    Palvelimen salaisuus ei saa olla selainkomponentissa.
+
+    Tämä on se virhe, joka Jukan toisessa järjestelmässä kävi toteen: kutsu
+    tehtiin selaimesta avaimella, jonka nimi alkoi Viten etuliitteellä, ja
+    avain oli kenen tahansa luettavissa sivun lähteestä. Lasku oli
+    kolminumeroinen.
+
+    Next.js ei upota muuttujaa selaimeen ilman `NEXT_PUBLIC_`-etuliitettä —
+    arvo olisi `undefined`. Mutta jos joku myöhemmin "korjaa" sen lisäämällä
+    etuliitteen, koodi alkaa toimia ja avain vuotaa samalla. Siksi kielto on
+    jo siinä, että salaisuutta edes luetaan selainkomponentissa.
+  */
+  const onSelainkomponentti = rivit
+    .slice(0, 5)
+    .some((rivi) => /^\s*["']use client["']/.test(rivi));
+
+  if (onSelainkomponentti) {
+    rivit.forEach((rivi, index) => {
+      if (SALAISUUDET.test(rivi)) {
+        virheet.push(
+          `${polku}:${index + 1}  palvelimen salaisuus selainkomponentissa.`,
+        );
+      }
+    });
+  }
+
+  /*
+    Avain ei saa olla kirjoitettuna koodiin.
+
+    Tunnistetaan tunnetuista etuliitteistä. Koodiin liitetty avain päätyy
+    git-historiaan, josta sitä ei saa pois ilman historian kirjoittamista
+    uusiksi — ja siihen mennessä se on jo kaikkien kloonien mukana.
+  */
+  rivit.forEach((rivi, index) => {
+    if (KOVAKOODATTU_AVAIN.test(rivi)) {
+      virheet.push(
+        `${polku}:${index + 1}  koodissa näyttää olevan oikea avain. MITÄTÖI se heti.`,
+      );
     }
   });
 }

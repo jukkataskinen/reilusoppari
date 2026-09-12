@@ -1500,3 +1500,33 @@ KasaMasterissa.
 Taulu on yhteinen kaikille rajoille: `endpoint` erottaa ne, joten CLAUDE.md
 kohdan 6 vaatimat rajat kuvien lataukseen ja kutsulinkkeihin eivät tarvitse
 uutta taulua.
+
+
+## Kaksi vahtia avaimen vuotamista vastaan (2026-09-12)
+
+Jukan linjaus: avain EI saa karata. Hanen toisessa jarjestelmassaan vuotanut
+tunnus tuotti kerran kolminumeroisen laskun, ja syy oli Viten etuliite, joka
+kirjoitti ymparistomuuttujan selaimeen ladattavaan koodiin.
+
+Suojaus on kolmessa kerroksessa, ja ne on kaikki TESTATTU hälyttämään:
+
+1. **Lahdekoodin vahti** (`tarkista-tunnisteet.mjs`) kieltaa kolme asiaa:
+   palvelimen salaisuuden lukemisen selainkomponentissa, salaiselta
+   kuulostavan nimen `NEXT_PUBLIC_`-etuliitteen takana, ja oikean avaimen
+   nakoisen merkkijonon koodissa.
+2. **Selainpaketin vahti** (`tarkista-selainpaketti.mjs`) lukee ne tiedostot,
+   jotka selain oikeasti lataa, ja etsii niista avaimen muotoisia
+   merkkijonoja. Tama on eri asia kuin edellinen: lahdekoodin vahti loytaa
+   vain sen, minka tiedan vaaralliseksi. Tama katsoo lopputulosta ja
+   loytaisi myos sen, mita en osannut odottaa.
+3. **Kutsuraja** (20/min per kayttaja) ja pakollinen kirjautuminen rajaavat
+   vahingon siina tapauksessa, etta avain silti paasee vuotamaan.
+
+Neljas kerros on Jukan asettama kulutusraja Anthropicin konsolissa. Se on
+ainoa suoja, joka toimii myos silloin, kun vika on koodissa.
+
+**Saannolliset lausekkeet kirjoitettiin ilman kenoviivoja** (`[^A-Z_]`
+sanarajan sijaan, `[.]` pisteen sijaan). Syy on konkreettinen: `` muuttui
+tiedostoa muokatessa oikeaksi askelpalautinmerkiksi, ja vahti naytti
+toimivalta halyttamatta koskaan. Rikkoutunut vahti on pahempi kuin ei
+vahtia, koska siihen luotetaan.

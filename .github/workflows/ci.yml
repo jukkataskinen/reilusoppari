@@ -109,15 +109,14 @@ jobs:
           echo "OK: PDF:n fontit ovat mukana."
 
       - name: Varmista ettei salaisuuksia ole selainpaketissa
-        # Palvelinsalaisuudet eivät saa päätyä .next/static-tiedostoihin.
-        # Tämä huomaisi esimerkiksi vahingossa NEXT_PUBLIC_-etuliitteen
-        # saaneen muuttujan tai suoraan bundlattavaan koodiin kirjoitetun avaimen.
-        run: |
-          if grep -rl "ci-client-secret-ei-oikea\|service_role\|SUPABASE_SERVICE_ROLE_KEY" .next/static/ 2>/dev/null; then
-            echo "VIRHE: palvelinsalaisuus löytyi selainpaketista."
-            exit 1
-          fi
-          echo "OK: selainpaketissa ei salaisuuksia."
+        # Skripti lukee ne tiedostot, jotka selain oikeasti lataa, ja etsii
+        # niista oikean avaimen nakoisia merkkijonoja: Anthropic, Stripe,
+        # Resend ja Supabasen service_role.
+        #
+        # Tama on eri asia kuin lahdekoodin tarkistus (tarkista:tunnisteet):
+        # se etsii kaavoja, jotka tiedetaan vaarallisiksi, eika voi nahda
+        # sita mita ei osattu odottaa. Tama katsoo lopputulosta.
+        run: npm run tarkista:selainpaketti
 
   e2e:
     runs-on: ubuntu-latest
