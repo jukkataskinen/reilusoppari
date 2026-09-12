@@ -87,6 +87,16 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
         {fi.nav.inspection}
       </Link>
 
+      {/* Kulut ovat vain omistajan: linkkiä ei näytetä vuokralaiselle. */}
+      {isLandlord ? (
+        <Link
+          href={`/vuokrasuhteet/${tenancy.id}/kulut`}
+          className="mt-3 ml-0 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm sm:ml-3 sm:mt-6"
+        >
+          {fi.nav.expenses}
+        </Link>
+      ) : null}
+
       <Link
         href={`/vuokrasuhteet/${tenancy.id}/huoltokirja`}
         className="mt-3 ml-0 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm sm:ml-3 sm:mt-6"

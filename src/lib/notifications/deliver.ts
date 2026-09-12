@@ -17,11 +17,18 @@
  * Ilmoitus on herätys, ei sisältö. Kaikki, mitä ilmoituksessa lukee, näkyy
  * myös sovelluksessa — jos ilmoitus ei mene perille tai se pyyhkäistään pois,
  * mitään ei ole menetetty.
+ *
+ * SÄHKÖPOSTI ON VARAKANAVA, EI RINNAKKAINEN
+ *
+ * Sähköposti lähtee vain, jos push ei mennyt perille yhteenkään laitteeseen.
+ * Molemmat yhdessä tarkoittaisivat kahta ilmoitusta samasta asiasta, ja Jukka
+ * linjasi tästä suoraan: heräte puhelimeen on parempi kuin sähköposti.
  * ===========================================================================
  */
 
 import webpush from "web-push";
 import { getServiceClient } from "../db/supabase";
+import { sendEmail } from "./email";
 
 export interface DeliverableNotification {
   userId: string;
@@ -98,15 +105,19 @@ export async function deliver(notification: DeliverableNotification): Promise<bo
     throw new Error("Ilmoituksen kirjaus epäonnistui.");
   }
 
-  if (!ensureVapid()) return true;
-
-  const { data: subscriptions } = await supabase
-    .from("rs_push_subscriptions")
-    .select("id, endpoint, keys")
-    .eq("user_id", notification.userId);
+  const { data: subscriptions } = ensureVapid()
+    ? await supabase
+        .from("rs_push_subscriptions")
+        .select("id, endpoint, keys")
+        .eq("user_id", notification.userId)
+    : { data: null };
 
   const rows = (subscriptions ?? []) as unknown as SubscriptionRow[];
-  if (rows.length === 0) return true;
+
+  if (rows.length === 0) {
+    await fallbackToEmail(notification);
+    return true;
+  }
 
   const payload = JSON.stringify({
     title: notification.title,
@@ -115,11 +126,13 @@ export async function deliver(notification: DeliverableNotification): Promise<bo
   });
 
   const now = new Date().toISOString();
+  let delivered = 0;
 
   await Promise.all(
     rows.map(async (row) => {
       try {
         await webpush.sendNotification({ endpoint: row.endpoint, keys: row.keys }, payload);
+        delivered += 1;
         await supabase
           .from("rs_push_subscriptions")
           .update({ last_success_at: now })
@@ -141,6 +154,13 @@ export async function deliver(notification: DeliverableNotification): Promise<bo
     }),
   );
 
+  // Yksikään laite ei ottanut vastaan: tilaukset olivat vanhentuneita tai
+  // lähetys epäonnistui. Silloin viesti lähtee sähköpostina.
+  if (delivered === 0) {
+    await fallbackToEmail(notification);
+    return true;
+  }
+
   if (notification.dedupeKey) {
     await supabase
       .from("rs_notifications")
@@ -149,4 +169,38 @@ export async function deliver(notification: DeliverableNotification): Promise<bo
   }
 
   return true;
+}
+
+/**
+ * Lähettää ilmoituksen sähköpostina ja merkitsee kanavan.
+ *
+ * Osoite luetaan `rs_users`-taulusta: se on sama, jolla käyttäjä kirjautuu,
+ * eikä sitä tarvitse kysyä erikseen. Jos osoitetta ei ole, ei tehdä mitään —
+ * ilmoitus on silti kirjattu ja näkyy sovelluksessa.
+ */
+async function fallbackToEmail(notification: DeliverableNotification): Promise<void> {
+  const supabase = getServiceClient();
+
+  const { data } = await supabase
+    .from("rs_users")
+    .select("email")
+    .eq("id", notification.userId)
+    .maybeSingle();
+
+  const email = (data as { email: string } | null)?.email;
+  if (!email) return;
+
+  const sent = await sendEmail({
+    to: email,
+    title: notification.title,
+    body: notification.body,
+    path: notification.path,
+  });
+
+  if (!sent || !notification.dedupeKey) return;
+
+  await supabase
+    .from("rs_notifications")
+    .update({ channel: "email", sent_at: new Date().toISOString() })
+    .eq("dedupe_key", notification.dedupeKey);
 }

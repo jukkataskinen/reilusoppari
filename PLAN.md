@@ -139,7 +139,8 @@ Polut 5.5–5.6. DoD: kuittaus toimii pushista ja sähköpostista, historia näk
 - [x] **iPhone: ohjaus kotivalikkoon lisäämiseen** vuokranmaksusivulla, kun
       vuokrakausia on olemassa. Nappia ei näytetä siellä missä se ei voi
       toimia
-- [ ] Sähköposti varakanavana (Resend)
+- [x] Sähköposti varakanavana (Resend). Lähtee vain, jos push ei mennyt
+      perille yhteenkään laitteeseen
 - [x] Cron: päivittäin, tarkistuspyyntö vuokranantajalle 3 pv eräpäivästä ja
       toinen kierros 10 pv. Muistutus vuokralaiselle vain merkinnän
       perusteella (Jukan linjaus 2026-09-12)

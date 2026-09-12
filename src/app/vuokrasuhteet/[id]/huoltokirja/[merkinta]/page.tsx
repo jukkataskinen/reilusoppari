@@ -8,6 +8,7 @@ import { photoUrl } from "@/lib/db/inspections";
 import { AppShell } from "@/components/AppShell";
 import { PhotoCapture } from "@/components/PhotoCapture";
 import { MaintenanceEntryActions } from "@/components/MaintenanceEntryActions";
+import { ExpenseForm } from "@/components/ExpenseForm";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -129,6 +130,19 @@ export default async function EntryPage({
             ))}
           </ul>
         </section>
+      ) : null}
+
+      {/*
+        Kulukysely juuri korjauksen kuittaamisen jälkeen (Jukan pyyntö
+        2026-09-12): se on ainoa hetki, jolloin kuitti on vielä taskussa ja
+        ajokilometrit muistissa. Vain vuokranantajalle.
+      */}
+      {isLandlord && entry.resolvedAt && !entry.cancelledAt ? (
+        <ExpenseForm
+          tenancyId={id}
+          maintenanceEntryId={merkinta}
+          defaultDate={entry.resolvedAt.slice(0, 10)}
+        />
       ) : null}
 
       <MaintenanceEntryActions

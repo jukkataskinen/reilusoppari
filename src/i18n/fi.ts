@@ -19,6 +19,7 @@ export const fi = {
     signing: "Allekirjoitus",
     rent: "Vuokranmaksu",
     maintenance: "Huoltokirja",
+    expenses: "Kulut",
     settings: "Asetukset",
   },
   role: {

@@ -1099,3 +1099,65 @@ Aikaraja on nyt 20 sekuntia koko ajolle (`vitest.config.mts`). Satunnaisesti
 kaatuva testi on pahempi kuin hidas: se opettaa sivuuttamaan punaisen.
 
 Todennettu kolmella peräkkäisellä ajolla: 331 testiä läpi joka kerta.
+
+
+## Sähköposti on varakanava, ei rinnakkainen (2026-09-12)
+
+Sähköposti lähtee vain silloin, kun push ei mennyt perille yhteenkään
+laitteeseen — ei tilausta, vanhentunut tilaus tai epäonnistunut lähetys.
+Molempien lähettäminen tarkoittaisi kahta ilmoitusta samasta asiasta, ja
+Jukka linjasi tästä suoraan (2026-09-11):
+
+> "Se ei ole hyvä ratkaisu, että vuokranantaja saa sähköpostin jossa
+> pyydetään tarkastamaan vuokranmaksu. Heräte puhelimeen on parempi."
+
+Sähköposti on siis sitä varten, ettei ilmoitus katoa kokonaan.
+
+Viestissä ei ole painikkeita eikä kuittausta: kuittaus tehdään kirjautuneena,
+koska se on merkintä, jonka toinen osapuoli näkee. Sähköpostissa on sama
+teksti kuin ilmoituksessa ja linkki sovellukseen.
+
+Ilman `RESEND_API_KEY`-avainta ei lähetetä mitään eikä kaaduta. Ilmoitus on
+silti kirjattu, ja sovelluksessa se näkyy joka tapauksessa.
+
+
+## Kulukysely korjauksen kuittaamisen yhteydessä (2026-09-12, Jukan pyyntö)
+
+> "Kun vuokranantaja kuittaa vian hoidetuksi, voisi tulla kysely
+> kustannuksista ja matkakuluista. Tässä vaiheessa laskut voi kuvata
+> talteen. Ei näy tietenkään vuokralaiselle."
+
+**Hetki on olennainen.** Kysely ilmestyy siinä hetkessä, kun vika merkitään
+korjatuksi — se on ainoa hetki, jolloin kuitti on vielä taskussa ja
+ajokilometrit muistissa. Keväällä veroilmoitusta tehdessä kumpikaan ei ole.
+
+Lomake on suljettuna oletuksena: kaikista korjauksista ei tule kuluja, ja
+aina auki oleva lomake olisi kysymys, johon vastataan ohittamalla.
+
+**Matkakuluissa riittävät kilometrit.** Summa lasketaan verottajan taksalla
+sen vuoden mukaan, jolle kulu kirjataan — laskelma tehdään usein seuraavana
+keväänä, eikä silloin saa käyttää uutta taksaa vanhan vuoden ajoihin. Taksa
+on siksi vuosikohtainen taulukko eikä yksi luku.
+
+**Rajaus on asunnon omistajuudessa, ei osapuoliasemassa.** Tämä on koko
+ominaisuuden tärkein kohta: vuokralainen on vuokrasuhteen osapuoli, joten
+tavallinen osapuolitarkistus päästäisi hänet kuluihin. Kulut ja kuitit
+rajataan `requireExpenseAccess`-tarkistuksella, joka kysyy asunnon
+omistajuutta. Vuokralainen saa 404:n eikä "ei oikeutta" -sivua — hänen ei
+kuulu tietää, että sivu on olemassa.
+
+Kuitissa voi olla vuokranantajan kotiosoite, kortin loppunumerot tai muun
+asunnon tietoja. Kuitti tallentuu `expense_id`-viitteellä, eivätkä katselmus-
+ja huoltokirjanäkymät hae kuvia sillä viitteellä — kuitti ei siis voi
+vahingossa päätyä pöytäkirjaan.
+
+Kulu linkitetään huoltokirjan merkintään (`expense_id`), jotta
+vuosilaskelmasta näkee mihin korjaukseen kulu liittyi. Linkki on kannassa
+molempiin suuntiin, mutta huoltokirjan näkymä ei lue sitä — testi vartioi
+tätä.
+
+**Kululuokat ovat verottajan, eivät meidän.** Nimet ja jaottelu seuraavat
+vuokratulon veroilmoituslomaketta, jotta rivit voi siirtää OmaVeroon ilman
+tulkintaa. Rahastoitu rahoitusvastike, perusparannus ja korot on merkitty
+erikseen: ne eivät ole vuosikuluja, ja jos ne summautuisivat muiden joukkoon,
+laskelma olisi väärä juuri siinä kohdassa, jossa virhe maksaa.
