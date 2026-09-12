@@ -29,6 +29,19 @@ Juridinen sisältö on Jukan vastuulla. Tämä tiedosto koskee ulkoasua ja kielt
 Toinen komento on olennainen: asiakirjan ulkoasua ei voi arvioida lukematta
 sitä, eikä PDF:ää näe päätteestä.
 
+**Markkinointisivusto näyttää näitä samoja asiakirjoja.** `reilusoppari-web`
+esittää vuokrasopimuksen, alkukatselmuksen ja vuokratodistuksen ensimmäiset
+sivut PNG-kuvina (`public/asiakirjat/`), jottei sivustolle synny toista
+versiota samasta asiakirjasta. **Kun muutat pohjaa, päivitä myös ne:**
+
+    npm run samples
+    node scripts/pdf-to-png.mjs esimerkit/vuokrasopimus.pdf sivu
+    # kopioi sivu-1.png → reilusoppari-web/public/asiakirjat/vuokrasopimus.png
+
+Sama `alkukatselmus.pdf` → `alkukatselmus.png` ja `vuokratodistus.pdf` →
+`vuokratodistus.png`. Jos tämä unohtuu, sivusto näyttää vanhaa asiakirjaa
+eikä kukaan huomaa sitä ennen kuin asiakas huomaa.
+
 ---
 
 ## Lähtökohta: ei viranomaispaperia
