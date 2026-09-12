@@ -258,3 +258,99 @@ export async function cancelSubscription(stripeSubscriptionId: string): Promise<
     .update({ status: "canceled", updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", stripeSubscriptionId);
 }
+
+/** Käyttäjän tilaus lajeittain. `null`, jos sellaista ei ole. */
+export async function getSubscription(
+  userId: string,
+  kind: "portfolio_yearly" | "plus_yearly",
+): Promise<{
+  stripeSubscriptionId: string;
+  quantity: number;
+  status: "active" | "past_due" | "canceled";
+  currentPeriodEnd: string | null;
+} | null> {
+  const { data } = await getServiceClient()
+    .from("rs_subscriptions")
+    .select("stripe_subscription_id, quantity, status, current_period_end")
+    .eq("user_id", userId)
+    .eq("kind", kind)
+    /*
+      Uusin ensin.
+
+      Päättynyt tilaus jää riviksi, ja jos käyttäjä tilaa uudelleen, rivejä on
+      kaksi. Vanhempi näyttäisi tilauksen päättyneeltä, vaikka uusi on
+      voimassa.
+    */
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const row = data as {
+    stripe_subscription_id: string;
+    quantity: number;
+    status: "active" | "past_due" | "canceled";
+    current_period_end: string | null;
+  } | null;
+
+  if (!row) return null;
+
+  return {
+    stripeSubscriptionId: row.stripe_subscription_id,
+    quantity: row.quantity,
+    status: row.status,
+    currentPeriodEnd: row.current_period_end,
+  };
+}
+
+/**
+ * Salkkunäkymän tiedot yhdellä kutsulla.
+ *
+ * Vertailuluvut ovat TOTEUTUNEITA eivätkä arvioita: vuokrasuhteet viimeisen
+ * vuoden ajalta ja asunnot, joista laskelma on tulostettu. Arvattu luku
+ * näyttäisi laskelmassa samalta kuin mitattu, eikä käyttäjä voisi tietää
+ * kumpi on kyseessä.
+ */
+export async function getPortfolioState(userId: string, now: Date = new Date()) {
+  const supabase = getServiceClient();
+  const vuosiSitten = new Date(now);
+  vuosiSitten.setFullYear(vuosiSitten.getFullYear() - 1);
+
+  const [{ data: properties }, { data: tenancies }, subscription] = await Promise.all([
+    supabase.from("rs_properties").select("id").eq("owner_user_id", userId).is("archived_at", null),
+    supabase
+      .from("rs_tenancies")
+      .select("id")
+      .eq("landlord_user_id", userId)
+      .gte("created_at", vuosiSitten.toISOString()),
+    getSubscription(userId, "portfolio_yearly"),
+  ]);
+
+  const propertyIds = ((properties ?? []) as Array<{ id: string }>).map((row) => row.id);
+
+  /*
+    Plus-asunnot: ne, joista on tulostettu laskelma viimeisen vuoden aikana.
+
+    `generated_at` eikä pelkkä rivin olemassaolo: laskelma voi olla tallessa
+    ilman että sitä on koskaan sinetöity, ja veloitus syntyy vasta
+    tulostuksesta.
+  */
+  let plusProperties = 0;
+  if (propertyIds.length > 0) {
+    const { data: reports } = await supabase
+      .from("rs_tax_reports")
+      .select("property_id")
+      .in("property_id", propertyIds)
+      .gte("generated_at", vuosiSitten.toISOString());
+
+    plusProperties = new Set(
+      ((reports ?? []) as Array<{ property_id: string }>).map((row) => row.property_id),
+    ).size;
+  }
+
+  return {
+    properties: propertyIds.length,
+    tenanciesLastYear: (tenancies ?? []).length,
+    plusProperties,
+    subscription,
+  };
+}

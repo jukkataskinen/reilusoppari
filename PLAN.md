@@ -232,8 +232,8 @@ kuuluvat valmiiseen tuotteeseen.
 - [x] Kuluttajakauppa: peruutusoikeus 14 pv ja sen menetys nimenomaisella
       suostumuksella; suostumus ehtona maksulle
 - [x] Webhook allekirjoitustarkistuksella ja toiston estolla
-- [ ] Salkkutilauksen tilaaminen käyttöliittymästä (laskenta valmis, sivu
-      puuttuu)
+- [x] Salkkutilaus: `/laskutus`, rehellinen vertailu toteutuneella käytöllä,
+      asuntomäärän päivitys napin takana, Customer Portal laskuille
 - [ ] Tilausvahvistus sähköpostiin — odottaa `RESEND_API_KEY`:tä
 - [ ] Testaus Stripe test modessa — odottaa avaimia (Jukka)
 

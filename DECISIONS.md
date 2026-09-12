@@ -1642,3 +1642,47 @@ ruudulle nayttamaan jumilta.
 
 Samalla loytyi kaksi nappia ilman odotustilaa: katselmuksen "Kuvaa tama
 tila" ja todistuksen jakolinkin "Mitatoi".
+
+
+## Salkkutilaus (2026-09-12)
+
+Vaiheen 5 viimeinen kesken ollut osa. Laskenta oli valmiina; käyttöliittymä
+ja tilauksen hallinta puuttuivat.
+
+**Salkkua ei tarjota, jos se on käyttäjälle kalliimpi.** Vertailu tehdään
+TOTEUTUNEELLA käytöllä: montako vuokrasuhdetta viimeisen vuoden aikana ja
+monestako asunnosta laskelma on tulostettu. Tämä on se kohta, jossa oma etu
+ja käyttäjän etu ovat eri suuntiin, ja siksi se on testattu tiheimmin.
+
+**Molemmat luvut näytetään, ei pelkkää säästöä.** "Säästät salkulla" on
+väite, jonka voi vain uskoa tai olla uskomatta. Luvut rinnakkain on laskelma,
+jonka voi tarkistaa. Näkymä kertoo myös mistä luvut tulevat, jotta käyttäjä
+voi olla eri mieltä, jos hän tietää suunnitelmistaan jotain mitä historia ei
+kerro.
+
+**Kun salkku ei kannata, se kerrotaan silti.** Vaihtoehto — jättää asia
+mainitsematta — tarkoittaisi, että käyttäjä kuulee salkusta vasta kun se
+sattuu olemaan meille edullista.
+
+**Asuntomäärän muutosta EI päivitetä automaattisesti.** Salkun hinta riippuu
+asuntojen määrästä, ja hiljainen päivitys olisi veloitus, jota käyttäjä ei
+ole hyväksynyt. Ero näytetään ja päivitys on yhden napin takana. Siihen asti
+tilauksen ulkopuoliset asunnot laskutetaan vuokrasuhteittain.
+
+**Salkkutilaus ei kuluta peruutusoikeutta.** Toisin kuin kertamaksu, tilaus
+laskutetaan kaudittain ja sen voi irtisanoa asiakasportaalista, joten
+suostumusta palvelun välittömään aloittamiseen ei kysytä.
+
+**Laskut ja maksutapa hoidetaan Stripen asiakasportaalissa.** Niitä ei
+rakenneta tänne: maksuvälineen käsittely omassa käyttöliittymässä
+tarkoittaisi korttitietojen kulkemista tämän palvelun läpi.
+
+**Toiminnot eivät ota lomakedataa.** Asuntomäärä, tilaus ja hinta luetaan
+palvelimella; lomakkeesta tuleva luku olisi selaimen kertoma, eikä sellaista
+haluta hinnoitteluun. Siksi ne ovat tavallisia funktioita eivätkä
+`useActionState`-toimintoja, ja odotustila hoidetaan `useTransition`illa.
+
+**Tilauksen määrä päivitetään omaan kantaan heti, ei vain webhookista.**
+Webhook on lopullinen totuus, mutta se voi tulla sekuntien päästä — ja siihen
+asti näkymä näyttäisi, ettei painallus tehnyt mitään. Webhook kirjoittaa
+saman arvon uudelleen, joten kahta totuutta ei synny.

@@ -127,6 +127,8 @@ test("asuntosivut vaativat kirjautumisen", async ({ page }) => {
     // Suositteluosoite paljastaisi käyttäjän tunnisteen.
     "/suosittele",
     "/omat-tiedot",
+    // Laskutus kertoo mitä käyttäjä maksaa ja mitä tilauksia hänellä on.
+    "/laskutus",
   ]) {
     const response = await page.request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(307);

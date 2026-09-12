@@ -63,6 +63,19 @@ export default async function OwnDetailsPage() {
         </p>
       </div>
 
+      <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+        <p className="font-medium">Laskutus</p>
+        <p className="mt-2 text-sm text-ink/70">
+          Mitä seuraava vuokrasuhde maksaa, suositteluetusi ja salkkuhinta viidelle tai
+          useammalle asunnolle. Vuokralainen ei maksa koskaan mitään.
+        </p>
+        <p className="mt-3 text-sm">
+          <Link href="/laskutus" className="underline underline-offset-4">
+            Laskutuksen tilanne
+          </Link>
+        </p>
+      </div>
+
       {/*
         Omien tietojen vienti on tietosuoja-asetuksen oikeus (art. 20) ja
         CLAUDE.md:n lupaus. Se on tällä sivulla eikä asetuksissa, koska tämä
