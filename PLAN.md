@@ -150,7 +150,8 @@ Polut 5.5–5.6. DoD: kuittaus toimii pushista ja sähköpostista, historia näk
 - [x] Vuokralaisen näkymä ja kommentti (300 merkkiä)
 - [x] Kaksi peräkkäistä "Ei vielä" → ohje ja linkki neuvontaan, ei muuta.
       Ohje näkyy vain vuokralaiselle
-- [ ] Huoltokirja: vikailmoitus kuvineen, kommentit, korjatuksi merkintä
+- [x] Huoltokirja: vikailmoitus kuvineen, kommentit, korjatuksi merkintä.
+      Merkintää ei poisteta — virheellisen voi perua, ja peruminen näkyy
 - [ ] Merkintöjä ei poisteta; virheellinen merkitään "peruttu" molempien nähden
 
 ## Vaihe 3 — Päättyminen ja todistukset
