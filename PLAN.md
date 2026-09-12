@@ -140,9 +140,11 @@ Polut 5.5–5.6. DoD: kuittaus toimii pushista ja sähköpostista, historia näk
       sitä iPhone ei näytä ilmoituksia lainkaan — Applen sääntö
 - [ ] Sähköposti varakanavana (Resend)
 - [ ] Cron: eräpäivänä klo 9 Europe/Helsinki, muistutus 3 pv myöhemmin
-- [ ] Kuittaus: Kyllä / Ei vielä / Osittain + summa, muutettavissa 30 pv
-- [ ] Vuokralaisen näkymä ja kommentti (300 merkkiä)
-- [ ] Kaksi peräkkäistä "Ei vielä" → ohje ja linkki neuvontaan, ei muuta
+- [x] Kuittaus: Kyllä / Ei vielä / Osittain + summa, muutettavissa 30 pv.
+      Ikkuna lasketaan ensimmäisestä kuittauksesta, muutokset lokiin
+- [x] Vuokralaisen näkymä ja kommentti (300 merkkiä)
+- [x] Kaksi peräkkäistä "Ei vielä" → ohje ja linkki neuvontaan, ei muuta.
+      Ohje näkyy vain vuokralaiselle
 - [ ] Huoltokirja: vikailmoitus kuvineen, kommentit, korjatuksi merkintä
 - [ ] Merkintöjä ei poisteta; virheellinen merkitään "peruttu" molempien nähden
 

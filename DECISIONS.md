@@ -916,3 +916,43 @@ Siksi merkintää ei voi käyttää toisen havainnon hiljentämiseen: lukija nä
 sekä kuvan että merkinnän ja päättää itse. Lomake on suljettuna oletuksena ja
 avautuu erikseen; se on tarkoituksella hieman hankalampi kuin kuvan
 ottaminen.
+
+
+## Kuittaus on merkintä, ei maksujärjestelmä (2026-09-12)
+
+Reilusoppari ei näe tilitapahtumia eikä peri mitään. Kuittaus on
+vuokranantajan oma merkintä siitä, tuliko vuokra — siis mielipide
+tosiasiasta, ei tosiasia. Juuri siksi vuokralainen näkee sen ja voi
+kommentoida.
+
+Sanamuodot on valittu sen mukaan: **"Ei vielä" eikä "maksamatta".**
+Ensimmäinen kuvaa hetkeä, jälkimmäinen ihmistä. Kuittaus voi olla väärässä —
+maksu on voinut olla matkalla — ja sanamuodon on kestettävä se.
+
+**Roolit eivät sekoitu.** Vain vuokranantaja kuittaa: hän on se, joka näkee
+tilinsä. Vain vuokralainen kommentoi: kommentti on vastine, ei toinen
+kuittaus. Jos kumpikin voisi tehdä molempia, historia ei kertoisi kumman
+näkemys se on.
+
+**30 päivän ikkuna lasketaan ensimmäisestä kuittauksesta**, ei viimeisestä
+muutoksesta. Muuten merkintää voisi pitää auki loputtomiin muuttamalla sitä
+kerran kuussa. Aikaraja on olemassa, koska vuokratodistus rakentuu näiden
+merkintöjen varaan: jos vuosien takaisia kuittauksia voisi muuttaa, todistus
+kertoisi siitä mitä vuokranantaja nyt ajattelee, ei siitä mitä silloin
+tapahtui. Jokainen muutos menee `rs_audit_log`-tauluun.
+
+**Osittainen maksu vaatii summan.** Ilman sitä "osittain" ei kerro mitään:
+sekä 10 € että 840 € 850 eurosta olisivat "osittain". Nolla ohjataan
+merkintään "Ei vielä" ja täysi summa merkintään "Kyllä" — kolme merkintää
+riittää, kun ne tarkoittavat eri asioita.
+
+**Ohje maksuvaikeuksista näytetään vuokralaiselle, ei vuokranantajalle.**
+Kahden peräkkäisen "Ei vielä" jälkeen näkyy ohje ja linkki maksuttomaan
+talous- ja velkaneuvontaan — eikä muuta. Ei muistutuksia, ei perintää, ei
+merkintää mihinkään rekisteriin. Ohje on sille, joka sitä tarvitsee; se ei
+ole vuokranantajalle tarkoitettu painostuskeino, eikä sen näkymistä siksi
+kerrota hänelle.
+
+**Osittainen maksu ei laske maksamattomuudeksi** ohjetta laskettaessa. Se on
+yritys maksaa, ja sen kohteleminen maksamattomuutena olisi väärin sitä
+kohtaan, joka yritti.

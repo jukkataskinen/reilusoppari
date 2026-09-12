@@ -17,6 +17,7 @@ export const fi = {
     parties: "Osapuolten tiedot",
     inspection: "Alkukatselmus",
     signing: "Allekirjoitus",
+    rent: "Vuokranmaksu",
     settings: "Asetukset",
   },
   role: {
