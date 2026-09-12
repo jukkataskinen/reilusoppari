@@ -61,11 +61,73 @@ h3 {
   border-radius: 2px;
 }
 
+/*
+ * PAINALLUS NÄKYY HETI (Jukan havainto 2026-09-12)
+ *
+ * Ilman tätä nappi näytti painettuna täsmälleen samalta kuin painamattomana.
+ * Sivu on palvelimella renderöity, joten napin painamisen ja uuden näkymän
+ * välissä on verkkopyyntö — ja sinä aikana mikään ei kertonut, osuiko
+ * painallus vai onko sovellus jumissa.
+ *
+ * Tämä ei nopeuta mitään. Se kertoo, että painallus rekisteröityi, ja se on
+ * eri asia kuin nopeus: odottaminen on siedettävää, epätietoisuus ei.
+ *
+ * Toteutus on pelkkää CSS:ää tarkoituksella — se reagoi samalla
+ * millisekunnilla eikä odota JavaScriptin latautumista.
+ */
+button:active,
+a:active,
+label:active,
+summary:active,
+[role="button"]:active {
+  opacity: 0.62;
+  /* Nopea mutta ei nykivä: paluu normaaliin saa kestää hieman kauemmin. */
+  transition: opacity 0.03s ease-out;
+}
+
+button,
+a,
+label,
+summary,
+[role="button"] {
+  transition: opacity 0.15s ease-out;
+}
+
+/*
+ * Poistettu käytöstä oleva nappi ei saa näyttää painettavalta.
+ *
+ * Lomakkeissa nappi menee `disabled`-tilaan lähetyksen ajaksi. Jos se
+ * reagoisi painallukseen, käyttäjä luulisi painavansa uudelleen — ja
+ * epäilisi, meniko ensimmäinen perille.
+ */
+button:disabled:active,
+[aria-disabled="true"]:active {
+  opacity: 0.6;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/*
+ * Sivunvaihdon palkki (NavigationProgress).
+ *
+ * Liikkuu edestakaisin eikä tayty: emme tieda, kauanko palvelimella kestaa,
+ * eika palkki saa vaittaa tietavansa. Sen tehtava on vastata kysymykseen
+ * "onko tama jumissa", ei ennustaa valmistumista.
+ *
+ * prefers-reduced-motion pysayttaa taman jo ylla olevalla saannolla.
+ */
+@keyframes navprogress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
   }
 }

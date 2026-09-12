@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { sans } from "@/lib/fonts";
 import { fi } from "@/i18n/fi";
+import { NavigationProgress } from "@/components/NavigationProgress";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
@@ -35,6 +37,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fi" className={`${sans.variable} h-full`}>
       <body className="min-h-full bg-cloud text-ink antialiased">
+        {/*
+          Sivunvaihdon palkki. `Suspense`, koska komponentti lukee
+          hakuparametreja — ilman sitä koko sovellus muuttuisi dynaamiseksi.
+        */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
         <ServiceWorkerRegistration />
       </body>

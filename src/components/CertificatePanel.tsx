@@ -47,7 +47,7 @@ export function CertificatePanel({
   const [replyState, reply, replyPending] = useActionState(replyAction, initialState);
   const [sealState, seal, sealPending] = useActionState(sealAction, initialState);
   const [shareState, share, sharePending] = useActionState(createShareAction, initialState);
-  const [revokeState, revoke] = useActionState(revokeShareAction, initialState);
+  const [revokeState, revoke, revokePending] = useActionState(revokeShareAction, initialState);
   const [rating, setRating] = useState<"recommend" | "none">(
     certificate.rating === "recommend" ? "recommend" : "none",
   );
@@ -297,8 +297,12 @@ export function CertificatePanel({
                     <form action={revoke}>
                       <input type="hidden" name="tenancyId" value={tenancyId} />
                       <input type="hidden" name="shareId" value={row.id} />
-                      <button type="submit" className="underline underline-offset-4">
-                        Mitätöi
+                      <button
+                        type="submit"
+                        disabled={revokePending}
+                        className="underline underline-offset-4 disabled:opacity-60"
+                      >
+                        {revokePending ? "Mitätöidään…" : "Mitätöi"}
                       </button>
                     </form>
                   )}

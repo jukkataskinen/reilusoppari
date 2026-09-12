@@ -46,7 +46,7 @@ export function InspectionControls({
 }) {
   const [readyState, readyAction, readyPending] = useActionState(markReadyAction, initialState);
   const [lockState, lockAction, lockPending] = useActionState(lockInspectionAction, initialState);
-  const [roomState, roomAction] = useActionState(addRoomAction, initialState);
+  const [roomState, roomAction, roomPending] = useActionState(addRoomAction, initialState);
 
   if (locked) return null;
 
@@ -76,9 +76,10 @@ export function InspectionControls({
         ) : null}
         <button
           type="submit"
-          className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+          disabled={roomPending}
+          className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm disabled:opacity-60"
         >
-          Kuvaa tämä tila
+          {roomPending ? "Lisätään…" : "Kuvaa tämä tila"}
         </button>
       </form>
 

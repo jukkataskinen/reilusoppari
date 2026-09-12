@@ -1605,3 +1605,40 @@ tiedot poistuisivat päivää liian aikaisin.
 **Päättymätön vuokrasuhde ei ole koskaan poistokelpoinen**, kesti se kuinka
 kauan tahansa. Sama koskee rikkinäistä päivämäärää: epäselvässä tapauksessa
 säilytetään.
+
+
+## Painikepalaute ja sivunvaihdon palkki (2026-09-12)
+
+Jukan havainto: napit eivat reagoi tarpeeksi nopeasti, eika mikaan kerro
+osuiko painallus vai onko sovellus jumissa.
+
+Syita oli kaksi. Napeilla ei ollut lainkaan painallustilaa — painettu nappi
+nayttti tasmalleen samalta kuin painamaton. Ja sivut renderoidaan
+palvelimella, joten linkin painamisen ja uuden nakymän valissa on
+verkkopyynto, jonka aikana mikaan ei liikkunut.
+
+**`:active`-tila on pelkkaa CSS:aa tarkoituksella.** Se reagoi samalla
+millisekunnilla eika odota JavaScriptin latautumista. Se ei nopeuta mitaan;
+se kertoo etta painallus rekisteroityi. Odottaminen on siedettavaa,
+epatietoisuus ei.
+
+**`loading.tsx` kokeiltiin ja hylattiin.** Se olisi ollut Next.js:n oma
+ratkaisu ja yksinkertaisempi, mutta se rikkoi suojattujen sivujen
+uudelleenohjauksen: streamattu sivu ei voi enaa asettaa vastauksen
+tilakoodia, joten `/asunnot` palautti kirjautumattomalle 200:n
+latausnakymalla eika 307:aa kirjautumiseen. Suojaus sailyi, mutta vastaus
+oli huonompi — ja e2e-testi huomasi sen.
+
+Vaihtoehto olisi ollut siirtaa suojaus middlewareen, mutta middleware sanoo
+nimenomaisesti ettei suojaus ole siella, ja syy on kirjattu: osa reiteista
+on tarkoituksella julkisia. Arkkitehtuuria ei muuteta latausilmeen takia.
+
+**`NavigationProgress` ei koske reittien vastauksiin.** Se kuuntelee
+linkkien painalluksia selaimessa ja piilottaa palkin kun osoite vaihtuu.
+Palkki liikkuu tasaisesti eika tayty: emme tieda kauanko palvelimella
+kestaa, eika palkki saa vaittaa tietavansa. Ajastin piilottaa sen
+viimeistaan 15 sekunnissa, jottei peruuntunut sivunvaihto jata sita
+ruudulle nayttamaan jumilta.
+
+Samalla loytyi kaksi nappia ilman odotustilaa: katselmuksen "Kuvaa tama
+tila" ja todistuksen jakolinkin "Mitatoi".
