@@ -258,3 +258,126 @@ export async function signingStatus(
     return null;
   }
 }
+
+
+/**
+ * Loppukatselmuksen allekirjoituskierros (CLAUDE.md 5.8).
+ *
+ * ===========================================================================
+ * YKSI ASIAKIRJA, SAMAT ALLEKIRJOITTAJAT
+ *
+ * Alussa allekirjoitetaan kaksi asiakirjaa, lopussa yksi: loppukatselmuksen
+ * pöytäkirja. Sopimusta ei allekirjoiteta uudelleen — se on jo voimassa, ja
+ * sen uudelleenallekirjoittaminen antaisi ymmärtää, että sen sisällöstä
+ * neuvotellaan uudelleen.
+ *
+ * Tämä kierros vie vuokrasuhteen tilaan `ended`, ja vasta siitä alkaa
+ * arvioiden ja todistusten vaihe.
+ * ===========================================================================
+ */
+export async function sendFinalForSigning(
+  userId: string,
+  tenancyId: string,
+): Promise<SendResult> {
+  const tenancy = await getTenancy(userId, tenancyId);
+  if (!tenancy) return { ok: false, message: "Vuokrasuhdetta ei löytynyt." };
+
+  if (tenancy.landlordUserId !== userId) {
+    return { ok: false, message: "Vain vuokranantaja voi lähettää pöytäkirjan allekirjoitettavaksi." };
+  }
+
+  const overview = await getInspectionOverview(userId, tenancyId, "final");
+
+  if (overview.inspection.esinettiRoundId) {
+    return { ok: false, message: "Pöytäkirja on jo lähetetty allekirjoitettavaksi." };
+  }
+  if (overview.inspection.status === "open") {
+    return { ok: false, message: "Lukitse loppukatselmus ensin." };
+  }
+
+  assertRealEsinetti();
+
+  const [protocol, parties] = await Promise.all([
+    buildInspectionProtocolData(userId, tenancyId, "final"),
+    listPartyDetails(userId, tenancyId),
+  ]);
+
+  if (!protocol) {
+    return { ok: false, message: "Pöytäkirjaa ei voitu koota." };
+  }
+
+  if (parties.some((party) => !party.email)) {
+    return { ok: false, message: "Jokaiselta osapuolelta puuttuu sähköpostiosoite." };
+  }
+
+  const protocolPdf = await renderDocumentPdf(
+    createElement(InspectionProtocol, { data: protocol }),
+  );
+
+  const signers: RoundSigner[] = [
+    ...parties
+      .filter((party) => party.role === "tenant")
+      .map((party) => ({
+        name: signerName(party),
+        email: party.email!,
+        phone: party.phone ?? undefined,
+        roleLabel: "Vuokralainen",
+        authLevel: "strong" as const,
+      })),
+    ...parties
+      .filter((party) => party.role === "landlord")
+      .map((party) => ({
+        name: signerName(party),
+        email: party.email!,
+        phone: party.phone ?? undefined,
+        roleLabel: "Vuokranantaja",
+        authLevel: "strong" as const,
+      })),
+  ];
+
+  let round: Round;
+  try {
+    round = await getEsinettiClient().createRound({
+      title: `Loppukatselmus – ${protocol.property.street}`,
+      documents: [{ name: "Loppukatselmus.pdf", pdfBytes: protocolPdf.bytes }],
+      signers,
+      sequential: false,
+      externalRef: buildExternalRef(tenancyId, "loppu"),
+      send: true,
+    });
+  } catch (err) {
+    console.error(
+      "[signing] loppukierroksen luonti epäonnistui:",
+      err instanceof Error ? err.message : err,
+    );
+    return { ok: false, message: "Allekirjoituskierroksen lähetys ei onnistunut." };
+  }
+
+  const now = new Date().toISOString();
+  await getServiceClient()
+    .from("rs_inspections")
+    .update({ esinetti_round_id: round.id, updated_at: now })
+    .eq("tenancy_id", tenancyId)
+    .eq("kind", "final");
+
+  return { ok: true, round };
+}
+
+/** Loppukierroksen tila näytettäväksi. */
+export async function finalSigningStatus(
+  userId: string,
+  tenancyId: string,
+): Promise<Round | null> {
+  const overview = await getInspectionOverview(userId, tenancyId, "final");
+  if (!overview.inspection.esinettiRoundId) return null;
+
+  try {
+    return await getEsinettiClient().getRound(overview.inspection.esinettiRoundId);
+  } catch (err) {
+    console.error(
+      "[signing] loppukierroksen haku epäonnistui:",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+}

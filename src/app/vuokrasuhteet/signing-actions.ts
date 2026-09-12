@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { sendForSigning } from "@/lib/tenancy/signing";
+import { sendFinalForSigning, sendForSigning } from "@/lib/tenancy/signing";
 
 /**
  * Asiakirjojen lähetys allekirjoitettavaksi (CLAUDE.md 5.4).
@@ -41,5 +41,30 @@ export async function sendForSigningAction(
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}`);
   revalidatePath(`/vuokrasuhteet/${tenancyId}/allekirjoitus`);
+  return { sent: true };
+}
+
+/** Loppukatselmuksen pöytäkirja allekirjoitettavaksi (CLAUDE.md 5.8). */
+export async function sendFinalForSigningAction(
+  _previous: SigningActionState,
+  formData: FormData,
+): Promise<SigningActionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const tenancyId = String(formData.get("tenancyId") ?? "");
+
+  try {
+    const result = await sendFinalForSigning(user.id, tenancyId);
+    if (!result.ok) return { message: result.message };
+  } catch (err) {
+    const message =
+      err instanceof Error && err.message.includes("eSinetti-yhteyttä")
+        ? "eSinetti-yhteyttä ei ole määritetty. Allekirjoitusta ei voi tehdä."
+        : "Lähetys ei onnistunut. Yritä hetken kuluttua uudelleen.";
+    return { message };
+  }
+
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/paattyminen`);
   return { sent: true };
 }

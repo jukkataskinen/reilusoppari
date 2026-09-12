@@ -5,7 +5,10 @@ import {
   parseWebhookPayload,
   verifyWebhookSignature,
 } from "@/lib/esinetti";
-import { handleRoundCompleted } from "@/lib/tenancy/round-completed";
+import {
+  handleFinalRoundCompleted,
+  handleRoundCompleted,
+} from "@/lib/tenancy/round-completed";
 
 /**
  * eSinetin webhook (CLAUDE.md 5.4).
@@ -67,13 +70,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, ignored: "tuntematon viite" });
   }
 
-  if (ref.phase !== "alku") {
-    // Loppukatselmuksen kierros käsitellään vaiheessa 3 (CLAUDE.md 5.8).
-    return NextResponse.json({ ok: true, ignored: "vaihe ei ole käytössä" });
-  }
-
   try {
-    const outcome = await handleRoundCompleted(event, ref.tenancyId);
+    const outcome =
+      ref.phase === "alku"
+        ? await handleRoundCompleted(event, ref.tenancyId)
+        : await handleFinalRoundCompleted(event, ref.tenancyId);
+
     return NextResponse.json({ ok: true, ...outcome });
   } catch (err) {
     console.error(

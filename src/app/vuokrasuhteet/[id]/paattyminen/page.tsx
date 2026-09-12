@@ -3,8 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getEndingState } from "@/lib/db/ending";
+import { getInspectionOverview } from "@/lib/db/inspections";
+import { finalSigningStatus } from "@/lib/tenancy/signing";
 import { AppShell } from "@/components/AppShell";
 import { EndingControls } from "@/components/EndingControls";
+import { FinalSigning } from "@/components/FinalSigning";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { fi } from "@/i18n/fi";
 
@@ -40,6 +43,15 @@ export default async function EndingPage({ params }: { params: Promise<{ id: str
 
   const given = state.noticeGivenAt !== null;
 
+  // Loppukatselmuksen tila haetaan vain kun irtisanominen on kirjattu: sitä
+  // ennen koko vaihetta ei ole olemassa.
+  const [finalInspection, round] = given
+    ? await Promise.all([
+        getInspectionOverview(user.id, id, "final"),
+        finalSigningStatus(user.id, id),
+      ])
+    : [null, null];
+
   return (
     <AppShell>
       <h1 className="text-2xl">Vuokrasuhteen päättyminen</h1>
@@ -67,6 +79,13 @@ export default async function EndingPage({ params }: { params: Promise<{ id: str
               >
                 Avaa loppukatselmus
               </Link>
+
+              <FinalSigning
+                tenancyId={id}
+                isLandlord={state.isLandlord}
+                locked={finalInspection?.inspection.status !== "open"}
+                signers={round ? round.signers : null}
+              />
             </li>
 
             <li className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">

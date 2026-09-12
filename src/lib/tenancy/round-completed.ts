@@ -253,3 +253,71 @@ export async function handleRoundCompleted(
 
   return { handled: true, alreadyDone: false };
 }
+
+
+/**
+ * Loppukatselmuksen kierros on valmis (CLAUDE.md 5.8).
+ *
+ * ===========================================================================
+ * TÄSTÄ ALKAA ARVIOIDEN VAIHE
+ *
+ * Kun loppukatselmuksen pöytäkirja on allekirjoitettu, vuokrasuhde on
+ * päättynyt: tila `ended`. Vasta sen jälkeen kumpikin voi antaa toisestaan
+ * arvion, ja vasta arvioiden jälkeen todistukset sinetöidään.
+ *
+ * Järjestys on olennainen. Arvio ennen allekirjoitusta olisi painostuskeino:
+ * "allekirjoita, niin saat hyvän arvion". Allekirjoituksen jälkeen kumpikaan
+ * ei voi enää muuttaa toisen tilannetta.
+ *
+ * Idempotentti samalla tavalla kuin alkukierros: `signed_at` katselmuksella
+ * on merkki siitä, että työ on jo tehty.
+ * ===========================================================================
+ */
+export async function handleFinalRoundCompleted(
+  event: WebhookEvent,
+  tenancyId: string,
+): Promise<CompletionOutcome> {
+  const supabase = getServiceClient();
+
+  const { data: inspection } = await supabase
+    .from("rs_inspections")
+    .select("id, signed_at")
+    .eq("tenancy_id", tenancyId)
+    .eq("kind", "final")
+    .maybeSingle();
+
+  const row = inspection as { id: string; signed_at: string | null } | null;
+  if (!row) return { handled: false, reason: "Loppukatselmusta ei löytynyt." };
+  if (row.signed_at) return { handled: true, alreadyDone: true };
+
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("rs_inspections")
+    .update({ status: "signed", signed_at: now, updated_at: now })
+    .eq("id", row.id);
+
+  for (const document of event.documents) {
+    const path = await storeSealed(tenancyId, event.roundId, document.id, document.name);
+
+    await supabase
+      .from("rs_inspections")
+      .update({
+        esinetti_document_id: document.id,
+        sealed_sha256: document.sealedSha256,
+        sealed_path: path,
+        updated_at: now,
+      })
+      .eq("id", row.id);
+  }
+
+  await markIdentityVerified(tenancyId, event.signers);
+
+  // Vuokrasuhde on päättynyt. Todistukset syntyvät vasta arvioiden jälkeen.
+  await supabase
+    .from("rs_tenancies")
+    .update({ status: "ended", updated_at: now })
+    .eq("id", tenancyId);
+
+  return { handled: true, alreadyDone: false };
+}
