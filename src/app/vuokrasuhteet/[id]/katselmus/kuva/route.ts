@@ -9,6 +9,7 @@ import {
 import { normalizeRoomName } from "@/lib/inspection/rooms";
 import { stripImageMetadata, UnsupportedImageError } from "@/lib/photos/strip-metadata";
 import { storeThumbnail } from "@/lib/photos/thumbnail";
+import { checkRateLimit, KUVARAJA, KUVARAJA_VIESTI } from "@/lib/security/rate-limit";
 
 /**
  * Katselmuskuvan vastaanotto (CLAUDE.md 5.3 ja kohta 6).
@@ -49,6 +50,21 @@ const VIRHE = (status: number, viesti: string) =>
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   if (!user) return VIRHE(401, "Kirjautuminen vaaditaan.");
+
+  /*
+    Kutsuraja heti tunnistuksen jälkeen.
+
+    Kaikki kuvareitit kuluttavat samaa rajaa (CLAUDE.md kohta 6). Raja on
+    ennen osapuolitarkistusta ja tiedoston lukua, jottei rikkinäinen silmukka
+    ehdi tehdä työtä ennen kuin se pysäytetään.
+  */
+  const raja = await checkRateLimit(
+    user.id,
+    KUVARAJA.endpoint,
+    KUVARAJA.limit,
+    KUVARAJA.windowMinutes,
+  );
+  if (!raja.allowed) return VIRHE(429, KUVARAJA_VIESTI);
 
   const { id: tenancyId } = await context.params;
 

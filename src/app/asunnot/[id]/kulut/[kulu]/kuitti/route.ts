@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getServiceClient } from "@/lib/db/supabase";
 import { getPropertyExpense, recordReceiptPhoto } from "@/lib/db/expenses";
 import { stripImageMetadata, UnsupportedImageError } from "@/lib/photos/strip-metadata";
+import { checkRateLimit, KUVARAJA, KUVARAJA_VIESTI } from "@/lib/security/rate-limit";
 
 /**
  * Asunnon kulun kuitti (CLAUDE.md 5.7 ja kohta 6).
@@ -44,6 +45,21 @@ export async function POST(
 ) {
   const user = await getCurrentUser();
   if (!user) return VIRHE(401, "Kirjautuminen vaaditaan.");
+
+  /*
+    Kutsuraja heti tunnistuksen jälkeen.
+
+    Kaikki kuvareitit kuluttavat samaa rajaa (CLAUDE.md kohta 6). Raja on
+    ennen osapuolitarkistusta ja tiedoston lukua, jottei rikkinäinen silmukka
+    ehdi tehdä työtä ennen kuin se pysäytetään.
+  */
+  const raja = await checkRateLimit(
+    user.id,
+    KUVARAJA.endpoint,
+    KUVARAJA.limit,
+    KUVARAJA.windowMinutes,
+  );
+  if (!raja.allowed) return VIRHE(429, KUVARAJA_VIESTI);
 
   const { id: propertyId, kulu: expenseId } = await context.params;
 

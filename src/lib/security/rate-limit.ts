@@ -42,19 +42,26 @@ export interface RateLimitResult {
 /**
  * Ikkunan alku pyöristettynä alaspäin.
  *
- * Minuutin ikkuna alkaa tasaminuutilta, tunnin ikkuna tasatunnilta. Sama
- * arvo koko ikkunan ajan, joten kaikki sen kutsut osuvat samaan riviin.
+ * Minuutin ikkuna alkaa tasaminuutilta, tunnin ikkuna tasatunnilta. Sama arvo
+ * koko ikkunan ajan, joten kaikki sen kutsut osuvat samaan riviin.
+ *
+ * ===========================================================================
+ * LASKENTA TEHDÄÄN EPOOKISTA, EI KELLONAJAN KENTISTÄ
+ *
+ * Ensimmäinen versio pyöristi `setMinutes`illa minuuttikentän mukaan. Se
+ * toimii tunnin ikkunaan asti mutta hajoaa hiljaa sitä pidemmillä: kahden
+ * tunnin ikkunassa minuuttikenttä on aina 0–59, joten `Math.floor(45 / 120)`
+ * on nolla ja tulos on tasatunti — eli kahden tunnin ikkuna käyttäytyisi
+ * kuin tunnin.
+ *
+ * Vika ei olisi näkynyt mitenkään: raja olisi vain ollut tiukempi kuin
+ * pyydettiin. Epookista laskettuna erikoistapauksia ei ole, ja tulos on
+ * oikea kaikilla ikkunan pituuksilla.
+ * ===========================================================================
  */
 export function windowStart(now: Date, windowMinutes: number): Date {
-  const start = new Date(now);
-  start.setSeconds(0, 0);
-
-  if (windowMinutes > 1) {
-    const minutes = Math.floor(start.getMinutes() / windowMinutes) * windowMinutes;
-    start.setMinutes(minutes);
-  }
-
-  return start;
+  const pituus = windowMinutes * 60_000;
+  return new Date(Math.floor(now.getTime() / pituus) * pituus);
 }
 
 /**
@@ -100,3 +107,24 @@ export async function checkRateLimit(
     return { allowed: true, count: 0 };
   }
 }
+
+/**
+ * Kuvien lataus (CLAUDE.md kohta 6).
+ *
+ * Kaikki kuvareitit — katselmus, loppukatselmus, huoltokirja ja kuitit —
+ * kuluttavat SAMAA rajaa. Erilliset rajat per reitti tarkoittaisivat, että
+ * kokonaismäärä olisi rajojen summa, eikä kukaan laskisi sitä.
+ *
+ * Sata tunnissa riittää isoonkin katselmukseen: kymmenen huonetta ja viisi
+ * kuvaa kustakin on viisikymmentä. Se ei riitä silmukkaan, joka täyttää
+ * levytilan.
+ */
+export const KUVARAJA = {
+  endpoint: "kuva",
+  limit: 100,
+  windowMinutes: 60,
+} as const;
+
+/** Sama viesti kaikilla kuvareiteilla: käyttäjälle tilanne on sama. */
+export const KUVARAJA_VIESTI =
+  "Kuvia on lähetetty paljon lyhyessä ajassa. Odota hetki ja jatka sitten.";

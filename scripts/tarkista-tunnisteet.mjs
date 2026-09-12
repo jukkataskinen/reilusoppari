@@ -32,22 +32,26 @@ const SALLITUT = {
 };
 
 /**
- * Palvelimen salaisuudet. Naita ei lueta selainkomponentissa.
+ * Palvelimen salaisuudet. Näitä ei lueta selainkomponentissa.
  *
- * Lista on tarkoituksella nimenomainen eika hahmontunnistusta: uusi
- * salaisuus lisataan tanne kasin, ja se on hyva hetki miettia, kuuluuko se
- * selaimeen. Julkiset avaimet (VAPIDin julkinen, Supabasen anon, Stripen
- * publishable) EIVAT ole tassa, koska ne ovat tarkoituksella selaimessa.
+ * Lista on tarkoituksella nimenomainen eikä hahmontunnistusta: uusi salaisuus
+ * lisätään tänne käsin, ja se on hyvä hetki miettiä, kuuluuko se selaimeen.
+ * Julkiset avaimet (VAPIDin julkinen, Supabasen anon, Stripen publishable)
+ * EIVÄT ole tässä, koska ne ovat tarkoituksella selaimessa.
  */
 const SALAISUUDET =
   /(^|[^A-Z_])(ANTHROPIC_API_KEY|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|SUPABASE_SERVICE_ROLE_KEY|ESINETTI_API_KEY|ESINETTI_WEBHOOK_SECRET|PERSON_DATA_KEY|RESEND_API_KEY|VAPID_PRIVATE_KEY)/;
 
 /**
- * Oikean avaimen nakoinen merkkijono.
+ * Oikean avaimen näköinen merkkijono.
  *
  * `sk-ant-` on Anthropicin, `sk_live_`/`sk_test_` Stripen, `whsec_` Stripen
- * webhook-salaisuus, ja service_role-JWT alkaa `eyJ`:lla. Nama eivat osu
+ * webhook-salaisuus, ja service_role-JWT alkaa `eyJ`:llä. Nämä eivät osu
  * tavalliseen koodiin.
+ *
+ * Sanarajat kirjoitetaan ilman kenoviivaa (`[^A-Z_]`), koska pakomerkki
+ * rikkoutui kerran tiedostoa muokatessa: `\b` muuttui oikeaksi
+ * askelpalautinmerkiksi, ja vahti näytti toimivalta hälyttämättä koskaan.
  */
 const KOVAKOODATTU_AVAIN =
   /(sk-ant-[A-Za-z0-9_-]{10,}|sk_(live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{10,}|eyJ[A-Za-z0-9_-]{10,}[.][A-Za-z0-9_-]{10,}[.][A-Za-z0-9_-]{10,})/;
