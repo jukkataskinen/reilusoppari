@@ -79,8 +79,63 @@ export async function createExpense(
   const tenancy = await getTenancy(userId, tenancyId);
   if (!tenancy) return { ok: false, message: "Vuokrasuhdetta ei löytynyt." };
 
+  const result = await insertExpense({
+    userId,
+    propertyId: tenancy.propertyId,
+    tenancyId,
+    input,
+  });
+
+  if (!result.ok) return result;
+
+  // Linkki huoltokirjan merkintään, jos kulu syntyi korjauksesta. Näin
+  // vuosilaskelmasta näkee, mihin korjaukseen kulu liittyi.
+  if (input.maintenanceEntryId) {
+    await getServiceClient()
+      .from("rs_maintenance_entries")
+      .update({ expense_id: result.id, updated_at: new Date().toISOString() })
+      .eq("id", input.maintenanceEntryId)
+      .eq("tenancy_id", tenancyId);
+  }
+
+  return result;
+}
+
+/**
+ * Kirjaa kulun suoraan asunnolle ilman vuokrasuhdetta.
+ *
+ * ===========================================================================
+ * KULU EI ODOTA VUOKRALAISTA
+ *
+ * Asunnon remontti vuokralaisten välissä, vakuutusmaksu tyhjältä
+ * kuukaudelta, taloyhtiön erillislasku — nämä eivät kuulu kenenkään
+ * vuokrasuhteeseen. Ilman tätä ne pitäisi kirjata jonkun vuokralaisen alle,
+ * mikä olisi väärin kahdesti: kulu näyttäisi liittyvän häneen, ja se
+ * kertoisi hänen vuokrasuhteestaan jotain, mitä siihen ei kuulu.
+ *
+ * Vuokrasuhteeseen kirjatut kulut ovat silti samoja kuluja: verolaskelma
+ * kokoaa molemmat asunnon kautta (`tax-reports.ts`).
+ * ===========================================================================
+ */
+export async function createPropertyExpense(
+  userId: string,
+  propertyId: string,
+  input: ExpenseInput,
+): Promise<ExpenseResult> {
+  return insertExpense({ userId, propertyId, tenancyId: null, input });
+}
+
+/** Yhteinen tarkistus ja kirjoitus. Vain omistaja, kummassakin tapauksessa. */
+async function insertExpense(args: {
+  userId: string;
+  propertyId: string;
+  tenancyId: string | null;
+  input: ExpenseInput;
+}): Promise<ExpenseResult> {
+  const { input } = args;
+
   // Omistajuus, ei osapuoliasema: vuokralainen on osapuoli muttei omistaja.
-  await requireExpenseAccess(userId, tenancy.propertyId);
+  await requireExpenseAccess(args.userId, args.propertyId);
 
   if (!isExpenseCategory(input.category)) {
     return { ok: false, message: "Valitse kululuokka." };
@@ -110,8 +165,8 @@ export async function createExpense(
   const { data, error } = await getServiceClient()
     .from("rs_expenses")
     .insert({
-      property_id: tenancy.propertyId,
-      tenancy_id: tenancyId,
+      property_id: args.propertyId,
+      tenancy_id: args.tenancyId,
       date: input.date,
       amount,
       vat_included: input.vatIncluded,
@@ -125,16 +180,6 @@ export async function createExpense(
   if (error || !data) {
     console.error("[kulut] kirjaus epäonnistui:", error?.message);
     throw new Error("Kulun tallennus epäonnistui.");
-  }
-
-  // Linkki huoltokirjan merkintään, jos kulu syntyi korjauksesta. Näin
-  // vuosilaskelmasta näkee, mihin korjaukseen kulu liittyi.
-  if (input.maintenanceEntryId) {
-    await getServiceClient()
-      .from("rs_maintenance_entries")
-      .update({ expense_id: data.id, updated_at: new Date().toISOString() })
-      .eq("id", input.maintenanceEntryId)
-      .eq("tenancy_id", tenancyId);
   }
 
   return { ok: true, id: data.id };
@@ -163,13 +208,36 @@ export async function listExpenses(userId: string, tenancyId: string): Promise<E
   if (!tenancy) throw new Error("Vuokrasuhdetta ei löytynyt.");
 
   await requireExpenseAccess(userId, tenancy.propertyId);
+  return fetchExpenses("tenancy_id", tenancyId);
+}
 
+/**
+ * Asunnon kaikki kulut: sekä vuokrasuhteisiin kirjatut että ilman
+ * vuokrasuhdetta kirjatut. Uusin ensin. Vain omistajalle.
+ *
+ * Tämä on se näkymä, joka vastaa verolaskelmaa: laskelma kokoaa kulut
+ * asunnon kautta, ja jos tämä lista näyttäisi vähemmän, käyttäjä ei
+ * löytäisi riviä, jonka hän laskelmasta näkee.
+ */
+export async function listPropertyExpenses(
+  userId: string,
+  propertyId: string,
+): Promise<Expense[]> {
+  await requireExpenseAccess(userId, propertyId);
+  return fetchExpenses("property_id", propertyId);
+}
+
+/** Kulut kuitteineen annetulla rajauksella. Oikeudet on tarkistettu jo. */
+async function fetchExpenses(
+  column: "tenancy_id" | "property_id",
+  value: string,
+): Promise<Expense[]> {
   const supabase = getServiceClient();
 
   const { data, error } = await supabase
     .from("rs_expenses")
     .select("id, property_id, tenancy_id, date, amount, vat_included, category, description, km")
-    .eq("tenancy_id", tenancyId)
+    .eq(column, value)
     .order("date", { ascending: false });
 
   if (error) {
@@ -214,7 +282,7 @@ export async function listExpenses(userId: string, tenancyId: string): Promise<E
   }));
 }
 
-/** Yksi kulu, jos kutsuja omistaa asunnon. */
+/** Yksi vuokrasuhteen kulu, jos kutsuja omistaa asunnon. */
 export async function getExpense(
   userId: string,
   tenancyId: string,
@@ -224,9 +292,28 @@ export async function getExpense(
   return expenses.find((expense) => expense.id === expenseId) ?? null;
 }
 
+/**
+ * Yksi asunnon kulu, jos kutsuja omistaa asunnon.
+ *
+ * Löytää myös vuokrasuhteeseen kirjatut kulut: ne ovat saman asunnon kuluja,
+ * ja asunnon listaus näyttää ne. Jos tämä ei löytäisi niitä, listalta ei
+ * pääsisi auki riviä, jonka se itse näyttää.
+ */
+export async function getPropertyExpense(
+  userId: string,
+  propertyId: string,
+  expenseId: string,
+): Promise<Expense | null> {
+  const expenses = await listPropertyExpenses(userId, propertyId);
+  return expenses.find((expense) => expense.id === expenseId) ?? null;
+}
+
 /** Kirjaa kuitin kuvan. Kutsutaan kun tiedosto on jo Storagessa. */
 export async function recordReceiptPhoto(input: {
-  tenancyId: string;
+  /** Vuokrasuhteen kulu. Täsmälleen toinen tästä ja `propertyId`:sta. */
+  tenancyId: string | null;
+  /** Asunnon kulu ilman vuokrasuhdetta. */
+  propertyId?: string | null;
   expenseId: string;
   uploaderUserId: string;
   storagePath: string;
@@ -238,7 +325,10 @@ export async function recordReceiptPhoto(input: {
   const { data, error } = await getServiceClient()
     .from("rs_photos")
     .insert({
-      tenancy_id: input.tenancyId,
+      // Täsmälleen toinen, ei molempia: kanta pakottaa sen check-rajoitteella
+      // (migraatio 0014), ja tässä se kirjoitetaan sen mukaisesti.
+      tenancy_id: input.tenancyId ?? null,
+      property_id: input.tenancyId ? null : (input.propertyId ?? null),
       expense_id: input.expenseId,
       uploader_user_id: input.uploaderUserId,
       storage_path: input.storagePath,

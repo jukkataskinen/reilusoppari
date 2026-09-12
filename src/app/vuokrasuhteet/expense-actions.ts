@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { createExpense } from "@/lib/db/expenses";
+import { createExpense, createPropertyExpense } from "@/lib/db/expenses";
 import { isExpenseCategory, type ExpenseCategory } from "@/lib/expenses/categories";
 
 /**
@@ -17,6 +17,13 @@ export interface ExpenseActionState {
   message?: string;
   savedId?: string;
 }
+
+/**
+ * Kulu voi kuulua vuokrasuhteeseen tai pelkkään asuntoon.
+ *
+ * Asunnon remontti vuokralaisten välissä ei kuulu kenenkään vuokrasuhteeseen.
+ * Lomake lähettää siksi joko `tenancyId`:n tai `propertyId`:n, ei molempia.
+ */
 
 function number(value: FormDataEntryValue | null): number | null {
   const text = String(value ?? "").trim().replace(",", ".");
@@ -33,26 +40,38 @@ export async function createExpenseAction(
   if (!user) redirect("/auth/login");
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
+  const propertyId = String(formData.get("propertyId") ?? "");
   const rawCategory = String(formData.get("category") ?? "");
   if (!isExpenseCategory(rawCategory)) return { message: "Valitse kululuokka." };
 
+  if (!tenancyId && !propertyId) return { message: "Kohde puuttuu." };
+
   const entryId = String(formData.get("maintenanceEntryId") ?? "") || null;
 
+  const input = {
+    date: String(formData.get("date") ?? ""),
+    amount: number(formData.get("amount")),
+    category: rawCategory as ExpenseCategory,
+    description: String(formData.get("description") ?? ""),
+    km: number(formData.get("km")),
+    vatIncluded: formData.get("vatIncluded") === "on",
+    maintenanceEntryId: entryId,
+  };
+
   try {
-    const result = await createExpense(user.id, tenancyId, {
-      date: String(formData.get("date") ?? ""),
-      amount: number(formData.get("amount")),
-      category: rawCategory as ExpenseCategory,
-      description: String(formData.get("description") ?? ""),
-      km: number(formData.get("km")),
-      vatIncluded: formData.get("vatIncluded") === "on",
-      maintenanceEntryId: entryId,
-    });
+    const result = tenancyId
+      ? await createExpense(user.id, tenancyId, input)
+      : await createPropertyExpense(user.id, propertyId, input);
 
     if (!result.ok) return { message: result.message };
 
-    revalidatePath(`/vuokrasuhteet/${tenancyId}/kulut`);
-    if (entryId) revalidatePath(`/vuokrasuhteet/${tenancyId}/huoltokirja/${entryId}`);
+    if (tenancyId) {
+      revalidatePath(`/vuokrasuhteet/${tenancyId}/kulut`);
+      if (entryId) revalidatePath(`/vuokrasuhteet/${tenancyId}/huoltokirja/${entryId}`);
+    } else {
+      revalidatePath(`/asunnot/${propertyId}/kulut`);
+      revalidatePath(`/asunnot/${propertyId}/verolaskelma`);
+    }
 
     return { savedId: result.id };
   } catch {

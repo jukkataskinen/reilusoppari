@@ -2,7 +2,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { getServiceClient, hasSupabaseCredentials } from "@/lib/db/supabase";
 import { createProperty } from "@/lib/db/properties";
 import { createTenancy } from "@/lib/db/tenancies";
-import { createExpense, listExpenses } from "@/lib/db/expenses";
+import {
+  createExpense,
+  createPropertyExpense,
+  listExpenses,
+  listPropertyExpenses,
+} from "@/lib/db/expenses";
 import { createMaintenanceEntry, listMaintenanceEntries } from "@/lib/db/maintenance";
 import { listPartyDetails } from "@/lib/tenancy/party-details";
 import { generateEncryptionKey } from "@/lib/identity/crypto";
@@ -75,7 +80,7 @@ async function setup() {
     .update({ user_id: tenantUser })
     .eq("id", tenantParty.partyId);
 
-  return { landlord, tenantUser, tenancyId: tenancy.id };
+  return { landlord, tenantUser, tenancyId: tenancy.id, propertyId: property.id };
 }
 
 afterAll(async () => {
@@ -219,5 +224,58 @@ describe.skipIf(!RUN)("kulut", () => {
 
     expect(teksti).not.toContain("Hanan vaihto");
     expect(teksti).not.toContain("129.9");
+  });
+});
+
+describe.skipIf(!RUN)("asunnon kulut ilman vuokrasuhdetta", () => {
+  it("kulun voi kirjata pelkälle asunnolle", async () => {
+    /*
+      Asunnon remontti vuokralaisten välissä ei kuulu kenenkään
+      vuokrasuhteeseen. Ilman tätä se pitäisi kirjata jonkun vuokralaisen
+      alle, mikä kertoisi hänen vuokrasuhteestaan jotain, mitä siihen ei
+      kuulu.
+    */
+    const { landlord, propertyId } = await setup();
+
+    const tulos = await createPropertyExpense(landlord, propertyId, {
+      ...KULU,
+      description: "Maalaus vuokralaisten välissä",
+    });
+    expect(tulos.ok).toBe(true);
+
+    const kulut = await listPropertyExpenses(landlord, propertyId);
+    expect(kulut).toHaveLength(1);
+    expect(kulut[0].tenancyId).toBeNull();
+  });
+
+  it("asunnon lista näyttää myös vuokrasuhteeseen kirjatut", async () => {
+    /*
+      Verolaskelma kokoaa kulut asunnon kautta. Jos tämä lista näyttäisi
+      vähemmän, käyttäjä ei löytäisi riviä, jonka hän laskelmasta näkee.
+    */
+    const { landlord, tenancyId, propertyId } = await setup();
+
+    await createExpense(landlord, tenancyId, KULU);
+    await createPropertyExpense(landlord, propertyId, { ...KULU, amount: 50 });
+
+    const kulut = await listPropertyExpenses(landlord, propertyId);
+    expect(kulut).toHaveLength(2);
+    expect(kulut.filter((kulu) => kulu.tenancyId !== null)).toHaveLength(1);
+  });
+
+  it("vuokrasuhteen lista ei näytä asunnon kuluja", async () => {
+    // Asunnon kulu ei kuulu kenenkään vuokrasuhteeseen, ei myöskään listalle.
+    const { landlord, tenancyId, propertyId } = await setup();
+
+    await createPropertyExpense(landlord, propertyId, KULU);
+
+    expect(await listExpenses(landlord, tenancyId)).toHaveLength(0);
+  });
+
+  it("vuokralainen ei pääse asunnon kuluihin", async () => {
+    const { tenantUser, propertyId } = await setup();
+
+    await expect(listPropertyExpenses(tenantUser, propertyId)).rejects.toThrow();
+    await expect(createPropertyExpense(tenantUser, propertyId, KULU)).rejects.toThrow();
   });
 });

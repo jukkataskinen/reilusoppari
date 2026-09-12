@@ -1401,3 +1401,34 @@ kaudeksi vai kaksitoista kertaa.
 olivat migraatiosta 0001 asti, mutta mikään koodi ei koskaan kirjoittanut
 niihin. Kahden tavan ilmaista sama asia on juuri sellainen epäselvyys, joka
 tuottaa myöhemmin väärän summan.
+
+
+## Kertakulu voidaan kirjata pelkälle asunnolle (2026-09-12)
+
+Jatkoa toistuvien kulujen linjaukseen. Kertakulun kirjaaminen kulki yhä
+vuokrasuhteen kautta, joten asunnon remonttia vuokralaisten välissä ei voinut
+kirjata mihinkään. Se olisi pitänyt kirjata jonkun vuokralaisen alle — väärin
+kahdesti: kulu näyttäisi liittyvän häneen, ja se kertoisi hänen
+vuokrasuhteestaan jotain, mitä siihen ei kuulu.
+
+`createPropertyExpense` kirjaa kulun asunnolle ilman vuokrasuhdetta.
+Asunnon kululista näyttää MOLEMMAT — myös vuokrasuhteisiin kirjatut — koska
+verolaskelma kokoaa ne yhteen asunnon kautta. Jos lista näyttäisi vähemmän
+kuin laskelma, käyttäjä ei löytäisi riviä, jonka hän laskelmasta näkee.
+Vuokrasuhteeseen kirjattu rivi on merkitty listalla.
+
+**Kuitti tarvitsi oman migraationsa (0014).** `rs_photos.tenancy_id` oli
+pakollinen, joten asunnon kulun kuitille ei ollut paikkaa. Nyt taulussa on
+`property_id`, `tenancy_id` on valinnainen, ja check-rajoite vaatii
+täsmälleen toisen. Jos molemmat voisivat olla tyhjiä, kuva jäisi ilman
+omistajaa eikä näkyisi kenellekään; jos molemmat asetettuja, sama kuva
+näkyisi kahdella eri säännöllä.
+
+**Kuitti kirjataan sille kohteelle, jolle kulu on kirjattu.**
+Vuokrasuhteeseen kirjatun kulun voi avata myös asunnon listalta, ja silloin
+sen kuitti kuuluu samaan vuokrasuhteeseen kuin kulu — muuten sama kulu
+näkyisi kahdella eri rajauksella.
+
+**Toistuvat kulut eivät ole samassa listassa.** Hoitovastike on kausi eikä
+kirjaus. Samassa listassa kausi näyttäisi yhdeltä kirjaukselta, ja lukija
+luulisi vastiketta kertamaksuksi.

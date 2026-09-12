@@ -67,6 +67,12 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
           tyhjän kuukauden yli ja vuokralaisen vaihtuessa.
         */}
         <Link
+          href={`/asunnot/${property.id}/kulut`}
+          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+        >
+          Kulut
+        </Link>
+        <Link
           href={`/asunnot/${property.id}/toistuvat-kulut`}
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >

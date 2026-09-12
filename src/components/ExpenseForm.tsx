@@ -45,13 +45,23 @@ const initialState: ExpenseActionState = {};
  */
 export function ExpenseForm({
   tenancyId,
+  propertyId,
   maintenanceEntryId,
   defaultDate,
+  prompt,
 }: {
-  tenancyId: string;
+  /** Vuokrasuhteeseen kuuluva kulu. Toinen näistä on aina annettu. */
+  tenancyId?: string;
+  /**
+   * Asunnon kulu ilman vuokrasuhdetta: remontti vuokralaisten välissä,
+   * vakuutus tyhjältä kuukaudelta. Se ei kuulu kenenkään vuokrasuhteeseen.
+   */
+  propertyId?: string;
   maintenanceEntryId?: string;
   /** Oletuspäivä `VVVV-KK-PP`. Korjauspäivä on paras arvaus. */
   defaultDate: string;
+  /** Kysymys, joka avaa lomakkeen. Oletus sopii korjauksen yhteyteen. */
+  prompt?: { title: string; body: string; button: string };
 }) {
   const [state, formAction, pending] = useActionState(createExpenseAction, initialState);
   const [open, setOpen] = useState(false);
@@ -72,7 +82,11 @@ export function ExpenseForm({
           Kuitin voi kuvata talteen nyt. Kuitti ja kulu näkyvät vain sinulle.
         </p>
         <Link
-          href={`/vuokrasuhteet/${tenancyId}/kulut/${state.savedId}`}
+          href={
+            tenancyId
+              ? `/vuokrasuhteet/${tenancyId}/kulut/${state.savedId}`
+              : `/asunnot/${propertyId}/kulut/${state.savedId}`
+          }
           className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
         >
           Kuvaa kuitti
@@ -84,17 +98,18 @@ export function ExpenseForm({
   if (!open) {
     return (
       <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-        <p className="font-medium">Tuliko tästä kuluja?</p>
+        <p className="font-medium">{prompt?.title ?? "Tuliko tästä kuluja?"}</p>
         <p className="mt-2 text-sm text-ink/70">
-          Kirjaa kulut ja ajokilometrit nyt, kun kuitti on vielä tallessa. Ne kootaan
-          verolaskelmaan, eivätkä ne näy vuokralaiselle.
+          {prompt?.body ??
+            "Kirjaa kulut ja ajokilometrit nyt, kun kuitti on vielä tallessa. Ne kootaan " +
+              "verolaskelmaan, eivätkä ne näy vuokralaiselle."}
         </p>
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >
-          Kirjaa kulu
+          {prompt?.button ?? "Kirjaa kulu"}
         </button>
       </div>
     );
@@ -105,7 +120,10 @@ export function ExpenseForm({
       action={formAction}
       className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5"
     >
-      <input type="hidden" name="tenancyId" value={tenancyId} />
+      {/* Vain toinen näistä lähtee: kulu kuuluu joko vuokrasuhteeseen tai
+          pelkkään asuntoon, ei molempiin. */}
+      {tenancyId ? <input type="hidden" name="tenancyId" value={tenancyId} /> : null}
+      {propertyId ? <input type="hidden" name="propertyId" value={propertyId} /> : null}
       {maintenanceEntryId ? (
         <input type="hidden" name="maintenanceEntryId" value={maintenanceEntryId} />
       ) : null}
