@@ -6,6 +6,7 @@ import {
   type ReportConfirmation,
   type ReportExpense,
 } from "@/lib/tax/report";
+import type { RecurringPeriod } from "@/lib/expenses/recurring";
 
 const kulut: ReportExpense[] = [
   { date: "2026-03-10", amount: 129.9, category: "vuosikorjaus", km: null },
@@ -120,5 +121,101 @@ describe("vuoden laskelma", () => {
       [{ dueDate: "2026-01-05", amount: 850, status: "paid", amountPaid: null }],
     );
     expect(tappio.net).toBe(-4150);
+  });
+});
+
+describe("toistuvat kulut laskelmassa", () => {
+  const vastike: RecurringPeriod[] = [
+    {
+      id: "p1",
+      seriesId: "s1",
+      category: "hoitovastike",
+      description: "Hoitovastike",
+      monthlyAmount: 245,
+      startsMonth: "2026-01",
+      endsMonth: "2026-02",
+    },
+    {
+      id: "p2",
+      seriesId: "s1",
+      category: "hoitovastike",
+      description: "Hoitovastike",
+      monthlyAmount: 268,
+      startsMonth: "2026-03",
+      endsMonth: null,
+    },
+  ];
+
+  it("summautuvat samaan luokkaan kertakirjausten kanssa", () => {
+    const report = buildTaxReport(2026, kulut, kuittaukset, vastike);
+    const rivi = report.lines.find((line) => line.category === "hoitovastike");
+
+    // Kertakirjaus 1800 € + toistuvat (2 × 245 + 10 × 268 = 3170) = 4970.
+    expect(rivi?.total).toBe(4970);
+    expect(rivi?.count).toBe(1);
+    expect(rivi?.recurringMonths).toBe(12);
+    expect(rivi?.recurringTotal).toBe(3170);
+  });
+
+  it("luovat rivin myös luokkaan, jossa ei ole yhtään kertakirjausta", () => {
+    /*
+      Ilman tätä asunto, jolla on vain vastike eikä yhtään kertakirjausta,
+      näyttäisi laskelmassa nollaa — vaikka juuri se on vuoden suurin
+      vähennettävä kulu.
+    */
+    const report = buildTaxReport(2026, [], kuittaukset, vastike);
+    const rivi = report.lines.find((line) => line.category === "hoitovastike");
+
+    expect(rivi?.total).toBe(3170);
+    expect(rivi?.count).toBe(0);
+  });
+
+  it("kasvattavat vuosikuluja ja siten pienentävät tulosta", () => {
+    const ilman = buildTaxReport(2026, kulut, kuittaukset);
+    const kanssa = buildTaxReport(2026, kulut, kuittaukset, vastike);
+
+    expect(kanssa.annualExpenses - ilman.annualExpenses).toBe(3170);
+    expect(ilman.net - kanssa.net).toBe(3170);
+  });
+
+  it("eivät summaudu vuosikuluihin, jos luokka ei ole vuosikulua", () => {
+    /*
+      Rahastoitu rahoitusvastike voi olla toistuva kuten hoitovastikekin,
+      mutta se ei ole vuosikulu. Toistuvuus ei muuta luokan luonnetta.
+    */
+    const rahastoitu: RecurringPeriod[] = [
+      {
+        id: "p3",
+        seriesId: "s2",
+        category: "rahoitusvastike_rahastoitu",
+        description: "Rahoitusvastike",
+        monthlyAmount: 300,
+        startsMonth: "2026-01",
+        endsMonth: null,
+      },
+    ];
+
+    const ilman = buildTaxReport(2026, kulut, kuittaukset);
+    const kanssa = buildTaxReport(2026, kulut, kuittaukset, rahastoitu);
+
+    expect(kanssa.annualExpenses).toBe(ilman.annualExpenses);
+    expect(kanssa.otherEntries - ilman.otherEntries).toBe(3600);
+  });
+
+  it("jättävät pois kauden, joka ei osu vuoteen", () => {
+    const menneisyys: RecurringPeriod[] = [
+      {
+        id: "p4",
+        seriesId: "s3",
+        category: "vakuutus",
+        description: "Vakuutus",
+        monthlyAmount: 20,
+        startsMonth: "2024-01",
+        endsMonth: "2024-12",
+      },
+    ];
+
+    const report = buildTaxReport(2026, [], kuittaukset, menneisyys);
+    expect(report.lines.find((line) => line.category === "vakuutus")).toBeUndefined();
   });
 });

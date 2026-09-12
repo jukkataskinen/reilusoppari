@@ -48,7 +48,10 @@ import { colors, spacing, type as typeScale, weight } from "./theme";
 
 export interface TaxReportLine {
   label: string;
+  /** Kertakirjausten määrä. */
   count: number;
+  /** Toistuvien kuukausien määrä. `0`, jos luokassa ei ole toistuvia. */
+  recurringMonths: number;
   total: number;
   /** Kilometrit, jos luokka on matkat. */
   km?: number;
@@ -85,8 +88,7 @@ function Line({ line }: { line: TaxReportLine }) {
       <View style={{ flexDirection: "row", alignItems: "baseline" }}>
         <Text style={{ flex: 1, fontWeight: weight.medium }}>{line.label}</Text>
         <Text style={{ fontSize: typeScale.small, color: colors.inkFaint, marginRight: 12 }}>
-          {line.count === 1 ? "1 kirjaus" : `${line.count} kirjausta`}
-          {line.km ? ` · ${formatKm(line.km)} km` : ""}
+          {describeLine(line)}
         </Text>
         <Text style={{ fontWeight: weight.bold }}>{formatEuro(line.total)}</Text>
       </View>
@@ -104,6 +106,29 @@ function Line({ line }: { line: TaxReportLine }) {
       ) : null}
     </View>
   );
+}
+
+/**
+ * Rivin selite: kertakirjaukset ja toistuvat kuukaudet erikseen.
+ *
+ * "12 kuukautta" ja "12 kirjausta" tarkoittavat eri asiaa, ja lukijan on
+ * voitava tarkistaa kumpikin. Jos luokassa on molempia, ne luetellaan
+ * peräkkäin eikä lasketa yhteen.
+ */
+export function describeLine(line: TaxReportLine): string {
+  const parts: string[] = [];
+
+  if (line.recurringMonths > 0) {
+    parts.push(line.recurringMonths === 1 ? "1 kuukausi" : `${line.recurringMonths} kuukautta`);
+  }
+
+  if (line.count > 0) {
+    parts.push(line.count === 1 ? "1 kirjaus" : `${line.count} kirjausta`);
+  }
+
+  if (line.km) parts.push(`${formatKm(line.km)} km`);
+
+  return parts.join(" · ");
 }
 
 /** `1 234` — sama tuhaterotin kuin euroissa, ei desimaaleja turhaan. */

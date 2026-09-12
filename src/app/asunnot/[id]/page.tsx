@@ -62,6 +62,16 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
           olla kaksi vuokralaista peräkkäin, ja hoitovastike juoksee myös
           tyhjän kuukauden yli.
         */}
+        {/*
+          Toistuva kulu on asunnon eikä vuokrasuhteen: vastike juoksee myös
+          tyhjän kuukauden yli ja vuokralaisen vaihtuessa.
+        */}
+        <Link
+          href={`/asunnot/${property.id}/toistuvat-kulut`}
+          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+        >
+          Toistuvat kulut
+        </Link>
         <Link
           href={`/asunnot/${property.id}/verolaskelma`}
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"

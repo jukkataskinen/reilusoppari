@@ -1353,3 +1353,51 @@ kasvateta keskustelua avattaessa: se ei ole todistuksen katselu.
 
 **Sinetöimättömästä todistuksesta ei keskustella.** Sen sisältö voi vielä
 muuttua, eikä keskustelu saa koskea jotain, mitä ei ole lyöty lukkoon.
+
+
+## Toistuva kulu on kausi, ei tapahtuma (2026-09-12)
+
+Jukan huomio: kulut kohdistuvat asuntoon riippumatta vuokralaisesta, ja
+kuukausikulut kuten vastike pitäisi voida syöttää kerran niin että kone
+laskee vuosikulut. Jos vastike muuttuu, siitä eteenpäin uusi kulu.
+
+**Toistuva kulu on kuukausisumma ja väli, jolla se on voimassa.** Ei
+kaksitoista kirjausta vuodessa: jokainen niistä olisi tilaisuus unohtaa yksi,
+eikä unohdus näkyisi laskelmassa virheenä — se vain tekisi vuosikuluista
+liian pienet.
+
+**Muutos on uusi kausi, ei vanhan muokkaus.** Kun vastike nousee
+maaliskuussa, tammi–helmikuu on maksettu vanhalla summalla. Jos summaa
+muutettaisiin paikalleen, koko vuosi laskettaisiin uudella — ja vuosikulu
+olisi väärä juuri siltä vuodelta, jolta se ilmoitetaan. Käyttöliittymässä ei
+siksi ole muokkausnappia vaan "Summa muuttui".
+
+**Takautuva muutos nykyisen kauden sisälle on estetty.** Se muuttaisi jo
+lasketut vuodet, ja jos laskelma on ehditty sinetöidä, sinetöity ja näytöllä
+näkyvä eroaisivat ilman että kumpikaan on väärin.
+
+**Kuukausi on pienin yksikkö, ei päivä.** Vastike on kuukausimaksu: se joko
+maksetaan siltä kuukaudelta tai ei. Päivätarkkuus pakottaisi keksimään
+säännön sille, lasketaanko 15. päivä alkanut kuukausi — ja mikä tahansa
+sääntö olisi väärä jossain tapauksessa.
+
+**Ei `tenancy_id`-saraketta lainkaan.** Vastike juoksee tyhjän kuukauden yli
+ja vuokralainen voi vaihtua kesken vuoden. Vuokrasuhteeseen sidottu toistuva
+kulu katkeaisi vaihdon kohdalla ilman että kukaan huomaa.
+
+**Yksi avoin kausi per sarja, tietokannan pakottamana.** Osittainen uniikki
+indeksi (`where ends_month is null`). Kaksi avointa kautta laskisi saman
+kuukauden kahdesti, eikä se näkyisi laskelmassa virheenä — vain liian
+suurina vuosikuluina. Päättäminen tehdään ennen uuden luontia, koska aukko
+on korjattavissa ja näkyy `seriesProblems`issa; kaksinkertainen kuukausi ei
+näy mitenkään.
+
+**Laskelmassa kuukaudet ja kirjaukset erikseen.** "12 kuukautta" ja "12
+kirjausta" tarkoittavat eri asiaa. Jos ne näyttäisivät samalta, lukija ei
+voisi tarkistaa kumpaakaan — hän ei tietäisi, onko vastike kirjattu kerran
+kaudeksi vai kaksitoista kertaa.
+
+**`rs_expenses.recurring_monthly` ja `recurring_until` poistettiin.** Ne
+olivat migraatiosta 0001 asti, mutta mikään koodi ei koskaan kirjoittanut
+niihin. Kahden tavan ilmaista sama asia on juuri sellainen epäselvyys, joka
+tuottaa myöhemmin väärän summan.

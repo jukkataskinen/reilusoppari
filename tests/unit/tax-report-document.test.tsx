@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TaxReport, type TaxReportData } from "@/documents/TaxReport";
+import { describeLine, TaxReport, type TaxReportData } from "@/documents/TaxReport";
 import { renderDocumentPdf } from "@/documents/render";
 import { documentText } from "../rasterize";
 
@@ -18,15 +18,23 @@ const DATA: TaxReportData = {
   rentalIncome: 9600,
   incomeMonths: 12,
   annualLines: [
-    { label: "Hoitovastike", count: 12, total: 1800 },
-    { label: "Vuosikorjaus", count: 2, total: 640, note: "Korjaus palauttaa entisen tason." },
-    { label: "Matkat", count: 4, total: 120, km: 240 },
+    // Hoitovastike on toistuva: 12 kuukautta, ei 12 kirjausta.
+    { label: "Hoitovastike", count: 0, recurringMonths: 12, total: 1800 },
+    {
+      label: "Vuosikorjaus",
+      count: 2,
+      recurringMonths: 0,
+      total: 640,
+      note: "Korjaus palauttaa entisen tason.",
+    },
+    { label: "Matkat", count: 4, recurringMonths: 0, total: 120, km: 240 },
   ],
   annualExpenses: 2560,
   otherLines: [
     {
       label: "Rahastoitu rahoitusvastike",
-      count: 12,
+      count: 0,
+      recurringMonths: 12,
       total: 3600,
       note: "Lisätään osakkeen hankintamenoon.",
     },
@@ -137,5 +145,39 @@ describe("toistettavuus", () => {
       sitä voi enää tarkistaa.
     */
     expect(first.sha256).toBe(second.sha256);
+  });
+});
+
+describe("rivin selite", () => {
+  it("erottaa toistuvat kuukaudet kertakirjauksista", () => {
+    /*
+      "12 kuukautta" ja "12 kirjausta" tarkoittavat eri asiaa. Jos ne
+      näyttäisivät samalta, lukija ei voisi tarkistaa kumpaakaan: hän ei
+      tietäisi, onko vastike kirjattu kerran kaudeksi vai kaksitoista kertaa.
+    */
+    expect(describeLine({ label: "x", count: 0, recurringMonths: 12, total: 1800 })).toBe(
+      "12 kuukautta",
+    );
+    expect(describeLine({ label: "x", count: 3, recurringMonths: 0, total: 100 })).toBe(
+      "3 kirjausta",
+    );
+  });
+
+  it("luettelee molemmat, kun luokassa on kumpiakin", () => {
+    // Ei lasketa yhteen: ne eivät ole samanlaisia asioita.
+    expect(describeLine({ label: "x", count: 2, recurringMonths: 12, total: 2000 })).toBe(
+      "12 kuukautta · 2 kirjausta",
+    );
+  });
+
+  it("taivuttaa yksikön oikein", () => {
+    expect(describeLine({ label: "x", count: 1, recurringMonths: 0, total: 10 })).toBe("1 kirjaus");
+    expect(describeLine({ label: "x", count: 0, recurringMonths: 1, total: 10 })).toBe("1 kuukausi");
+  });
+
+  it("lisää kilometrit matkoihin", () => {
+    expect(
+      describeLine({ label: "Matkat", count: 4, recurringMonths: 0, total: 120, km: 1240 }),
+    ).toBe("4 kirjausta · 1 240 km");
   });
 });

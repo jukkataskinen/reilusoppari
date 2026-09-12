@@ -18,6 +18,14 @@
  * Siksi laskelmassa on kaksi summaa: vuosikulut ja "muut kirjaukset". Ne
  * eivät ole toistensa osajoukkoja eikä niitä lasketa yhteen missään.
  *
+ * TOISTUVA KULU EI OLE KIRJAUS VAAN KAUSI
+ *
+ * Hoitovastike syötetään kerran kuukausisummana, ja vuosikulu lasketaan
+ * siitä (`expenses/recurring.ts`). Rivillä on siksi kaksi lukua: montako
+ * kertakirjausta luokassa on ja montako kuukautta toistuvia. Ne pidetään
+ * erillään, koska "12 kuukautta" ja "12 kirjausta" tarkoittavat eri asiaa —
+ * ja jos ne näyttäisivät samalta, lukija ei voisi tarkistaa kumpaakaan.
+ *
  * VUOKRATULO TULEE KUITTAUKSISTA
  *
  * Tulo on se, minkä vuokranantaja on itse merkinnyt saaneensa: "Kyllä" on
@@ -33,6 +41,7 @@ import {
   type ExpenseCategory,
 } from "../expenses/categories";
 import type { ConfirmationStatus } from "../rent/confirmation";
+import { recurringTotals, type RecurringPeriod } from "../expenses/recurring";
 
 export interface ReportExpense {
   date: string;
@@ -51,9 +60,14 @@ export interface ReportConfirmation {
 export interface ReportLine {
   category: ExpenseCategory;
   label: string;
-  /** Montako kirjausta luokassa on. */
+  /** Montako kertakirjausta luokassa on. Toistuvat eivät ole kirjauksia. */
   count: number;
+  /** Kertakirjaukset ja toistuvat yhteensä. */
   total: number;
+  /** Toistuvien kuukausien määrä. `0`, jos luokassa ei ole toistuvia. */
+  recurringMonths: number;
+  /** Toistuvien osuus summasta. */
+  recurringTotal: number;
   /** Kilometrit yhteensä, jos luokka on matkat. */
   km?: number;
   deductibleAnnually: boolean;
@@ -95,22 +109,30 @@ export function buildTaxReport(
   year: number,
   expenses: ReportExpense[],
   confirmations: ReportConfirmation[],
+  recurring: RecurringPeriod[] = [],
 ): TaxReport {
   const ofYear = expenses.filter((expense) => inYear(expense.date, year));
+  const recurringByCategory = recurringTotals(recurring, year);
 
   const lines: ReportLine[] = [];
 
   for (const category of EXPENSE_CATEGORIES) {
     const rows = ofYear.filter((expense) => expense.category === category.value);
-    if (rows.length === 0) continue;
+    const repeated = recurringByCategory.get(category.value);
+
+    // Luokka tulee riviksi, jos siinä on jompaakumpaa.
+    if (rows.length === 0 && !repeated) continue;
 
     const km = rows.reduce((sum, row) => sum + (row.km ?? 0), 0);
+    const once = rows.reduce((sum, row) => sum + row.amount, 0);
 
     lines.push({
       category: category.value,
       label: category.label,
       count: rows.length,
-      total: round(rows.reduce((sum, row) => sum + row.amount, 0)),
+      total: round(once + (repeated?.total ?? 0)),
+      recurringMonths: repeated?.months ?? 0,
+      recurringTotal: repeated?.total ?? 0,
       km: category.value === "matkat" && km > 0 ? round(km) : undefined,
       deductibleAnnually: category.deductibleAnnually,
     });

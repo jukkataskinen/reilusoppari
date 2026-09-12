@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getProperty } from "@/lib/db/properties";
 import { collectTaxReport, listStoredReports, taxYears } from "@/lib/db/tax-reports";
 import { CATEGORY_GUIDANCE, CLOSING_NOTE, DISCLAIMER } from "@content/tax-guidance.fi";
+import { describeLine } from "@/documents/TaxReport";
 import { isKmRateConfirmed, kmRate } from "@/lib/expenses/categories";
 import { AppShell } from "@/components/AppShell";
 import { SealTaxReport } from "@/components/SealTaxReport";
@@ -122,6 +123,18 @@ export default async function TaxReportPage({
       <section className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <h2 className="font-medium">Vuosikuluina vähennettävät</h2>
 
+        {/*
+          Linkki toistuviin on tässä eikä vain asunnon sivulla: jos vastike
+          puuttuu laskelmasta, sitä etsitään täältä.
+        */}
+        <p className="mt-1 text-sm text-ink/60">
+          Kuukausittain toistuvat kulut, kuten hoitovastike, kirjataan{" "}
+          <Link href={`/asunnot/${id}/toistuvat-kulut`} className="underline underline-offset-4">
+            erikseen kerran
+          </Link>
+          , ja laskelma laskee vuosikulun niistä.
+        </p>
+
         {annual.length === 0 ? (
           <p className="mt-2 text-sm text-ink/70">
             Tälle vuodelle ei ole kirjattu vuosikuluja.
@@ -135,8 +148,7 @@ export default async function TaxReportPage({
                   <span className="font-medium">{euro(line.total)}</span>
                 </div>
                 <p className="mt-0.5 text-sm text-ink/60">
-                  {line.count === 1 ? "1 kirjaus" : `${line.count} kirjausta`}
-                  {line.km ? ` · ${line.km} km` : ""}
+                  {describeLine(line)}
                 </p>
                 {CATEGORY_GUIDANCE[line.category].note ? (
                   <p className="mt-1 text-sm text-ink/60">
@@ -172,7 +184,7 @@ export default async function TaxReportPage({
                   <span className="font-medium">{euro(line.total)}</span>
                 </div>
                 <p className="mt-0.5 text-sm text-ink/60">
-                  {line.count === 1 ? "1 kirjaus" : `${line.count} kirjausta`}
+                  {describeLine(line)}
                 </p>
                 {CATEGORY_GUIDANCE[line.category].note ? (
                   <p className="mt-1 text-sm text-ink/60">

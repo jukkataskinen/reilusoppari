@@ -185,7 +185,10 @@ Polku 5.8. DoD: koko e2e-kaari läpi.
 Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 
 - [x] Kulurivit luokittain (kohta 5.7), kuitti kuvana
-- [x] Toistuvat kulut, matkat km-taksalla (`content/tax-rates.ts`)
+- [x] Toistuvat kuukausikulut kausina: syötetään kerran, kone laskee
+      vuosikulun; summan muutos aloittaa uuden kauden (Jukan linjaus
+      2026-09-12, migraatio 0013)
+- [x] Matkat km-taksalla (`content/tax-rates.ts`)
 - [x] Vuokratulo kuittauksista (Kyllä + Osittain)
 - [x] Vuosilaskelma OmaVeron kenttien järjestyksessä
 - [x] Sinetöinti (mockia vasten), uudelleensinetöinti korvaa vanhan

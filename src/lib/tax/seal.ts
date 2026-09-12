@@ -115,6 +115,7 @@ function toLines(numbers: TaxReportNumbers, annual: boolean): TaxReportLine[] {
     .map((line) => ({
       label: line.label,
       count: line.count,
+      recurringMonths: line.recurringMonths,
       total: line.total,
       km: line.km,
       // Vain `note` tulee asiakirjaan, ei `short`: lyhyt ohje on

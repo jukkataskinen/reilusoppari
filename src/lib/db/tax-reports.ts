@@ -23,6 +23,7 @@
 import { getServiceClient } from "./supabase";
 import { requireExpenseAccess } from "./access";
 import { isExpenseCategory } from "../expenses/categories";
+import { recurringForProperty } from "./recurring-expenses";
 import {
   buildTaxReport,
   type ReportConfirmation,
@@ -61,7 +62,8 @@ export async function collectTaxReport(
     suodattaa silti uudelleen — se on puhdas funktio, joka ei saa luottaa
     kutsujan rajaukseen.
   */
-  const [{ data: expenseRows, error: expenseError }, { data: tenancyRows }] = await Promise.all([
+  const [{ data: expenseRows, error: expenseError }, { data: tenancyRows }, recurring] =
+    await Promise.all([
     supabase
       .from("rs_expenses")
       .select("date, amount, category, km")
@@ -69,6 +71,15 @@ export async function collectTaxReport(
       .gte("date", `${year}-01-01`)
       .lte("date", `${year}-12-31`),
     supabase.from("rs_tenancies").select("id").eq("property_id", propertyId),
+    /*
+      Toistuvat kulut haetaan rajaamatta vuoteen.
+
+      Kausi voi alkaa edellisenä vuonna ja jatkua avoimena: jos haku
+      rajattaisiin tähän vuoteen, viime vuonna alkanut vastike katoaisi
+      laskelmasta kokonaan. Leikkaus vuoden kanssa tehdään laskennassa
+      (`monthsInYear`).
+    */
+    recurringForProperty(propertyId),
   ]);
 
   if (expenseError) {
@@ -99,7 +110,7 @@ export async function collectTaxReport(
       km: row.km === null ? null : Number(row.km),
     }));
 
-  return buildTaxReport(year, expenses, confirmations);
+  return buildTaxReport(year, expenses, confirmations, recurring);
 }
 
 /** Vuokrakaudet kuittauksineen. Kuittaamaton kausi tulee mukaan nollana. */
@@ -151,14 +162,38 @@ export async function taxYears(userId: string, propertyId: string): Promise<numb
 
   const supabase = getServiceClient();
 
-  const [{ data: expenses }, { data: tenancies }] = await Promise.all([
+  const [{ data: expenses }, { data: tenancies }, { data: repeated }] = await Promise.all([
     supabase.from("rs_expenses").select("date").eq("property_id", propertyId),
     supabase.from("rs_tenancies").select("id").eq("property_id", propertyId),
+    supabase
+      .from("rs_recurring_expenses")
+      .select("starts_month, ends_month")
+      .eq("property_id", propertyId),
   ]);
 
   const years = new Set<number>();
   for (const row of (expenses ?? []) as Array<{ date: string }>) {
     years.add(Number(row.date.slice(0, 4)));
+  }
+
+  /*
+    Toistuvan kulun kattamat vuodet, alusta loppuun.
+
+    Ilman tätä asunto, jolla on vain vastike eikä yhtään kertakirjausta, ei
+    näyttäisi laskelmassa niitä vuosia lainkaan — vaikka juuri niiltä
+    vuosilta on vähennettävää. Avoin kausi ulottuu kuluvaan vuoteen, joka on
+    listalla muutenkin.
+  */
+  for (const row of (repeated ?? []) as Array<{
+    starts_month: string;
+    ends_month: string | null;
+  }>) {
+    const from = Number(row.starts_month.slice(0, 4));
+    const to = row.ends_month
+      ? Number(row.ends_month.slice(0, 4))
+      : new Date().getFullYear();
+
+    for (let year = from; year <= to; year += 1) years.add(year);
   }
 
   const tenancyIds = ((tenancies ?? []) as Array<{ id: string }>).map((row) => row.id);
