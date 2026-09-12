@@ -32,7 +32,7 @@
 import { listTenancies, listParties, getTenancyProperty } from "../db/tenancies";
 import { listRentPeriods } from "../db/rent";
 import { listMaintenanceEntries } from "../db/maintenance";
-import { listInspectionPhotos, getOrCreateInspection, downloadPhoto } from "../db/inspections";
+import { listInspectionPhotos, findInspection, downloadPhoto } from "../db/inspections";
 import { listProperties } from "../db/properties";
 import { listPropertyExpenses } from "../db/expenses";
 import { listRecurringExpenses } from "../db/recurring-expenses";
@@ -183,7 +183,16 @@ export async function collectUserData(
     for (const kind of ["initial", "final"] as const) {
       let photos;
       try {
-        const inspection = await getOrCreateInspection(userId, tenancy.id, kind);
+        /*
+          `findInspection` eikä `getOrCreateInspection`.
+
+          Vienti on lukeva toiminto: se ei saa luoda tyhjää loppukatselmusta
+          vuokrasuhteelle, jolla sitä ei ole. Käyttäjä näkisi näkymässä
+          alkaneen katselmuksen, jota kukaan ei ole aloittanut.
+        */
+        const inspection = await findInspection(userId, tenancy.id, kind);
+        if (!inspection) continue;
+
         photos = await listInspectionPhotos(userId, tenancy.id, inspection.id);
       } catch {
         continue;

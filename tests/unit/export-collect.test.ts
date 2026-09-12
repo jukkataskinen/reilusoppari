@@ -216,6 +216,31 @@ describe.skipIf(!RUN)("omien tietojen vienti", () => {
     }
   }, 60_000);
 
+  it("ei luo mitään: vienti on lukeva toiminto", async () => {
+    /*
+      Ensimmäinen versio kävi katselmukset läpi `getOrCreateInspection`illa
+      ja loi samalla tyhjän loppukatselmuksen jokaiselle vuokrasuhteelle,
+      jolla sitä ei ollut. Käyttäjä olisi nähnyt näkymässä alkaneen
+      loppukatselmuksen, jota kukaan ei ollut aloittanut — ja syy olisi ollut
+      siinä, että hän latasi omat tietonsa.
+    */
+    const { landlord, tenancyId } = await setup();
+
+    const ennen = await getServiceClient()
+      .from("rs_inspections")
+      .select("id")
+      .eq("tenancy_id", tenancyId);
+
+    await collectUserData(landlord);
+
+    const jalkeen = await getServiceClient()
+      .from("rs_inspections")
+      .select("id")
+      .eq("tenancy_id", tenancyId);
+
+    expect((jalkeen.data ?? []).length).toBe((ennen.data ?? []).length);
+  }, 60_000);
+
   it("henkilötunnusta ei anneta kokonaisena", async () => {
     /*
       Paketti päätyy lataushakemistoon salaamattomana. Kokonainen tunnus

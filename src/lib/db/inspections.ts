@@ -132,6 +132,44 @@ export async function getOrCreateInspection(
 }
 
 /**
+ * Katselmus, jos se on olemassa. EI luo sitä.
+ *
+ * ===========================================================================
+ * MIKSI TÄMÄ ON ERILLÄÄN `getOrCreateInspection`ISTA
+ *
+ * Lukeva toiminto ei saa muuttaa mitään. Omien tietojen vienti kävi kerran
+ * läpi molemmat katselmustyypit `getOrCreateInspection`illa — ja loi
+ * samalla tyhjän loppukatselmuksen jokaiselle vuokrasuhteelle, jolla sitä ei
+ * ollut. Käyttäjä olisi nähnyt näkymässä alkaneen loppukatselmuksen, jota
+ * kukaan ei ollut aloittanut, ja syy olisi ollut siinä, että hän latasi omat
+ * tietonsa.
+ *
+ * Luonti kuuluu siihen hetkeen, jossa joku oikeasti avaa katselmuksen.
+ * ===========================================================================
+ */
+export async function findInspection(
+  userId: string,
+  tenancyId: string,
+  kind: InspectionKind,
+): Promise<Inspection | null> {
+  await requireTenancyParty(userId, tenancyId);
+
+  const { data, error } = await getServiceClient()
+    .from("rs_inspections")
+    .select(COLUMNS)
+    .eq("tenancy_id", tenancyId)
+    .eq("kind", kind)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[inspections] haku epäonnistui:", error.message);
+    throw new Error("Katselmuksen haku epäonnistui.");
+  }
+
+  return data ? fromRow(data as unknown as InspectionRow) : null;
+}
+
+/**
  * Merkitsee, että vuokralainen on nähnyt katselmuksen.
  *
  * Tästä alkaa se 24 tunnin aika, jonka jälkeen vuokranantaja voi lukita
