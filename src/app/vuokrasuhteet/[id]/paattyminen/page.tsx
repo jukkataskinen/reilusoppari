@@ -113,6 +113,12 @@ export default async function EndingPage({ params }: { params: Promise<{ id: str
                 Loppukatselmuksen allekirjoituksen jälkeen kumpikin antaa toisestaan arvion ja saa
                 oman vuokratodistuksensa.
               </p>
+              <Link
+                href={`/vuokrasuhteet/${id}/todistukset`}
+                className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+              >
+                Avaa todistukset
+              </Link>
             </li>
           </ol>
         </>

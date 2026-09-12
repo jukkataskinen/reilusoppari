@@ -44,7 +44,8 @@ function isOffLimits(url) {
     url.pathname.startsWith("/auth/") ||
     url.pathname.startsWith("/api/") ||
     // Kutsu- ja jakolinkit ovat kertaluonteisia ja tokenillisia: niitä ei
-    // saa jäädä laitteelle.
+    // saa jäädä laitteelle. Jakolinkki voidaan mitätöidä milloin tahansa,
+    // eikä välimuistiin jäänyt kopio saa elää mitätöinnin jälkeen.
     url.pathname.startsWith("/kutsu/") ||
     url.pathname.startsWith("/todistus/")
   );

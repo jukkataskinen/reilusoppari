@@ -1161,3 +1161,59 @@ vuokratulon veroilmoituslomaketta, jotta rivit voi siirtää OmaVeroon ilman
 tulkintaa. Rahastoitu rahoitusvastike, perusparannus ja korot on merkitty
 erikseen: ne eivät ole vuosikuluja, ja jos ne summautuisivat muiden joukkoon,
 laskelma olisi väärä juuri siinä kohdassa, jossa virhe maksaa.
+
+
+## Vuokratodistukset: arviot, sinetöinti ja jakolinkit (2026-09-12)
+
+**Todistus kuuluu sille, josta se kertoo.** `for_role` on todistuksen kohde,
+ei sen kirjoittaja: vuokranantajan arvio päätyy vuokralaisen todistukseen, ja
+vuokralainen jakaa sitä eteenpäin seuraavalle vuokranantajalle.
+
+**Arvio on kaksiarvoinen.** "Suosittelen" tai "En anna arviota". Kielteistä
+vaihtoehtoa ei ole (Jukan päätös 2026-09-10), eikä puuttuva arvio näy
+todistuksessa mitenkään. Lomake sanoo sen ääneen — ilman sitä moni valitsisi
+"en anna arviota" luullen sen olevan kohtelias tapa antaa kielteinen arvio.
+
+**Kaksi määräaikaa, molemmat 7 päivää.** Arviolle allekirjoituksesta,
+vastineelle arvion antamisesta. Määräajat ovat olemassa, jotta todistus
+valmistuu: ilman niitä toinen osapuoli voisi jättää sen roikkumaan
+loputtomiin olemalla tekemättä mitään — ja juuri silloin todistusta eniten
+tarvitaan.
+
+**Arviota ei voi muuttaa vastineen jälkeen.** Vastine on kirjoitettu siihen
+arvioon, joka silloin oli; muuttaminen tekisi vastineesta käsittämättömän.
+
+**Tilastot ovat tosiasioita, arvio on mielipide.** Luvut kootaan
+kuittauksista (kolme maksuluokkaa), huoltokirjasta ja vakuuden palautuksesta.
+Mitään ei syötetä käsin eikä mitään voi muokata. Peruttuja vikailmoituksia ei
+lasketa: peruttu ilmoitus ei ole vika.
+
+**Sinetöinti ei ole allekirjoitus.** Todistusta ei allekirjoita kukaan —
+antaja on jo tunnistautunut vahvasti loppukatselmuksessa, eikä uutta
+tunnistautumista pyydetä, koska se olisi este joka jättäisi todistukset
+syntymättä. Sinetöinti kiinnittää sisällön.
+
+**Vuokrasuhde on `certified` vasta kun molemmat todistukset on sinetöity.**
+Yksi ei riitä: toisen osapuolen todistus on yhtä lailla osa päättymistä.
+
+
+## QR-koodi ei voi sisältää asiakirjan omaa tiivistettä (2026-09-12)
+
+Ensimmäinen versio sinetöinnistä yritti laittaa QR-koodiin osoitteen, jossa
+on asiakirjan tiiviste. Se on mahdotonta: tiiviste lasketaan sisällöstä,
+johon QR-koodi kuuluu — sisältö riippuisi omasta tiivisteestään.
+
+Osoitteessa ei myöskään voi olla todistuksen tunnistetta: silloin kuka
+tahansa linkin nähnyt pääsisi lukemaan todistuksen ilman jakolinkkiä, ja
+tiivisteitä liikkuu sähköposteissa.
+
+QR vie siis tarkistussivulle, jolla tiiviste syötetään käsin. Se on yksi
+askel enemmän, mutta se on ainoa tapa, jossa tarkistus ei vaadi luottamusta
+Reilusopparin linkkeihin. Tarkistuksen vastaus kertoo vain, onko asiakirja
+sinetöity ja milloin — ei nimiä, ei osoitetta, ei arviota.
+
+Jakaminen tapahtuu erikseen mitätöitävällä jakolinkillä, jonka tunniste
+tallennetaan vain tiivisteenä. Linkki näytetään kerran: sitä ei voi katsoa
+myöhemmin uudelleen, koska sitä ei ole missään. Katselukerrat näkyvät
+omistajalle, ja jos niitä on enemmän kuin hän jakoi linkkejä, se on tieto,
+jonka perusteella linkin voi mitätöidä.
