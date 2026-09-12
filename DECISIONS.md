@@ -956,3 +956,81 @@ kerrota hänelle.
 **Osittainen maksu ei laske maksamattomuudeksi** ohjetta laskettaessa. Se on
 yritys maksaa, ja sen kohteleminen maksamattomuutena olisi väärin sitä
 kohtaan, joka yritti.
+
+
+## Muistutusketju: merkintä ohjaa, ei kello (2026-09-12, Jukan linjaus)
+
+Ohjelaatikko maksuvaikeuksista poistettiin sivulta. Tilalle tuli ketju, jonka
+Jukka määritteli. Esimerkki, kun vuokra erääntyy kuun 5. päivä:
+
+| Päivä | Kenelle | Mitä |
+|---|---|---|
+| 5. | — | Ei mitään. Maksu voi olla matkalla. |
+| 8. | Vuokranantaja | "Tarkista vuokranmaksutilanne." |
+| 8. | Vuokralainen | **Jos merkintä on "ei vielä"**: ystävällinen muistutus. |
+| 15. | Vuokranantaja | Toinen tarkistuskierros. |
+| 15. | Vuokralainen | **Jos yhä maksamatta**: napakka viesti ja ohje ottaa yhteyttä vuokranantajaan. |
+
+**Muistutus seuraa merkintää eikä kelloa.** Vuokralaiselle ei lähde mitään
+ennen kuin vuokranantaja on nimenomaisesti merkinnyt, ettei vuokraa ole
+saatu. Aikaan perustuva muistutus tavoittaisi myös ne, jotka ovat maksaneet
+ajallaan — ja perusteeton muistutus maksamattomasta vuokrasta on loukkaus, ei
+palvelu.
+
+Hinta on se, että jos vuokranantaja ei merkitse mitään, vuokralainen ei saa
+muistutusta. Se on oikea suunta: palvelu ei väitä vuokralaisesta mitään, mitä
+kukaan ei ole sanonut.
+
+**Napakka viesti ei uhkaa.** Se ohjaa yhteen asiaan: ota yhteyttä
+vuokranantajaan ja sopikaa. Ei perintää, ei rekisterimerkintää, ei ilmoitusta
+kolmannelle. Testi hylkää viestin, jos siihen ilmestyy sana "perintä",
+"luottotieto", "maksuhäiriö", "ulosotto" tai "irtisanominen".
+
+**Osittainen maksu muistuttaa vain puuttuvasta osasta.** 850 euron vuokrasta
+400 maksettuna muistutus koskee 450:tä eikä 850:tä.
+
+Toiston esto on `dedupe_key`-sarakkeen uniikkirajoitteessa (migraatio 0007),
+ja tunniste sisältää vastaanottajan: kahden vuokralaisen tapauksessa sama
+viesti menee molemmille, eikä toinen saa jäädä ilman.
+
+
+## Vuokranmaksun kolme luokkaa todistukseen (2026-09-12, Jukan linjaus)
+
+> 1. Vuokra maksettu ensimmäisellä tarkastuksella (0–3 pv): **maksettu ajallaan**
+> 2. Muistutuksen jälkeen: **vähän myöhässä mutta ok**
+> 3. Muissa tapauksissa: **vuokranmaksu viivästynyt**
+
+Rajat ovat samat kuin muistutusketjun rajat, eikä se ole sattumaa: "vähän
+myöhässä mutta ok" tarkoittaa nimenomaan sitä, että vuokralainen hoiti asian
+heti kun siitä huomautettiin. Jos rajat erkanisivat ketjusta, luokka
+menettäisi merkityksensä.
+
+Luokkia on kolme eikä viittä, koska todistuksen lukija tekee niiden
+perusteella yhden päätöksen. Hienojakoisempi asteikko antaisi vaikutelman
+mittaustarkkuudesta, jota tässä ei ole: tieto on vuokranantajan merkintä
+siitä, milloin hän näki maksun tilillään.
+
+**Uusi sarake `paid_at` (migraatio 0008).** `confirmed_at` on ensimmäisen
+kuittauksen hetki eikä muutu — 30 päivän muutosikkuna lasketaan siitä.
+Luokittelu tarvitsee eri tiedon: milloin merkintä muuttui maksetuksi. Ilman
+omaa saraketta tieto olisi vain lokissa, ja loki on todiste tapahtumista, ei
+tietolähde laskennalle.
+
+Merkinnän muuttaminen ei siirrä maksupäivää: jos merkintä pysyy maksettuna,
+aiempi `paid_at` säilyy. Jos se muuttuu pois maksetusta, `paid_at` nollataan.
+
+**Yhteenveto kertoo luvut eikä tulkitse niitä.** "34 kuukaudesta 32 ajallaan"
+on tosiasia, "erinomainen maksaja" on arvio — ja arvion antaa ihminen
+suosituksellaan, ei palvelu laskutoimituksella.
+
+
+## Tunnistevahti osui julkiseen avaimeen (2026-09-12)
+
+`tarkista:tunnisteet` kaatui riviin, jossa luetaan
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Sääntö oli "mikä tahansa
+`NEXT_PUBLIC_*KEY`", ja VAPIDin julkinen avain on tarkoituksella julkinen —
+kuten Supabasen anon-avain ja Stripen publishable-avain.
+
+Sääntö sanoo nyt sen, mitä se tarkoittaa: salaiselta kuulostava nimi
+(`PERSON`, `SECRET`, `PRIVATE`, `SERVICE_ROLE`) ei saa olla
+`NEXT_PUBLIC`-etuliitteen takana. Todennettu molempiin suuntiin.

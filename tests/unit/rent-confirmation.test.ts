@@ -5,16 +5,9 @@ import {
   EDIT_WINDOW_DAYS,
   formatPeriodMonth,
   isOverdue,
-  shouldOfferGuidance,
   STATUS_LABEL,
   validateConfirmation,
-  type PeriodWithConfirmation,
 } from "@/lib/rent/confirmation";
-
-const kuittaus = (status: "paid" | "not_yet" | "partial", dueDate: string): PeriodWithConfirmation => ({
-  dueDate,
-  confirmation: { status, amountPaid: status === "partial" ? 400 : null, confirmedAt: dueDate },
-});
 
 describe("kuittauksen muuttaminen", () => {
   const alku = "2026-09-05T09:00:00.000Z";
@@ -75,59 +68,6 @@ describe("osittainen maksu", () => {
     // joka voisi olla ristiriidassa sen kanssa.
     expect(validateConfirmation("paid", 400, 850)).toEqual({ ok: true, amountPaid: null });
     expect(validateConfirmation("not_yet", 400, 850)).toEqual({ ok: true, amountPaid: null });
-  });
-});
-
-describe("ohje maksuvaikeuksista", () => {
-  it("näytetään kahden peräkkäisen 'ei vielä' jälkeen", () => {
-    expect(
-      shouldOfferGuidance([kuittaus("not_yet", "2026-09-05"), kuittaus("not_yet", "2026-10-05")]),
-    ).toBe(true);
-  });
-
-  it("ei näytetä yhdestä", () => {
-    expect(
-      shouldOfferGuidance([kuittaus("paid", "2026-09-05"), kuittaus("not_yet", "2026-10-05")]),
-    ).toBe(false);
-  });
-
-  it("maksettu kuukausi nollaa laskurin", () => {
-    expect(
-      shouldOfferGuidance([
-        kuittaus("not_yet", "2026-08-05"),
-        kuittaus("paid", "2026-09-05"),
-        kuittaus("not_yet", "2026-10-05"),
-      ]),
-    ).toBe(false);
-  });
-
-  it("osittainen maksu ei laske maksamattomuudeksi", () => {
-    // Osittainen maksu on yritys maksaa. Sen kohteleminen
-    // maksamattomuutena olisi väärin sitä kohtaan, joka yritti.
-    expect(
-      shouldOfferGuidance([kuittaus("not_yet", "2026-09-05"), kuittaus("partial", "2026-10-05")]),
-    ).toBe(false);
-  });
-
-  it("järjestys ratkaistaan eräpäivästä eikä listan järjestyksestä", () => {
-    expect(
-      shouldOfferGuidance([
-        kuittaus("not_yet", "2026-10-05"),
-        kuittaus("paid", "2026-09-05"),
-        kuittaus("not_yet", "2026-11-05"),
-      ]),
-    ).toBe(true);
-  });
-
-  it("kuittaamattomat kaudet eivät laske", () => {
-    // Kuittaamaton kausi ei ole väite mistään: vuokranantaja ei ole vielä
-    // katsonut.
-    expect(
-      shouldOfferGuidance([
-        { dueDate: "2026-09-05", confirmation: null },
-        { dueDate: "2026-10-05", confirmation: null },
-      ]),
-    ).toBe(false);
   });
 });
 

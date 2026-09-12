@@ -34,3 +34,13 @@ export async function hasInspectionRooms(): Promise<boolean> {
 export async function hasContractComments(): Promise<boolean> {
   return hasColumn("rs_contract_comments", "body");
 }
+
+/** `true`, jos migraatio 0007 (ilmoitusten toiston esto) on ajettu. */
+export async function hasNotificationDedupe(): Promise<boolean> {
+  return hasColumn("rs_notifications", "dedupe_key");
+}
+
+/** `true`, jos migraatio 0008 (maksuhetki) on ajettu. */
+export async function hasPaidAt(): Promise<boolean> {
+  return hasColumn("rs_rent_confirmations", "paid_at");
+}

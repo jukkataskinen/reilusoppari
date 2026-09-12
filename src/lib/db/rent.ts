@@ -51,6 +51,7 @@ interface ConfirmationRow {
   status: ConfirmationStatus;
   amount_paid: string | number | null;
   confirmed_at: string;
+  paid_at: string | null;
   tenant_comment: string | null;
   tenant_commented_at: string | null;
 }
@@ -81,7 +82,7 @@ export async function listRentPeriods(
   const { data: confirmations } = await supabase
     .from("rs_rent_confirmations")
     .select(
-      "rent_period_id, confirmed_by, status, amount_paid, confirmed_at, tenant_comment, tenant_commented_at",
+      "rent_period_id, confirmed_by, status, amount_paid, confirmed_at, paid_at, tenant_comment, tenant_commented_at",
     )
     .in(
       "rent_period_id",
@@ -108,6 +109,7 @@ export async function listRentPeriods(
               confirmation.amount_paid === null ? null : Number(confirmation.amount_paid),
             confirmedAt: confirmation.confirmed_at,
             confirmedBy: confirmation.confirmed_by,
+            paidAt: confirmation.paid_at,
           }
         : null,
       tenantComment: confirmation?.tenant_comment ?? null,
@@ -162,7 +164,7 @@ export async function confirmRent(
 
   const { data: existing } = await supabase
     .from("rs_rent_confirmations")
-    .select("id, status, amount_paid, confirmed_at")
+    .select("id, status, amount_paid, confirmed_at, paid_at")
     .eq("rent_period_id", periodId)
     .maybeSingle();
 
@@ -171,6 +173,7 @@ export async function confirmRent(
     status: ConfirmationStatus;
     amount_paid: string | number | null;
     confirmed_at: string;
+    paid_at: string | null;
   } | null;
 
   if (previous && !canEditConfirmation(previous.confirmed_at)) {
@@ -182,10 +185,25 @@ export async function confirmRent(
 
   const now = new Date().toISOString();
 
+  /*
+    `paid_at` on eri asia kuin `confirmed_at`.
+
+    `confirmed_at` on ensimmäisen kuittauksen hetki eikä muutu: 30 päivän
+    muutosikkuna lasketaan siitä. `paid_at` on hetki, jolloin merkintä muuttui
+    maksetuksi, ja vuokratodistuksen luokittelu perustuu siihen
+    (`rent/history.ts`).
+
+    Jos merkintä muuttuu pois maksetusta, `paid_at` nollataan: silloin vuokraa
+    ei ole maksettu, eikä maksuhetkeä ole olemassa. Jos se pysyy maksettuna,
+    aiempi hetki säilyy — merkinnän muuttaminen ei saa siirtää maksupäivää.
+  */
+  const paidAt =
+    status !== "paid" ? null : (previous?.status === "paid" ? previous.paid_at : now) ?? now;
+
   const { error } = previous
     ? await supabase
         .from("rs_rent_confirmations")
-        .update({ status, amount_paid: validated.amountPaid, updated_at: now })
+        .update({ status, amount_paid: validated.amountPaid, paid_at: paidAt, updated_at: now })
         .eq("id", previous.id)
     : await supabase.from("rs_rent_confirmations").insert({
         rent_period_id: periodId,
@@ -193,6 +211,7 @@ export async function confirmRent(
         status,
         amount_paid: validated.amountPaid,
         confirmed_at: now,
+        paid_at: paidAt,
       });
 
   if (error) {

@@ -5,6 +5,7 @@ import { createRentPeriods, createTenancy } from "@/lib/db/tenancies";
 import { commentOnConfirmation, confirmRent, listRentPeriods } from "@/lib/db/rent";
 import { listPartyDetails } from "@/lib/tenancy/party-details";
 import { generateEncryptionKey } from "@/lib/identity/crypto";
+import { hasPaidAt } from "../migration-probe";
 
 /**
  * Vuokran kuittaus oikeaa Supabasea vasten (CLAUDE.md 5.5).
@@ -16,7 +17,18 @@ import { generateEncryptionKey } from "@/lib/identity/crypto";
 
 process.env.PERSON_DATA_KEY ??= generateEncryptionKey();
 
-const RUN = hasSupabaseCredentials();
+/*
+  Kuittaus kirjoittaa `paid_at`-sarakkeen (migraatio 0008). Ilman sitä testit
+  kaatuisivat viestiin "Kuittaus ei onnistunut", joka ei kerro puuttuvasta
+  migraatiosta mitään.
+*/
+const RUN = hasSupabaseCredentials() && (await hasPaidAt());
+
+if (hasSupabaseCredentials() && !RUN) {
+  console.warn(
+    "[testit] Migraatio 0008 (rs_rent_confirmations.paid_at) puuttuu kannasta — kuittaustestit ohitetaan.",
+  );
+}
 const PREFIX = `testi-vuokra-${Date.now()}`;
 const created = { users: [] as string[], properties: [] as string[], tenancies: [] as string[] };
 let seuraava = 0;

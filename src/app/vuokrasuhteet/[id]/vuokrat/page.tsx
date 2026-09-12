@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy } from "@/lib/db/tenancies";
 import { listRentPeriods } from "@/lib/db/rent";
-import { shouldOfferGuidance } from "@/lib/rent/confirmation";
 import { AppShell } from "@/components/AppShell";
 import { RentPeriodCard } from "@/components/RentPeriodCard";
 import { fi } from "@/i18n/fi";
@@ -24,12 +23,10 @@ export const metadata: Metadata = {
  * vuokralainen kommentoi. Kumpikaan ei näe toisesta mitään, mitä toinen ei
  * itse näe — sama periaate kuin katselmuksessa ja sopimuskeskustelussa.
  *
- * OHJE MAKSUVAIKEUKSISTA NÄYTETÄÄN VUOKRALAISELLE
- *
- * Kahden peräkkäisen "Ei vielä" jälkeen näytetään ohje ja linkki neuvontaan —
- * eikä muuta. Ei muistutuksia, ei perintää, ei merkintää mihinkään
- * rekisteriin. Ohje on vuokralaiselle, koska hän sitä tarvitsee; se ei ole
- * vuokranantajalle tarkoitettu työkalu painostaa.
+ * Aiemmin tässä oli ohjelaatikko maksuvaikeuksista kahden peräkkäisen
+ * "Ei vielä" jälkeen. Jukka poisti sen 2026-09-12: muistutus kuuluu
+ * ilmoituksiin, ei sivun laitaan, ja se annetaan hänen määrittelemässään
+ * järjestyksessä (ks. DECISIONS.md).
  * ===========================================================================
  */
 export default async function RentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,12 +39,6 @@ export default async function RentPage({ params }: { params: Promise<{ id: strin
 
   const isLandlord = tenancy.landlordUserId === user.id;
   const periods = await listRentPeriods(user.id, id);
-
-  const offerGuidance =
-    !isLandlord &&
-    shouldOfferGuidance(
-      periods.map((period) => ({ dueDate: period.dueDate, confirmation: period.confirmation })),
-    );
 
   return (
     <AppShell>
@@ -64,29 +55,6 @@ export default async function RentPage({ params }: { params: Promise<{ id: strin
           <p className="mt-2 text-sm text-ink/70">
             Ne syntyvät, kun sopimus on allekirjoitettu. Silloin vuokra ja eräpäivä ovat
             lopulliset.
-          </p>
-        </div>
-      ) : null}
-
-      {offerGuidance ? (
-        <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-          <p className="font-medium">Jos vuokranmaksu on vaikeaa</p>
-          <p className="mt-2 text-sm text-ink/70">
-            Kahtena kuukautena peräkkäin vuokraa ei ole merkitty saapuneeksi. Apua kannattaa
-            hakea ajoissa ja se on maksutonta: talous- ja velkaneuvonta auttaa maksusuunnitelman
-            tekemisessä, ja asumisen tukia voi hakea takautuvasti.
-          </p>
-          <p className="mt-3 text-sm">
-            <Link
-              href="https://oikeus.fi/fi/index/esitteet/talous-javelkaneuvonta.html"
-              className="underline underline-offset-4"
-            >
-              Talous- ja velkaneuvonta
-            </Link>
-          </p>
-          <p className="mt-3 text-sm text-ink/60">
-            Tämä teksti näkyy vain sinulle. Reilusoppari ei peri saatavia eikä välitä tietoa
-            maksuista minnekään.
           </p>
         </div>
       ) : null}

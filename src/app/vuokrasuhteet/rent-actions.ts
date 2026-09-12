@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { commentOnConfirmation, confirmRent } from "@/lib/db/rent";
 import type { ConfirmationStatus } from "@/lib/rent/confirmation";
+import { dispatchForPeriod, loadPeriodState } from "@/lib/rent/dispatch";
 
 /**
  * Vuokran kuittaus ja siihen liittyvä kommentti (CLAUDE.md 5.5).
@@ -50,6 +51,23 @@ export async function confirmRentAction(
     if (!result.ok) return { message: result.message };
   } catch {
     return { message: "Kuittaus ei onnistunut. Yritä hetken kuluttua uudelleen." };
+  }
+
+  /*
+    Vuokralaiselle kerrotaan heti.
+
+    Cron lähettäisi saman seuraavana aamuna, mutta vuorokauden viive tuntuisi
+    siltä, ettei merkinnällä ollut vaikutusta. Lähetys ei saa kaataa
+    kuittausta: merkintä on jo tallessa, ja ilmoitus on herätys eikä sisältö.
+  */
+  try {
+    const state = await loadPeriodState(periodId);
+    if (state) await dispatchForPeriod(state, new Date(), "tenant");
+  } catch (err) {
+    console.error(
+      "[vuokrat] ilmoituksen lähetys epäonnistui:",
+      err instanceof Error ? err.message : err,
+    );
   }
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/vuokrat`);

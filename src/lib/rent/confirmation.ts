@@ -46,7 +46,13 @@ export const STATUS_SENTENCE: Record<ConfirmationStatus, string> = {
 export interface Confirmation {
   status: ConfirmationStatus;
   amountPaid: number | null;
+  /** Ensimmäisen kuittauksen hetki. Muutosikkuna lasketaan tästä. */
   confirmedAt: string;
+  /**
+   * Hetki, jolloin merkintä muuttui maksetuksi. Eri asia kuin `confirmedAt`:
+   * vuokratodistuksen luokittelu perustuu tähän (`rent/history.ts`).
+   */
+  paidAt?: string | null;
 }
 
 /**
@@ -90,41 +96,6 @@ export function validateConfirmation(
   }
 
   return { ok: true, amountPaid };
-}
-
-export interface PeriodWithConfirmation {
-  /** Kauden eräpäivä, `VVVV-KK-PP`. */
-  dueDate: string;
-  confirmation: Confirmation | null;
-}
-
-/**
- * Näytetäänkö ohje maksuvaikeuksista?
- *
- * Kaksi peräkkäistä "Ei vielä" (CLAUDE.md 5.5). Silloin näytetään ohje ja
- * linkki neuvontaan — **eikä muuta**. Ei muistutuksia, ei perintää, ei
- * merkintää mihinkään rekisteriin. Palvelu ei ole perintätoimisto eikä
- * luottotietoyhtiö, eikä siitä saa tulla sellaista vahingossa.
- *
- * Osittainen maksu ei laske: se on yritys maksaa, ja sen kohteleminen
- * maksamattomuutena olisi väärin sitä kohtaan, joka yritti.
- */
-export function shouldOfferGuidance(periods: PeriodWithConfirmation[]): boolean {
-  const past = [...periods]
-    .filter((period) => period.confirmation !== null)
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-
-  let streak = 0;
-  for (const period of past) {
-    if (period.confirmation!.status === "not_yet") {
-      streak += 1;
-      if (streak >= 2) return true;
-    } else {
-      streak = 0;
-    }
-  }
-
-  return false;
 }
 
 /** Kuukausi luettavana tekstinä: `2026-09-01` → `syyskuu 2026`. */

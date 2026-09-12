@@ -60,10 +60,18 @@ for (const tiedosto of LÄHTEET) {
     }
   });
 
-  // Salausavain ei saa olla selaimessa.
+  /*
+    Salainen avain ei saa olla selaimessa.
+
+    Sääntö oli ensin "mikä tahansa NEXT_PUBLIC_*KEY", ja se osui VAPIDin
+    julkiseen avaimeen — joka on tarkoituksella julkinen, kuten Supabasen
+    anon-avain ja Stripen publishable-avain. Sääntö sanoo nyt sen, mitä se
+    tarkoittaa: salaiselta kuulostava nimi ei saa olla NEXT_PUBLIC-etuliitteen
+    takana.
+  */
   rivit.forEach((rivi, index) => {
-    if (/NEXT_PUBLIC_[A-Z_]*PERSON|NEXT_PUBLIC_[A-Z_]*KEY\b/.test(rivi)) {
-      virheet.push(`${polku}:${index + 1}  salausavain näyttää päätyvän selaimeen.`);
+    if (/NEXT_PUBLIC_[A-Z_]*(PERSON|SECRET|PRIVATE|SERVICE_ROLE)/.test(rivi)) {
+      virheet.push(`${polku}:${index + 1}  salainen avain näyttää päätyvän selaimeen.`);
     }
   });
 }
