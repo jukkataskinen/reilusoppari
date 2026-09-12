@@ -127,6 +127,9 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 - [x] Webhook `round.completed`: sinetöidyt PDF:t, `identity_verified_at`,
       tenancy → `active`, `rs_rent_periods` generoidaan. Idempotentti
 - [ ] e2e mockilla: asunto → vuokrasuhde → kutsu → kuvat → lukitus → allekirjoitus
+- [x] Kaaren käsiajo mahdollinen ilman eSinettiä:
+      `npm run testi:allekirjoitus` simuloi `round.completed`-webhookin ja
+      `npm run testi:vuokraherätteet` ajaa muistutusketjun toisena päivänä
 - [x] Kuvan merkintä "ei kuulu tähän" — kuva ei poistu, merkintä näkyy
       molemmille ja tulee pöytäkirjaan kuvan viereen
 

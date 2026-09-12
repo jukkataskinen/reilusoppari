@@ -1718,3 +1718,41 @@ kannanotto, ja sen muotoilu on CLAUDE.md kohdan 9.4 mukaan Jukan vastuulla.
 
 Sanamuodot ovat `DEPOSIT_TEXTS`-vakiossa yhdessä paikassa juuri siksi, että
 ne on helppo löytää ja korjata.
+
+
+## Kaaren testaus ilman eSinettiä (2026-09-12)
+
+Jukan kysymys: miten vuokrien valvontaa voi testata, jos heräte tulee kolme
+päivää eräpäivän jälkeen — testissä menisi kuukausia.
+
+Vastaus on kaksiosainen, ja molemmat ovat kehitystyökaluja eivätkä
+tuotantokoodia.
+
+**Aikaa siirretään, ei dataa** (`npm run testi:vuokraherätteet`).
+`dispatchDueReminders` ottaa jo `now`-parametrin, joten koko ketjun voi ajaa
+niin kuin olisi jokin toinen päivä. Houkutteleva oikotie olisi ollut siirtää
+eräpäiviä menneisyyteen, mutta siirretty eräpäivä jäisi väärin
+vuokratodistukseen ja verolaskelmaan.
+
+Kuivaharjoitus on oletus: ilman `--laheta`-lippua mitään ei lähde.
+Ilmoitukset menevät oikeisiin puhelimiin.
+
+**Webhookin simulointi** (`npm run testi:allekirjoitus`). eSinetin mock ei
+lähetä webhookeja, ja juuri `round.completed` vie vuokrasuhteen `active`:ksi,
+luo vuokrakaudet ja kirjaa tunnistautumisen. Ilman sitä koko kaarta ei ole
+voinut ajaa läpi kertaakaan — ja se oli syy siirtää lopputestaus eSinetin
+valmistumiseen.
+
+Skripti rakentaa saman tapahtuman, jonka eSinetti lähettäisi, ja antaa sen
+samalle käsittelijälle, jota webhook-reitti kutsuu. **Se ei mene HTTP-reitin
+läpi**, joten `ESINETTI_WEBHOOK_SECRET`-tarkistus pysyy koskemattomana:
+tuotantoon ei synny reittiä, jolla vuokrasuhteen saisi käyntiin ilman
+allekirjoitusta.
+
+Todennettu: `draft` → `active`, 12 vuokrakautta, ja toinen ajo tunnistaa
+kierroksen jo käsitellyksi.
+
+**Molemmat skriptit kutsuvat tuotantofunktioita eivätkä kirjoita omaa
+logiikkaansa.** Oma SQL olisi ollut nopeampi kirjoittaa, mutta silloin
+testattaisiin skriptiä eikä sovellusta — ja eräpäivien laskenta (31. päivä →
+kuukauden viimeinen) on juuri se, jonka halutaan toimivan oikein.

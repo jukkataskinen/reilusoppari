@@ -18,7 +18,8 @@
     "keys:person": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
     "tarkista:selainpaketti": "node scripts/tarkista-selainpaketti.mjs",
     "raportti:sailytys": "tsx scripts/raportti-sailytys.mts",
-    "testi:vuokraherätteet": "tsx scripts/testaa-vuokraheratteet.mts"
+    "testi:vuokraherätteet": "tsx scripts/testaa-vuokraheratteet.mts",
+    "testi:allekirjoitus": "tsx scripts/testaa-allekirjoitus.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
