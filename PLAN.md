@@ -216,12 +216,18 @@ Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 Polku 5.10. DoD: kysyjä pääsee keskusteluun vasta tunnistauduttuaan,
 yhteystiedot eivät paljastu, vuokralainen näkee keskustelun.
 
-- [ ] Lupa todistuksen luonnissa, näkyy omistajalle ennen jakamista
-- [ ] Jakolinkin "Kysy lisää" → kirjautuminen → vahva tunnistautuminen
-- [ ] Tunnistautuminen **kerran per henkilö** (`identity_verified_at`)
-- [ ] Keskustelu portaalissa, ei yhteystietoja kummallekaan
-- [ ] Vuokralainen näkee keskustelun kokonaisuudessaan
-- [ ] Luvan peruminen sulkee avoimet keskustelut, rajat ja loki
+- [x] Lupa todistuksessa, näkyy omistajalle ennen jakamista
+- [x] Jakolinkin "Kysy lisää" → kirjautuminen → tunnistautumisen tarkistus
+- [x] Tunnistautuminen **kerran per henkilö** (`identity_verified_at`)
+- [x] Keskustelu portaalissa, ei yhteystietoja kummallekaan
+- [x] Vuokralainen näkee keskustelun kokonaisuudessaan, muttei kirjoita siihen
+- [x] Luvan peruminen sulkee avoimet keskustelut; rajat (`max_messages`)
+- [ ] **Tunnistautumisen päätepiste puuttuu eSinetistä.** Sääntö on
+      paikallaan ja testattu; kysyjä ei pääse keskusteluun ilman
+      `identity_verified_at`:ia. Päätepisteen valmistuttua tarvitaan vain
+      linkki tunnistautumiseen (BLOCKERS.md)
+- [ ] Käyttöehtoihin maininta siitä, että keskustelu voi siirtyä puhelimeen
+      eikä palvelu estä sitä (Jukka)
 
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 

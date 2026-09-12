@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { findCertificateByShare } from "@/lib/db/certificates";
+import { resolveShare } from "@/lib/db/certificate-contact";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
@@ -33,6 +34,16 @@ export default async function SharedCertificatePage({
   const { token } = await params;
   const certificate = await findCertificateByShare(token);
 
+  /*
+    Yhteydenottolupa haetaan erikseen eikä `findCertificateByShare`:sta.
+
+    Jälkimmäinen kasvattaa katselukertaa, ja se on oikein: todistus
+    näytetään. Luvan haku ei ole katselu, joten se kulkee omaa reittiään
+    (`resolveShare`), joka ei koske laskuriin.
+  */
+  const share = certificate ? await resolveShare(token) : null;
+  const mayAsk = share?.permission.allowed === true;
+
   if (!certificate) {
     return (
       <AppShell nav={false} signedIn={false}>
@@ -63,7 +74,29 @@ export default async function SharedCertificatePage({
         >
           Tallenna PDF
         </a>
+
+        {/*
+          "Kysy lisää" näkyy vain, jos todistuksen ANTAJA on sallinut sen.
+          Nappi, joka johtaa umpikujaan, on huonompi kuin ei nappia.
+        */}
+        {mayAsk ? (
+          <Link
+            href={`/todistus/${token}/kysy`}
+            className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
+          >
+            Kysy lisää
+          </Link>
+        ) : null}
       </div>
+
+      {mayAsk ? (
+        <p className="mt-3 text-sm text-ink/70">
+          Todistuksen antaja on sallinut, että häneltä voi kysyä lisää tästä vuokrasuhteesta.
+          Keskustelu käydään tässä palvelussa, ja se edellyttää kirjautumista ja
+          tunnistautumista — keskustelu koskee toisen ihmisen tietoja. Kummankaan yhteystietoja
+          ei näytetä toiselle, ja se, jota keskustelu koskee, näkee sen.
+        </p>
+      ) : null}
 
       <object
         data={`/todistus/${token}/pdf`}

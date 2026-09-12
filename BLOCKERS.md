@@ -261,3 +261,28 @@ vasta, kun tenantille on määritetty oma sähköpostipalvelu — käytännöss�
 Resend, jonka domain on todennettava. Tämä on tehtävä ennen lanseerausta,
 koska kirjautumissähköposti on ensimmäinen asia jonka vuokralainen saa.
 Ks. myös EU-siirron muistilista yllä.
+
+
+---
+
+## Vahva tunnistautuminen ilman allekirjoituskierrosta (2026-09-12)
+
+**Estää:** vaiheen 6 viimeisen askeleen — uuden vuokranantajan pääsyn
+todistuskeskusteluun (CLAUDE.md 5.10).
+
+eSinetin rajapinnassa vahva tunnistautuminen tapahtuu allekirjoituskierroksen
+osana (`authLevel: "strong"`). Erillistä tunnistuspäätepistettä ei ole, eikä
+todistuskeskustelussa ole mitään allekirjoitettavaa.
+
+Reilusopparin puoli on valmis: sääntö on `certificates/contact.ts`:ssä,
+testattu, ja kysyjä pysähtyy `identity_verified_at`-tarkistukseen. Sivu kertoo
+tunnistautumisen puuttuvan eikä avaa keskustelua.
+
+**Mitä eSinetiltä tarvitaan:** päätepiste, joka tunnistaa henkilön ja
+palauttaa nimen ja syntymäajan ilman asiakirjaa — esimerkiksi
+`POST /identifications`, joka palauttaa tunnistautumislinkin ja webhookin
+valmistuttuaan. Ei henkilötunnusta (CLAUDE.md kohta 6).
+
+Sen valmistuttua tarvitaan Reilusopparissa vain linkki tunnistautumiseen
+`todistus/[token]/kysy`-sivulle ja `identity_verified_at`:in kirjaus
+webhookista — sama kohta, jossa se jo kirjataan allekirjoituksen yhteydessä.

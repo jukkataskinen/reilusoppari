@@ -1319,3 +1319,37 @@ luomisesta kannattavaa, ja silloin krediittejä kerättäisiin tekemällä tilej
 
 **Stripe-kirjastoa ei oteta riippuvuudeksi.** Tuote tarvitsee neljä kutsua ja
 HMAC-tarkistuksen; sama ratkaisu kuin eSinetti-clientissä ja samasta syystä.
+
+
+## Yhteydenottoluvan omistajuus ja keskustelun näkyvyys (2026-09-12)
+
+**Luvan antaa todistuksen KIRJOITTAJA, ei sen omistaja.** Vuokranantaja
+kirjoittaa todistuksen vuokralaisesta; lupa siihen, että häneen saa ottaa
+yhteyttä, on hänen omansa. Tämä on helppo sekoittaa, koska todistus on
+vuokralaisen omaisuutta — siksi se on koodissa oma funktionsa (`issuerOf`)
+eikä ehtolause.
+
+**Omistaja näkee luvan tilan ennen kuin jakaa todistuksen.** Hänen on
+tiedettävä, mitä hän jakaa.
+
+**Kolme näkee, kaksi kirjoittaa.** Kysyjä ja luvan antaja keskustelevat. Se,
+JOSTA keskustellaan, näkee keskustelun kokonaisuudessaan muttei kirjoita
+siihen. Näkyvyys on tarkoituksellinen: vaihtoehto olisi ensimmäinen kohta
+koko tuotteessa, jossa toisesta kerätään tietoa hänen tietämättään.
+Kirjoitusoikeuden rajaus on yhtä tarkoituksellinen: jos kolmas voisi
+kirjoittaa, keskustelu muuttuisi joksikin muuksi kuin miksi se luvattiin.
+
+**Puuttuvasta luvasta kerrotaan ENNEN tunnistautumista.** Muuten ihminen
+tunnistautuisi pankkitunnuksilla ja saisi vasta sen jälkeen kuulla, ettei
+lupaa ole. Järjestys on `canOpenConversation`issa ja testattu erikseen.
+
+**Peruminen sulkee keskustelut muttei poista viestejä.** Viestit jäävät
+näkyviin myös sille, jota keskustelu koskee — poisto olisi tiedon vieminen
+häneltä.
+
+**Todistuksen id ei kulje osoitteissa.** Keskustelu avataan jakolinkin
+tunnisteella, ja todistus ratkaistaan siitä palvelimella. Katselulaskuria ei
+kasvateta keskustelua avattaessa: se ei ole todistuksen katselu.
+
+**Sinetöimättömästä todistuksesta ei keskustella.** Sen sisältö voi vielä
+muuttua, eikä keskustelu saa koskea jotain, mitä ei ole lyöty lukkoon.

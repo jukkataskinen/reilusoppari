@@ -65,3 +65,33 @@ export async function notifyOtherParty(
     }
   }
 }
+
+/**
+ * Ilmoitus yhdelle käyttäjälle.
+ *
+ * Erillinen `notifyOtherParty`:sta, koska todistuskeskustelun osapuolet eivät
+ * ole saman vuokrasuhteen osapuolia: kysyjä on ulkopuolinen vuokranantaja,
+ * jolla ei ole mitään tekemistä sen vuokrasuhteen kanssa, jota todistus
+ * koskee (CLAUDE.md 5.10).
+ */
+export async function notifyUser(
+  userId: string,
+  notification: TenancyNotification,
+): Promise<void> {
+  try {
+    await deliver({
+      userId,
+      kind: notification.kind,
+      dedupeKey: `${notification.dedupeKey}:${userId}`,
+      title: notification.title,
+      body: notification.body,
+      path: notification.path,
+    });
+  } catch (err) {
+    // Ilmoitus on herätys eikä sisältö: viesti on jo tallessa portaalissa.
+    console.error(
+      "[ilmoitukset] ilmoitus epäonnistui:",
+      err instanceof Error ? err.message : err,
+    );
+  }
+}
