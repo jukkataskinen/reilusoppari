@@ -32,6 +32,11 @@ export interface InspectionPhotoRow {
   room: string | null;
   note: string | null;
   storagePath: string;
+  /**
+   * Pienoiskuva asiakirjoihin. `null` ennen 2026-09-12 otetuilla kuvilla,
+   * jolloin asiakirja upottaa täysikokoisen kuvan.
+   */
+  thumbnailPath: string | null;
   sha256: string;
   takenAtServer: string;
   uploaderUserId: string;
@@ -196,6 +201,7 @@ interface PhotoRow {
   room: string | null;
   note: string | null;
   storage_path: string;
+  thumbnail_path: string | null;
   sha256: string;
   taken_at_server: string;
   uploader_user_id: string;
@@ -224,7 +230,7 @@ export async function listInspectionPhotos(
     supabase
       .from("rs_photos")
       .select(
-        "id, room, note, storage_path, sha256, taken_at_server, uploader_user_id, flagged_by, flagged_reason",
+        "id, room, note, storage_path, thumbnail_path, sha256, taken_at_server, uploader_user_id, flagged_by, flagged_reason",
       )
       .eq("inspection_id", inspectionId)
       .eq("tenancy_id", tenancyId)
@@ -256,6 +262,7 @@ export async function listInspectionPhotos(
       room: row.room,
       note: row.note,
       storagePath: row.storage_path,
+      thumbnailPath: row.thumbnail_path,
       sha256: row.sha256,
       takenAtServer: row.taken_at_server,
       uploaderUserId: row.uploader_user_id,
@@ -281,6 +288,7 @@ export async function recordInspectionPhoto(input: {
   room: string;
   note: string | null;
   storagePath: string;
+  thumbnailPath: string | null;
   sha256: string;
   bytes: number;
   width: number | null;
@@ -295,6 +303,7 @@ export async function recordInspectionPhoto(input: {
       room: input.room,
       note: input.note,
       storage_path: input.storagePath,
+      thumbnail_path: input.thumbnailPath,
       sha256: input.sha256,
       bytes: input.bytes,
       width: input.width,

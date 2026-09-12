@@ -117,3 +117,33 @@ export function colorPixels(
   }
   return count;
 }
+
+/**
+ * Sivun teksti luettavana merkkijonona.
+ *
+ * PDF:n sisältövirrat ovat pakattuja, joten tavujen läpi hakeminen ei löydä
+ * tekstiä. pdf.js purkaa ne — ja samalla tulos on se, minkä lukija näkee,
+ * eikä se mitä tiedostossa sattuu olemaan.
+ *
+ * Tämä ei korvaa `inkedPixels`iä: teksti voi olla sisältövirrassa ilman että
+ * se piirtyy sivulle (`components.tsx`). Tekstihaku kertoo mitä asiakirjassa
+ * lukee, pikselit sen että se näkyy.
+ */
+export async function pageText(bytes: Uint8Array, pageNumber = 1): Promise<string> {
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+  const page = await doc.getPage(pageNumber);
+  const content = await page.getTextContent();
+
+  return content.items
+    .map((item) => ("str" in item ? item.str : ""))
+    .join(" ")
+    .replace(/\s+/g, " ");
+}
+
+/** Kaikkien sivujen teksti yhtenä merkkijonona. */
+export async function documentText(bytes: Uint8Array): Promise<string> {
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+  const pages: string[] = [];
+  for (let i = 1; i <= doc.numPages; i += 1) pages.push(await pageText(bytes, i));
+  return pages.join(" ");
+}

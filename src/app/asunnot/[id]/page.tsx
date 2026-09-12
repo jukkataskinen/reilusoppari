@@ -50,12 +50,25 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
       <h1 className="text-2xl">{property.name ?? formatAddress(property)}</h1>
       {property.name ? <p className="mt-1 text-ink/70">{formatAddress(property)}</p> : null}
 
-      <Link
-        href={`/asunnot/${property.id}/vuokrasuhde/uusi`}
-        className="mt-5 inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
-      >
-        {fi.tenancy.new}
-      </Link>
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link
+          href={`/asunnot/${property.id}/vuokrasuhde/uusi`}
+          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
+        >
+          {fi.tenancy.new}
+        </Link>
+        {/*
+          Verolaskelma on asunnon alla eikä vuokrasuhteen: yhdessä vuodessa voi
+          olla kaksi vuokralaista peräkkäin, ja hoitovastike juoksee myös
+          tyhjän kuukauden yli.
+        */}
+        <Link
+          href={`/asunnot/${property.id}/verolaskelma`}
+          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+        >
+          Verolaskelma
+        </Link>
+      </div>
 
       <dl className="mt-6 grid grid-cols-2 gap-4 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <div>

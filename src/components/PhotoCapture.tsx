@@ -54,10 +54,13 @@ export function PhotoCapture({
     setMessage(null);
 
     try {
-      const { blob } = await compressPhoto(file);
+      const { blob, thumbnail } = await compressPhoto(file);
 
       const body = new FormData();
       body.set("file", blob, "kuva.jpg");
+      // Pienoiskuva asiakirjoihin: täysikokoinen kuva kasvattaisi pöytäkirjan
+      // kymmeniin megatavuihin ilman että mikään näkyisi paremmin.
+      body.set("thumbnail", thumbnail, "pienoiskuva.jpg");
       if (room) body.set("room", room);
       body.set("note", note);
 

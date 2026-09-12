@@ -184,12 +184,16 @@ Polku 5.8. DoD: koko e2e-kaari läpi.
 
 Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 
-- [ ] Kulurivit luokittain (kohta 5.7), kuitti kuvana
-- [ ] Toistuvat kulut, matkat km-taksalla (`content/tax-rates.ts`)
-- [ ] Vuokratulo kuittauksista (Kyllä + Osittain)
-- [ ] Vuosilaskelma OmaVeron kenttien järjestyksessä, kuitit liitteenä
-- [ ] Sinetöinti, ensimmäinen tulostus laukaisee Plus-maksun
-- [ ] Ohjetekstit luokan vieressä; jokaisessa "ei veroneuvontaa"
+- [x] Kulurivit luokittain (kohta 5.7), kuitti kuvana
+- [x] Toistuvat kulut, matkat km-taksalla (`content/tax-rates.ts`)
+- [x] Vuokratulo kuittauksista (Kyllä + Osittain)
+- [x] Vuosilaskelma OmaVeron kenttien järjestyksessä
+- [x] Sinetöinti (mockia vasten), uudelleensinetöinti korvaa vanhan
+- [x] Ohjetekstit luokan vieressä; jokaisessa "ei veroneuvontaa"
+- [ ] Kuitit liitteenä — **toteutettu toisin**: kuitit säilyvät sovelluksessa
+      ja laskelmassa kerrotaan niiden määrä (DECISIONS.md 2026-09-12)
+- [ ] Ensimmäinen tulostus laukaisee Plus-maksun — odottaa vaihetta 5
+- [ ] Ohjetekstien tarkistus (Jukka, `content/tax-guidance.fi.ts`)
 
 ## Vaihe 5 — Laskutus, suosittelu, salkku
 

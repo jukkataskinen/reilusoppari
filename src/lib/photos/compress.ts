@@ -24,8 +24,21 @@
 export const MAX_EDGE = 2000;
 export const JPEG_QUALITY = 0.82;
 
+/**
+ * Pienoiskuvan pitkä sivu.
+ *
+ * Asiakirjassa kuva piirretään 158 pisteen levyisenä, mikä on noin 220
+ * pikseliä 100 dpi:n tarkkuudella. 500 pikseliä antaa varaa sille, että
+ * asiakirjaa katsotaan tarkemmalla zoomilla, ja on silti noin sadasosa
+ * täysikokoisen datamäärästä.
+ */
+export const THUMBNAIL_EDGE = 500;
+export const THUMBNAIL_QUALITY = 0.75;
+
 export interface CompressedPhoto {
   blob: Blob;
+  /** Pienoiskuva asiakirjoihin. Tiiviste lasketaan silti `blob`ista. */
+  thumbnail: Blob;
   width: number;
   height: number;
 }
@@ -55,23 +68,40 @@ export async function compressPhoto(file: File): Promise<CompressedPhoto> {
 
   try {
     const { width, height } = scaledSize(bitmap.width, bitmap.height);
+    const [blob, thumbnail] = await Promise.all([
+      draw(bitmap, width, height, JPEG_QUALITY),
+      (() => {
+        const thumb = scaledSize(bitmap.width, bitmap.height, THUMBNAIL_EDGE);
+        return draw(bitmap, thumb.width, thumb.height, THUMBNAIL_QUALITY);
+      })(),
+    ]);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Selain ei osaa käsitellä kuvaa.");
-
-    context.drawImage(bitmap, 0, 0, width, height);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
-    );
-
-    if (!blob) throw new Error("Kuvan pakkaus epäonnistui.");
-    return { blob, width, height };
+    return { blob, thumbnail, width, height };
   } finally {
     bitmap.close();
   }
+}
+
+/** Piirtää kuvan canvasille annetussa koossa ja palauttaa JPEG:n. */
+async function draw(
+  bitmap: ImageBitmap,
+  width: number,
+  height: number,
+  quality: number,
+): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Selain ei osaa käsitellä kuvaa.");
+
+  context.drawImage(bitmap, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", quality),
+  );
+
+  if (!blob) throw new Error("Kuvan pakkaus epäonnistui.");
+  return blob;
 }

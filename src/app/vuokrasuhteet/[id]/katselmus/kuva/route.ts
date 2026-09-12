@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/inspections";
 import { normalizeRoomName } from "@/lib/inspection/rooms";
 import { stripImageMetadata, UnsupportedImageError } from "@/lib/photos/strip-metadata";
+import { storeThumbnail } from "@/lib/photos/thumbnail";
 
 /**
  * Katselmuskuvan vastaanotto (CLAUDE.md 5.3 ja kohta 6).
@@ -110,6 +111,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return VIRHE(500, "Kuvan tallennus epäonnistui.");
   }
 
+  // Pienoiskuva asiakirjaa varten. Puuttuva pienoiskuva ei ole virhe: silloin
+  // pöytäkirja upottaa täysikokoisen kuvan kuten ennen tätä otetuilla kuvilla.
+  const thumbnailPath = await storeThumbnail(form, storagePath);
+
   try {
     const photo = await recordInspectionPhoto({
       tenancyId,
@@ -118,6 +123,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       room,
       note,
       storagePath,
+      thumbnailPath,
       sha256,
       bytes: cleaned.bytes.byteLength,
       width: cleaned.width,
@@ -131,7 +137,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   } catch {
     // Rivin kirjaus epäonnistui: poistetaan tiedosto, jottei Storageen jää
     // kuvaa, jota mikään ei omista eikä kukaan näe.
-    await getServiceClient().storage.from("photos").remove([storagePath]);
+    const orvot = thumbnailPath ? [storagePath, thumbnailPath] : [storagePath];
+    await getServiceClient().storage.from("photos").remove(orvot);
     return VIRHE(500, "Kuvan tallennus epäonnistui.");
   }
 }

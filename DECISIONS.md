@@ -1217,3 +1217,70 @@ tallennetaan vain tiivisteenä. Linkki näytetään kerran: sitä ei voi katsoa
 myöhemmin uudelleen, koska sitä ei ole missään. Katselukerrat näkyvät
 omistajalle, ja jos niitä on enemmän kuin hän jakoi linkkejä, se on tieto,
 jonka perusteella linkin voi mitätöidä.
+
+
+## Pöytäkirjaan upotetaan pienoiskuva, ei täysikokoista kuvaa (2026-09-12)
+
+Jukka kysyi kapasiteetista: 20 kuvaa sopimusta kohden, paljon käyttäjiä
+yhtä aikaa, tavoitteena 5000 vuokrasopimusta vuodessa.
+
+Käyttäjämäärä ei ole ongelma. 5000 sopimusta on ~14 päivässä, ja huippuina
+kuunvaihteessa ehkä 150 — Vercelin funktiot ja Supabasen HTTP-rajapinta
+kestävät sen ilman muutoksia. Tallennustila on ~125 GB vuodessa, mikä maksaa
+kymppejä kuussa.
+
+Vika oli asiakirjassa. Katselmuspöytäkirja upotti kuvat täydessä koossa
+(2000 px), vaikka ne piirretään 158 × 96 pisteen kokoisina. Kahdenkymmenen
+kuvan pöytäkirja olisi ollut noin 13 MB — yli `documents`-ämpärin 25 MB:n
+rajan heti kun kuvia on 40, funktion muistin ja aikarajan äärellä, ja ikävä
+lataus vuokralaisen puhelimeen mobiiliverkossa. Lisäksi kuvat ladattiin
+Storagesta peräkkäin, mikä on kaksikymmentä sarjassa olevaa kierrosta ennen
+kuin renderöinti alkaa.
+
+**Ratkaisu:** selain tallentaa kuvasta myös pienoiskuvan (500 px) samalla kun
+se pakkaa alkuperäisen, ja asiakirja upottaa sen. Lataukset menevät
+kahdeksan rinnakkain. Pöytäkirja kutistuu ~13 MB:sta ~600 kt:aan.
+
+**Miksi tämä ei heikennä todistusarvoa:** `sha256` lasketaan edelleen
+täysikokoisesta tiedostosta, ja se on se tiiviste, joka pöytäkirjassa lukee.
+Pöytäkirjan kuva on aina ollut pienennetty esitys siitä, mihin tiiviste
+viittaa — täysikokoinen kuva on tallessa sovelluksessa. Pienoiskuvan
+puuttuminen ei pudota kuvaa pöytäkirjasta: silloin upotetaan täysikokoinen
+kuten ennen tätä otetuilla kuvilla.
+
+
+## Kuitit eivät ole verolaskelman sisällä (2026-09-12)
+
+CLAUDE.md 5.7 sanoo "liitteenä kuitit". Toteutin sen niin, että kuitit
+säilyvät sovelluksessa ja sinetöidyssä laskelmassa kerrotaan niiden määrä.
+
+Kaksi syytä. Vuoden kuitit ovat helposti 50 kuvaa, mikä upotettuna on
+kymmeniä megatavuja — sama ongelma kuin pöytäkirjassa yllä, mutta pahempi,
+koska kuitin tekstin on pysyttävä luettavana eikä pienoiskuva riitä.
+Ja Verohallinto ei pyydä kuitteja veroilmoituksen liitteeksi: ne on
+säilytettävä ja esitettävä pyydettäessä, mikä on juuri se mitä sovellus
+tekee.
+
+Tämä on poikkeama CLAUDE.md:n sanamuodosta. Jukka voi linjata toisin;
+silloin kuiteille tarvitaan oma, isompi pienoiskuvakoko.
+
+
+## Verolaskelma on asunnon eikä vuokrasuhteen (2026-09-12)
+
+Yhdessä vuodessa voi olla kaksi vuokralaista peräkkäin, ja hoitovastike
+juoksee myös tyhjän kuukauden yli. Vuokrasuhdekohtainen laskelma antaisi
+kaksi puolikasta eikä yhtäkään, jonka voi siirtää OmaVeroon.
+
+Siksi laskelma on asunnon alla, ja vuokratulo kootaan asunnon KAIKKIEN
+vuokrasuhteiden kuittauksista. Pääsy on omistajatarkistuksen takana
+(`requireExpenseAccess`), ei osapuolitarkistuksen — vuokralainen on
+vuokrasuhteen osapuoli muttei näe kuluja eikä laskelmaa.
+
+**Kuittaamaton kuukausi on nolla.** Ei oletusta koko vuokrasta: laskelma ei
+saa kertoa tulosta, jota kukaan ei ole merkinnyt saaneensa. Se sanotaan
+näkymässä ääneen, koska luku voi muuten näyttää liian pieneltä ilman että
+syy näkyy.
+
+**Uudelleensinetöinti on sallittu.** Kirjaus voi puuttua tai olla väärässä
+luokassa, ja korjattu laskelma on parempi kuin väärä. Vanha korvautuu — kaksi
+ristiriitaista laskelmaa samalta vuodelta olisi pahempi ongelma.
