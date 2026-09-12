@@ -158,6 +158,29 @@ export async function handleRoundCompleted(
 
   const now = new Date().toISOString();
 
+  /*
+    Allekirjoitus merkitään ENNEN asiakirjojen käsittelyä ja siitä
+    riippumatta.
+
+    Ensin tämä tehtiin asiakirjasilmukan sisällä. Silloin idempotenssin
+    vahti riippui siitä, tunnistettiinko asiakirjat: tapahtuma, jonka
+    asiakirjoja emme tunnista — tai jossa niitä ei ole — ei jättänyt
+    `signed_at`-leimaa, ja jokainen toisto generoi vuokrakaudet uudelleen.
+    Kierros on valmis silloin kun se on valmis, riippumatta siitä montako
+    tiedostoa siitä osasimme lukea.
+  */
+  await Promise.all([
+    supabase
+      .from("rs_contracts")
+      .update({ signed_at: now, updated_at: now })
+      .eq("tenancy_id", tenancyId),
+    supabase
+      .from("rs_inspections")
+      .update({ status: "signed", signed_at: now, updated_at: now })
+      .eq("tenancy_id", tenancyId)
+      .eq("kind", "initial"),
+  ]);
+
   for (const document of event.documents) {
     const kind = documentKind(document.name);
     if (!kind) continue;
@@ -168,7 +191,6 @@ export async function handleRoundCompleted(
       esinetti_document_id: document.id,
       sealed_sha256: document.sealedSha256,
       sealed_path: path,
-      signed_at: now,
       updated_at: now,
     };
 
@@ -177,7 +199,7 @@ export async function handleRoundCompleted(
     } else {
       await supabase
         .from("rs_inspections")
-        .update({ ...patch, status: "signed" })
+        .update(patch)
         .eq("tenancy_id", tenancyId)
         .eq("kind", "initial");
     }

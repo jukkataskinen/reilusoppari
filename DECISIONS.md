@@ -857,7 +857,14 @@ juuri siinä kysymyksessä, kuka on allekirjoittanut.
 
 **Käsittely on idempotentti.** eSinetti toistaa tapahtuman, jos vastauksemme
 ei mennyt perille. Ilman idempotenssia toisto tuottaisi kaksinkertaiset
-vuokrakaudet — eli vuokralaiselle kaksi laskua kuukaudessa. Testattu.
+vuokrakaudet — eli vuokralaiselle kaksi laskua kuukaudessa.
+
+Ensimmäinen toteutus oli tässä rikki, ja testi löysi sen: `signed_at`
+kirjoitettiin asiakirjasilmukan sisällä, joten idempotenssin vahti riippui
+siitä, tunnistettiinko asiakirjat. Tapahtuma, jonka asiakirjoja emme
+tunnista — tai jossa niitä ei ole — ei jättänyt leimaa, ja jokainen toisto
+olisi generoinut vuokrakaudet uudelleen. Kierros on valmis silloin kun se on
+valmis, riippumatta siitä montako tiedostoa siitä osasimme lukea.
 
 **Vuokrakaudet syntyvät vasta allekirjoituksesta**, ei sopimusta luotaessa:
 ennen allekirjoitusta vuokra ja eräpäivä voivat vielä muuttua.

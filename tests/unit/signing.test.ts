@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { getServiceClient, hasSupabaseCredentials } from "@/lib/db/supabase";
 import { createProperty } from "@/lib/db/properties";
 import { createTenancy, getTenancy } from "@/lib/db/tenancies";
+import { getOrCreateInspection } from "@/lib/db/inspections";
 import { savePartyDetails, listPartyDetails } from "@/lib/tenancy/party-details";
 import { sendForSigning, signingReadiness } from "@/lib/tenancy/signing";
 import { handleRoundCompleted } from "@/lib/tenancy/round-completed";
@@ -113,7 +114,12 @@ async function fillParties(landlord: string, tenancyId: string) {
  * lataaminen Storageen tekisi testistä hitaan ilman että se kertoisi
  * allekirjoituksesta mitään.
  */
-async function lockInspectionDirectly(tenancyId: string) {
+async function lockInspectionDirectly(userId: string, tenancyId: string) {
+  // Katselmusrivi syntyy vasta ensimmäisellä haulla. Ilman tätä UPDATE ei
+  // osunut mihinkään, ja tila jäi auki — testi väitti lukinneensa mutta ei
+  // ollut lukinnut.
+  await getOrCreateInspection(userId, tenancyId);
+
   await getServiceClient()
     .from("rs_inspections")
     .update({ status: "locked", locked_at: new Date().toISOString() })
@@ -173,19 +179,19 @@ describe.skipIf(!RUN)("allekirjoituskierroksen ehdot", () => {
     const valmius = await signingReadiness(landlord, tenancyId);
     expect(valmius.ready).toBe(false);
     if (!valmius.ready) expect(valmius.reason).toBe("inspection_not_locked");
-  });
+  }, 30_000);
 
   it("estyy jos osapuolten tiedot ovat kesken", async () => {
     // Allekirjoituksen jälkeen sopimusta ei voi korjata.
     const { landlord, tenancyId } = await setup();
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     const valmius = await signingReadiness(landlord, tenancyId);
     expect(valmius.ready).toBe(false);
     if (valmius.ready) return;
     expect(valmius.reason).toBe("party_details_missing");
     expect(valmius.missing?.length).toBeGreaterThan(0);
-  });
+  }, 30_000);
 
   it("estyy vuokralaiselta", async () => {
     const { landlord, tenancyId } = await setup();
@@ -202,24 +208,26 @@ describe.skipIf(!RUN)("allekirjoituskierroksen ehdot", () => {
     const valmius = await signingReadiness(tenantUser, tenancyId);
     expect(valmius.ready).toBe(false);
     if (!valmius.ready) expect(valmius.reason).toBe("not_landlord");
-  });
+  }, 30_000);
 
   it("onnistuu kun kaikki on kunnossa", async () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     expect(await signingReadiness(landlord, tenancyId)).toEqual({ ready: true });
-  });
+  }, 30_000);
 });
 
 describe.skipIf(!RUN)("kierroksen lähetys", () => {
   it("luo kierroksen, jolla on molemmat asiakirjat", async () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     const result = await sendForSigning(landlord, tenancyId);
+    // Viesti mukaan väitteeseen: pelkkä `ok: false` ei kerro miksi.
+    expect(result.message ?? "ei virhettä").toBe("ei virhettä");
     expect(result.ok).toBe(true);
     expect(result.round?.documents.map((doc) => doc.name)).toEqual([
       "Vuokrasopimus.pdf",
@@ -233,7 +241,7 @@ describe.skipIf(!RUN)("kierroksen lähetys", () => {
   it("ei lähetä samaa kierrosta kahdesti", async () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     expect((await sendForSigning(landlord, tenancyId)).ok).toBe(true);
 
@@ -247,7 +255,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
   it("vie vuokrasuhteen käyntiin ja generoi vuokrakaudet", async () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     const sent = await sendForSigning(landlord, tenancyId);
     const roundId = sent.round!.id;
@@ -273,7 +281,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
     */
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     const sent = await sendForSigning(landlord, tenancyId);
     const event = completedEvent(sent.round!.id, tenancyId);
@@ -303,7 +311,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
     // varaan vuokratodistuksen arvo myöhemmin rakentuu.
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
-    await lockInspectionDirectly(tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
 
     const sent = await sendForSigning(landlord, tenancyId);
     await handleRoundCompleted(completedEvent(sent.round!.id, tenancyId), tenancyId);
@@ -325,7 +333,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
       "00000000-0000-0000-0000-000000000000",
     );
     expect(outcome.handled).toBe(false);
-  });
+  }, 30_000);
 });
 
 describe.skipIf(!RUN)("mock on käytössä ilman avainta", () => {
