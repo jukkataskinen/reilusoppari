@@ -5,8 +5,10 @@ import { createTenancy } from "@/lib/db/tenancies";
 import {
   createExpense,
   createPropertyExpense,
+  getPropertyExpense,
   listExpenses,
   listPropertyExpenses,
+  recordReceiptPhoto,
 } from "@/lib/db/expenses";
 import { createMaintenanceEntry, listMaintenanceEntries } from "@/lib/db/maintenance";
 import { listPartyDetails } from "@/lib/tenancy/party-details";
@@ -277,5 +279,145 @@ describe.skipIf(!RUN)("asunnon kulut ilman vuokrasuhdetta", () => {
 
     await expect(listPropertyExpenses(tenantUser, propertyId)).rejects.toThrow();
     await expect(createPropertyExpense(tenantUser, propertyId, KULU)).rejects.toThrow();
+  });
+});
+
+describe.skipIf(!RUN)("kuitti asunnon kulusta", () => {
+  /*
+    Tämä on migraation 0014 polku: `rs_photos.tenancy_id` oli pakollinen,
+    joten asunnon kulun kuitille ei ollut paikkaa. Nyt taulussa on
+    `property_id`, ja check-rajoite vaatii täsmälleen toisen.
+  */
+  const KUITTI = {
+    storagePath: "asunnot/testi/kuitit/testi.jpg",
+    sha256: "a".repeat(64),
+    bytes: 1234,
+    width: 800,
+    height: 600,
+  };
+
+  it("tallentuu asunnolle ilman vuokrasuhdetta", async () => {
+    const { landlord, propertyId } = await setup();
+
+    const kulu = await createPropertyExpense(landlord, propertyId, KULU);
+    expect(kulu.ok).toBe(true);
+    if (!kulu.ok) return;
+
+    const photo = await recordReceiptPhoto({
+      tenancyId: null,
+      propertyId,
+      expenseId: kulu.id,
+      uploaderUserId: landlord,
+      ...KUITTI,
+      storagePath: `asunnot/${propertyId}/kuitit/${kulu.id}.jpg`,
+    });
+
+    expect(photo.id).toBeTruthy();
+
+    const tallennettu = await getPropertyExpense(landlord, propertyId, kulu.id);
+    expect(tallennettu?.receipts).toHaveLength(1);
+  });
+
+  it("vuokrasuhteen kulun kuitti kirjautuu vuokrasuhteelle", async () => {
+    /*
+      Vuokrasuhteeseen kirjatun kulun voi avata myös asunnon listalta.
+      Silloin sen kuitin on kuuluttava samaan vuokrasuhteeseen kuin kulu —
+      muuten sama kulu näkyisi kahdella eri rajauksella.
+    */
+    const { landlord, tenancyId, propertyId } = await setup();
+
+    const kulu = await createExpense(landlord, tenancyId, KULU);
+    expect(kulu.ok).toBe(true);
+    if (!kulu.ok) return;
+
+    await recordReceiptPhoto({
+      tenancyId,
+      propertyId,
+      expenseId: kulu.id,
+      uploaderUserId: landlord,
+      ...KUITTI,
+      storagePath: `${tenancyId}/kuitit/${kulu.id}.jpg`,
+    });
+
+    const rivi = await getServiceClient()
+      .from("rs_photos")
+      .select("tenancy_id, property_id")
+      .eq("expense_id", kulu.id)
+      .maybeSingle();
+
+    const data = rivi.data as { tenancy_id: string | null; property_id: string | null } | null;
+    expect(data?.tenancy_id).toBe(tenancyId);
+    // Täsmälleen toinen: `property_id` jää tyhjäksi, kun vuokrasuhde on tiedossa.
+    expect(data?.property_id).toBeNull();
+  });
+
+  it("kanta hylkää kuvan, jolla ei ole kohdetta lainkaan", async () => {
+    /*
+      Check-rajoite migraatiosta 0014. Ilman sitä kuva jäisi ilman omistajaa
+      eikä näkyisi kenellekään — eikä mikään kertoisi siitä. Tämä testi
+      koskee tarkoituksella kantaa eikä koodia: koodi voi muuttua, rajoite
+      on se, joka pitää.
+    */
+    const { landlord } = await setup();
+
+    const { error } = await getServiceClient()
+      .from("rs_photos")
+      .insert({
+        tenancy_id: null,
+        property_id: null,
+        uploader_user_id: landlord,
+        storage_path: "orpo.jpg",
+        sha256: "b".repeat(64),
+        bytes: 10,
+      });
+
+    expect(error).not.toBeNull();
+  });
+
+  it("kanta hylkää kuvan, jolla on kaksi kohdetta", async () => {
+    // Muuten sama kuva näkyisi kahdella eri säännöllä, ja osapuolirajaus
+    // riippuisi siitä, kumpaa kysytään ensin.
+    const { landlord, tenancyId, propertyId } = await setup();
+
+    const { error } = await getServiceClient()
+      .from("rs_photos")
+      .insert({
+        tenancy_id: tenancyId,
+        property_id: propertyId,
+        uploader_user_id: landlord,
+        storage_path: "kaksi-kohdetta.jpg",
+        sha256: "c".repeat(64),
+        bytes: 10,
+      });
+
+    expect(error).not.toBeNull();
+  });
+
+  it("kuitti ei näy katselmuksen kuvissa", async () => {
+    /*
+      Kuitissa voi olla kotiosoite tai kortin loppunumerot. Se ei saa päätyä
+      pöytäkirjaan, jonka molemmat osapuolet allekirjoittavat.
+    */
+    const { landlord, propertyId } = await setup();
+
+    const kulu = await createPropertyExpense(landlord, propertyId, KULU);
+    if (!kulu.ok) return;
+
+    await recordReceiptPhoto({
+      tenancyId: null,
+      propertyId,
+      expenseId: kulu.id,
+      uploaderUserId: landlord,
+      ...KUITTI,
+      storagePath: `asunnot/${propertyId}/kuitit/${kulu.id}-2.jpg`,
+    });
+
+    const { data } = await getServiceClient()
+      .from("rs_photos")
+      .select("id")
+      .eq("expense_id", kulu.id)
+      .not("inspection_id", "is", null);
+
+    expect(data ?? []).toHaveLength(0);
   });
 });
