@@ -52,12 +52,34 @@ export function PortfolioPanel({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
-  function run(action: () => Promise<{ message?: string }>) {
+  /*
+    Toiminto palauttaa joko viestin, osoitteen tai ei kumpaakaan.
+
+    Osoite tarkoittaa siirtymää Stripeen: se tehdään selaimessa
+    `window.location`illa eikä palvelimen `redirect`illa, koska
+    `useTransition`in sisällä jälkimmäisen kulku on epävarma
+    (`portfolio-actions.ts`).
+  */
+  function run(action: () => Promise<{ message?: string; url?: string }>) {
     setMessage(null);
+
     startTransition(async () => {
-      const result = await action();
-      if (result?.message) setMessage(result.message);
-      else router.refresh();
+      try {
+        const result = await action();
+
+        if (result?.url) {
+          window.location.href = result.url;
+          return;
+        }
+
+        if (result?.message) setMessage(result.message);
+        else router.refresh();
+      } catch {
+        // Verkkokatkos tai palvelinvirhe. Nappi vapautuu, ja käyttäjä näkee
+        // syyn — hiljainen epäonnistuminen näyttäisi siltä, ettei painallus
+        // rekisteröitynyt.
+        setMessage("Toiminto ei onnistunut. Yritä hetken kuluttua uudelleen.");
+      }
     });
   }
 

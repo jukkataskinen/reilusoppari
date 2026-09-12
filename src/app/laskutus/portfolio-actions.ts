@@ -47,6 +47,27 @@ import {
 export interface PortfolioActionState {
   message?: string;
   done?: boolean;
+  /**
+   * Osoite, johon selain ohjataan (Stripe).
+   *
+   * ==========================================================================
+   * MIKSI OSOITE PALAUTETAAN EIKÄ OHJATA PALVELIMELLA
+   *
+   * `payTenancyAction` (vuokrasuhteen maksu) kutsuu `redirect`:iä
+   * palvelimella, ja se toimii, koska se ajetaan `useActionState`-toimintona
+   * — Next käsittelee uudelleenohjauksen osana toiminnon vastausta.
+   *
+   * Nämä toiminnot eivät ota lomakedataa, joten ne kutsutaan suoraan
+   * `useTransition`in sisältä. Siinä yhteydessä palvelimen `redirect` on
+   * epävarma: se toimii heittämällä erityisen virheen, ja transition-lohkon
+   * sisällä sen kulku riippuu siitä, miten Next käsittelee hylätyn lupauksen.
+   *
+   * Selaimessa tehtävä siirtymä on varma. Ero on marginaalinen —
+   * kummassakin tapauksessa selain päätyy samaan Stripen osoitteeseen — ja
+   * varmuus on tässä tärkeämpää kuin yhdenmukaisuus.
+   * ==========================================================================
+   */
+  url?: string;
 }
 
 const appUrl = () =>
@@ -114,14 +135,7 @@ export async function startPortfolioAction(): Promise<PortfolioActionState> {
     return { message: "Maksusivua ei voitu avata. Yritä hetken kuluttua uudelleen." };
   }
 
-  /*
-    `redirect` on try-lohkon ULKOPUOLELLA.
-
-    Se toimii heittämällä erityisen virheen, jonka Next käsittelee. Try-lohkon
-    sisällä oma `catch` nappaisi sen ja muuttaisi uudelleenohjauksen
-    virheilmoitukseksi — ja maksusivu jäisi avaamatta.
-  */
-  redirect(url);
+  return { url };
 }
 
 /**
@@ -211,5 +225,5 @@ export async function openPortalAction(): Promise<PortfolioActionState> {
     return { message: "Asiakasportaalia ei voitu avata." };
   }
 
-  redirect(url);
+  return { url };
 }
