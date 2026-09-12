@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getOwnPartyDefaults } from "@/lib/tenancy/party-details";
 import { PartyDetailsForm } from "@/components/PartyDetailsForm";
 import { AppShell } from "@/components/AppShell";
+import { PushToggle } from "@/components/PushToggle";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -41,6 +42,8 @@ export default async function OwnDetailsPage() {
       <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <PartyDetailsForm details={details} nameLabel="Nimesi" />
       </div>
+
+      <PushToggle />
 
       <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <p className="font-medium">Miten henkilötunnusta käsitellään</p>

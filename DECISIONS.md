@@ -1034,3 +1034,25 @@ kuten Supabasen anon-avain ja Stripen publishable-avain.
 Sääntö sanoo nyt sen, mitä se tarkoittaa: salaiselta kuulostava nimi
 (`PERSON`, `SECRET`, `PRIVATE`, `SERVICE_ROLE`) ei saa olla
 `NEXT_PUBLIC`-etuliitteen takana. Todennettu molempiin suuntiin.
+
+
+## Ilmoituslupaa ei kysytä sivun latauksessa (2026-09-12)
+
+Selain kysyy luvan vasta kun käyttäjä painaa nappia. Latauksessa kysytty lupa
+on se, johon vastataan "estä" — ja estetty lupa on vaikea perua, koska
+peruminen tapahtuu selaimen asetuksissa eikä sovelluksessa. Yksi harkitsematon
+"estä" veisi ilmoitukset pysyvästi.
+
+**iPhonella näytetään ohje, ei nappia.** Applen sääntö: selaimessa avattu
+sivusto ei saa lähettää ilmoituksia lainkaan, vaikka käyttäjä antaisi luvan —
+vasta kotivalikkoon lisätty sovellus voi. Nappi, joka ei voi toimia, on
+pahempi kuin ei nappia.
+
+**Kehotus näkyy vuokranmaksusivulla**, kun vuokrakausia on olemassa. Siinä
+hetkessä ilmoituksilla alkaa olla merkitystä. Asennuskehotus tuntemattomasta
+palvelusta ensimmäisellä kirjautumisella on se, joka suljetaan katsomatta.
+
+**Vanhentunut tilaus siivotaan.** 404 ja 410 tarkoittavat, ettei tilaus ole
+enää voimassa: selain on poistanut sen tai sovellus on poistettu laitteelta.
+Sellaista ei yritetä loputtomiin. Muut virheet eivät kaada ajoa — yksi
+rikkinäinen laite ei saa estää muiden ilmoituksia.

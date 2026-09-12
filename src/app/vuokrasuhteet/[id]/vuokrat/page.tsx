@@ -6,6 +6,7 @@ import { getTenancy } from "@/lib/db/tenancies";
 import { listRentPeriods } from "@/lib/db/rent";
 import { AppShell } from "@/components/AppShell";
 import { RentPeriodCard } from "@/components/RentPeriodCard";
+import { PushToggle } from "@/components/PushToggle";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -58,6 +59,13 @@ export default async function RentPage({ params }: { params: Promise<{ id: strin
           </p>
         </div>
       ) : null}
+
+      {/*
+        Ilmoituskehotus juuri tässä: vuokranmaksu on se, mistä herätteet
+        tulevat, ja kehotus tuntemattomasta palvelusta ensimmäisellä
+        kirjautumisella olisi se, joka suljetaan katsomatta.
+      */}
+      {periods.length > 0 ? <PushToggle /> : null}
 
       <ul className="mt-6 flex flex-col gap-4">
         {periods.map((period) => (

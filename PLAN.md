@@ -134,11 +134,11 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 
 Polut 5.5–5.6. DoD: kuittaus toimii pushista ja sähköpostista, historia näkyy molemmille.
 
-- [~] Web push (VAPID): lähetys valmis (`lib/notifications/deliver.ts`).
-      Tilaus selaimessa vielä tekemättä
-- [ ] **iPhone: ohjaus kotivalikkoon lisäämiseen** siinä hetkessä, kun
-      ilmoituksilla alkaa olla merkitystä (vuokrasuhde aktivoituu). Ilman
-      sitä iPhone ei näytä ilmoituksia lainkaan — Applen sääntö
+- [x] Web push (VAPID): tilaus selaimessa, service workerin push-käsittely,
+      lähetys ja vanhentuneen tilauksen siivous
+- [x] **iPhone: ohjaus kotivalikkoon lisäämiseen** vuokranmaksusivulla, kun
+      vuokrakausia on olemassa. Nappia ei näytetä siellä missä se ei voi
+      toimia
 - [ ] Sähköposti varakanavana (Resend)
 - [x] Cron: päivittäin, tarkistuspyyntö vuokranantajalle 3 pv eräpäivästä ja
       toinen kierros 10 pv. Muistutus vuokralaiselle vain merkinnän

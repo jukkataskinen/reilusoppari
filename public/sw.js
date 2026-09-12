@@ -138,3 +138,71 @@ self.addEventListener("message", (event) => {
     event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
   }
 });
+
+/**
+ * Push-ilmoitukset (CLAUDE.md 5.5).
+ *
+ * ===========================================================================
+ * ILMOITUS ON HERÄTYS, EI SISÄLTÖ
+ *
+ * Ilmoituksessa lukee sama asia kuin sovelluksessa. Jos se ei mene perille
+ * tai se pyyhkäistään pois, mitään ei ole menetetty — tieto on tallessa
+ * sovelluksessa, eikä ilmoituksen varaan ole rakennettu mitään.
+ *
+ * Siksi tässä ei myöskään yritetä hienouksia: ei toimintopainikkeita, ei
+ * ryhmittelyä, ei hiljaista päivitystä. Yksi ilmoitus, yksi kosketus, oikea
+ * sivu auki.
+ *
+ * PAYLOAD ON AINA MERKKIJONO
+ *
+ * Rikkinäistä JSONia ei näytetä käyttäjälle raakana. Jos jäsentäminen
+ * epäonnistuu, näytetään yleinen teksti: tyhjä ilmoitus olisi hämmentävämpi
+ * kuin epämääräinen.
+ * ===========================================================================
+ */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+
+  const title = data.title || "Reilusoppari";
+  const options = {
+    body: data.body || "Sinulle on uutta Reilusopparissa.",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    // Ilman `tag`ia sama viesti voisi kertyä useaksi ilmoitukseksi, jos
+    // laite vastaanottaa sen uudelleen.
+    tag: data.tag || title,
+    data: { path: data.path || "/" },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+/**
+ * Ilmoituksen kosketus avaa oikean sivun.
+ *
+ * Jos sovellus on jo auki, se tuodaan eteen ja ohjataan oikeaan paikkaan
+ * uuden ikkunan avaamisen sijaan: kaksi ikkunaa samasta sovelluksesta on
+ * käyttäjälle sekaannus.
+ */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const path = (event.notification.data && event.notification.data.path) || "/";
+  const target = new URL(path, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.startsWith(self.location.origin) && "focus" in client) {
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});
