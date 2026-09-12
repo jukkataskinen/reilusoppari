@@ -28,13 +28,17 @@ import { NOTE_GUIDANCE } from "@/lib/inspection/rooms";
  * ===========================================================================
  */
 export function PhotoCapture({
-  tenancyId,
+  endpoint,
   room,
   disabled = false,
+  label = "Ota kuva",
 }: {
-  tenancyId: string;
-  room: string;
+  /** Mihin kuva lähetetään. Katselmus ja huoltokirja ottavat sen eri reittiin. */
+  endpoint: string;
+  /** Katselmuksessa huoneen nimi; huoltokirjassa tyhjä. */
+  room?: string;
   disabled?: boolean;
+  label?: string;
 }) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -54,13 +58,10 @@ export function PhotoCapture({
 
       const body = new FormData();
       body.set("file", blob, "kuva.jpg");
-      body.set("room", room);
+      if (room) body.set("room", room);
       body.set("note", note);
 
-      const response = await fetch(`/vuokrasuhteet/${tenancyId}/katselmus/kuva`, {
-        method: "POST",
-        body,
-      });
+      const response = await fetch(endpoint, { method: "POST", body });
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -117,7 +118,7 @@ export function PhotoCapture({
           disabled={status === "sending"}
           className="sr-only"
         />
-        {status === "sending" ? "Lähetetään…" : "Ota kuva"}
+        {status === "sending" ? "Lähetetään…" : label}
       </label>
 
       <p className="mt-3 text-sm text-ink/60">

@@ -1056,3 +1056,46 @@ palvelusta ensimmäisellä kirjautumisella on se, joka suljetaan katsomatta.
 enää voimassa: selain on poistanut sen tai sovellus on poistettu laitteelta.
 Sellaista ei yritetä loputtomiin. Muut virheet eivät kaada ajoa — yksi
 rikkinäinen laite ei saa estää muiden ilmoituksia.
+
+
+## Huoltokirja: merkintää ei poisteta, vain perutaan (2026-09-12)
+
+Kumpi tahansa osapuoli kirjaa vian, korjauksen tai merkinnän, ja molemmat
+näkevät kaiken. Huoltokirja on se, johon loppukatselmuksessa nojataan:
+milloin vika ilmoitettiin, milloin se korjattiin, ja mitä siitä sanottiin
+matkan varrella.
+
+**Merkintää ei poisteta.** Virheellisen voi perua, ja peruminen näkyy:
+merkintä jää listaan yliviivattuna ja syy tallentuu kommenttina, jonka
+molemmat näkevät. Peruminen on merkinnän korjaamista, ei sen pyyhkimistä.
+
+**Vain kirjoittaja voi perua oman merkintänsä.** Toisen merkinnän peruminen
+olisi sen hiljentämistä, ja huoltokirjan arvo perustuu siihen, ettei kumpikaan
+voi poistaa toisen havaintoa.
+
+**Korjatuksi merkitseminen on vuokranantajan** — hän vastaa korjauksesta
+(AHVL) ja tietää milloin se on tehty. Se ei kuitenkaan sulje keskustelua:
+vuokralainen voi kommentoida senkin jälkeen, ja juuri se erimielisyys on se,
+joka loppukatselmuksessa halutaan nähdä.
+
+**Kuvat lisätään vasta tallennuksen jälkeen.** Kuvan lähetys kestää, ja jos
+se epäonnistuisi kesken lomakkeen, myös kirjoitettu teksti katoaisi. Näin
+teksti on tallessa heti ja kuvan voi yrittää uudelleen rauhassa.
+
+Peruttuun merkintään ei voi lisätä kuvia: lukija ei tietäisi, koskeeko kuva
+perumista edeltävää vai sen jälkeistä tilannetta.
+
+
+## Satunnaisesti kaatuva testi: syy oli aikaraja (2026-09-12)
+
+Testiajo kaatui kertaalleen aiemmin ilman selitystä, ja raportoin sen
+avoimena. Syy selvisi, kun sama toistui: vitestin oletusaikaraja on 5
+sekuntia, eikä se riitä live-Supabasea vasten ajettaville testeille. Yksi
+testi tekee helposti kymmenen verkkokierrosta — käyttäjä, asunto,
+vuokrasuhde, osapuolet — ja kun palvelu vastaa tavallista hitaammin, testi
+kaatui ilman että mikään oli rikki.
+
+Aikaraja on nyt 20 sekuntia koko ajolle (`vitest.config.mts`). Satunnaisesti
+kaatuva testi on pahempi kuin hidas: se opettaa sivuuttamaan punaisen.
+
+Todennettu kolmella peräkkäisellä ajolla: 331 testiä läpi joka kerta.

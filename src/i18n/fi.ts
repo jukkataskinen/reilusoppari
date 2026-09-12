@@ -18,6 +18,7 @@ export const fi = {
     inspection: "Alkukatselmus",
     signing: "Allekirjoitus",
     rent: "Vuokranmaksu",
+    maintenance: "Huoltokirja",
     settings: "Asetukset",
   },
   role: {

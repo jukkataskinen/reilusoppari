@@ -113,7 +113,7 @@ export default async function RoomPage({
           Katselmus on lukittu, joten kuvia ei voi enää lisätä.
         </p>
       ) : (
-        <PhotoCapture tenancyId={id} room={room.name} />
+        <PhotoCapture endpoint={`/vuokrasuhteet/${id}/katselmus/kuva`} room={room.name} />
       )}
 
       <div className="mt-8 flex flex-col gap-6">
