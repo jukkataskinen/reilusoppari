@@ -116,6 +116,17 @@ test("asuntosivut vaativat kirjautumisen", async ({ page }) => {
     "/asunnot/00000000-0000-4000-8000-000000000000/vuokrasuhde/uusi",
     "/vuokrasuhteet",
     "/vuokrasuhteet/00000000-0000-4000-8000-000000000000",
+    // Kulut ja verolaskelma ovat vain asunnon omistajan.
+    "/asunnot/00000000-0000-4000-8000-000000000000/kulut",
+    "/asunnot/00000000-0000-4000-8000-000000000000/toistuvat-kulut",
+    "/asunnot/00000000-0000-4000-8000-000000000000/verolaskelma",
+    // Kuitin kuvaus: kulut ovat vuokranantajan kirjanpitoa.
+    "/kuitti",
+    // Todistuskeskustelu koskee kolmannen osapuolen tietoja.
+    "/keskustelut/00000000-0000-4000-8000-000000000000",
+    // Suositteluosoite paljastaisi käyttäjän tunnisteen.
+    "/suosittele",
+    "/omat-tiedot",
   ]) {
     const response = await page.request.get(path, { maxRedirects: 0 });
     expect(response.status(), path).toBe(307);
@@ -154,4 +165,41 @@ test("kutsusivua ei indeksoida", async ({ page }) => {
 test("tuntematon polku on 404 eikä paljasta mitään", async ({ page }) => {
   const response = await page.goto("/ei-ole-olemassa");
   expect(response?.status()).toBe(404);
+});
+
+/*
+  Reitit, joissa kirjautumattoman pääsy maksaisi rahaa tai luovuttaisi
+  tietoja.
+
+  Nämä palauttavat 401 eivätkä ohjaa kirjautumiseen: ne ovat rajapintoja,
+  joita kutsutaan koodista eikä selaimen osoiteriviltä. Uudelleenohjaus
+  näkyisi kutsujalle onnistuneena vastauksena, jonka sisältö on
+  kirjautumissivun HTML.
+*/
+test("maksavat ja tietoja luovuttavat rajapinnat vaativat kirjautumisen", async ({ page }) => {
+  // Kuitin luku kutsuu Anthropicia: yksi kutsu maksaa oikeaa rahaa.
+  const luku = await page.request.post("/api/kuitti/lue", {
+    data: { imageBase64: "AAAA", mediaType: "image/jpeg" },
+    maxRedirects: 0,
+  });
+  expect(luku.status()).toBe(401);
+
+  // Vienti kokoaa kaikki käyttäjän tiedot yhteen pakettiin.
+  const vienti = await page.request.get("/api/omat-tiedot/vienti", { maxRedirects: 0 });
+  expect(vienti.status()).toBe(401);
+});
+
+/*
+  Stripe-webhook hylkää allekirjoittamattoman pyynnön.
+
+  Tämä reitti MYÖNTÄÄ käyttöoikeuden: ilman allekirjoitustarkistusta kuka
+  tahansa osoitteen tietävä voisi merkitä vuokrasuhteen maksetuksi.
+*/
+test("Stripe-webhook hylkää allekirjoittamattoman pyynnön", async ({ page }) => {
+  const response = await page.request.post("/api/stripe/webhook", {
+    data: { id: "evt_1", type: "checkout.session.completed", data: { object: {} } },
+    maxRedirects: 0,
+  });
+
+  expect(response.status()).toBe(401);
 });
