@@ -1573,3 +1573,35 @@ kuormitusvälineenä.
 
 **Lukuohje paketin juuressa.** Zip, jossa on pelkkiä JSON-tiedostoja, on
 kirjanpitäjälle käyttökelpoinen ja kaikille muille läpinäkymätön.
+
+
+## Säilytysaika: sääntö nyt, poisto myöhemmin (2026-09-12)
+
+CLAUDE.md kohta 2: vuokrasuhteen tiedot ja kuvat säilytetään kolme vuotta
+päättymisestä, sitten poistetaan; todistukset ja tiivisteet pysyvästi.
+Toteutus oli tekemättä.
+
+**Sääntö on kirjoitettu ja testattu, poistoa ei ole.** Poisto on
+peruuttamaton, ja ensimmäinen poistettava rivi syntyy aikaisintaan 2029 —
+kiirettä ei ole, mutta sääntö on lupaus tietosuojaselosteessa, ja lupaus
+jonka toteutusta ei ole edes suunniteltu on tyhjä.
+
+Käytössä on `npm run raportti:sailytys`, joka kertoo mitä poistettaisiin jos
+poisto ajettaisiin nyt. Raportti tuo säännön sovelluskoodista eikä kirjoita
+sitä uudelleen: kaksi kopiota ajautuisi erilleen, ja silloin raportti
+näyttäisi eri asiaa kuin mitä poisto tekisi — pahin mahdollinen tilanne
+peruuttamattomassa toiminnossa.
+
+**Poistettavien luettelo on nimenomainen eikä "kaikki paitsi".** Jos uusi
+taulu unohtuisi lisätä, nimenomaisesta listasta se jäisi poistamatta ja
+säilyisi liian kauan. Päinvastainen virhe poistaisi sen, mitä ei saa
+poistaa — ja todistus on toisen ihmisen ansio, jota hän voi tarvita vielä
+vuosien päästä.
+
+**Kolme vuotta lasketaan kalenterista eikä 1095 päivänä.** Karkausvuosi
+tekisi päivälaskennasta epätarkan, ja epätarkkuus olisi käyttäjän tappioksi:
+tiedot poistuisivat päivää liian aikaisin.
+
+**Päättymätön vuokrasuhde ei ole koskaan poistokelpoinen**, kesti se kuinka
+kauan tahansa. Sama koskee rikkinäistä päivämäärää: epäselvässä tapauksessa
+säilytetään.

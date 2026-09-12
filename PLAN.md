@@ -214,8 +214,10 @@ kuuluvat valmiiseen tuotteeseen.
       käyttäjäkohtainen taulu ei ilmaise. Tunnus on 256-bittinen ja
       tiivisteenä, joten arvaaminen ei ole realistinen uhka; kyse olisi
       kuormituksen rajaamisesta
-- [ ] Säilytysaika: tiedot ja kuvat poistetaan 3 vuotta vuokrasuhteen
-      päättymisestä, todistukset ja tiivisteet jäävät
+- [x] Säilytysajan sääntö kirjoitettu ja testattu (`lib/retention/rules.ts`)
+- [x] Kuivaharjoitus: `npm run raportti:sailytys` kertoo mitä poistettaisiin
+- [ ] Poiston käyttöönotto — odottaa Jukan katsausta. Poisto on
+      peruuttamaton, ja ensimmäinen poistettava rivi syntyy aikaisintaan 2029
 - [ ] Tietosuojaselosteeseen maininta viennin peitetystä henkilötunnuksesta
       ja kuitin käsittelystä palvelun ulkopuolella (Jukka)
 
