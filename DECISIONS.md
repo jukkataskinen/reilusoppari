@@ -1686,3 +1686,35 @@ haluta hinnoitteluun. Siksi ne ovat tavallisia funktioita eivätkä
 Webhook on lopullinen totuus, mutta se voi tulla sekuntien päästä — ja siihen
 asti näkymä näyttäisi, ettei painallus tehnyt mitään. Webhook kirjoittaa
 saman arvon uudelleen, joten kahta totuutta ei synny.
+
+
+## Vakuuden palautusosio ei ehdota vähennystä (2026-09-12)
+
+CLAUDE.md 5.8 vaatii loppupöytäkirjaan vakuuden palautusehdotuksen ja
+perusteet huoltokirjasta. Osio puuttui kokonaan.
+
+**Perusteet tulevat huoltokirjasta eivätkä kuluista.** Loppupöytäkirjan
+allekirjoittavat molemmat osapuolet, joten se on vuokralaiselle näkyvä
+asiakirja — ja kulut ovat vuokranantajan kirjanpitoa, rajattuna asunnon
+omistajuuden kautta koko sovelluksessa. Korjauksen hinnan liittäminen
+tähän vuotaisi kulutiedon reittiä, jota kukaan ei tarkista. Rakenteessa ei
+siksi ole kenttää summalle lainkaan, ja testi tarkistaa sen.
+
+**Palvelu ei ehdota vähennystä.** Se ei voi tietää, kuuluuko avoin vika
+vuokralaisen vastuulle vai tavanomaiseen kulumiseen — se on osapuolten
+sovittava ja tarvittaessa tuomioistuimen ratkaistava. Pöytäkirja kokoaa sen,
+mikä on kirjattu: vakuuden määrä ja avoimet vikailmoitukset ajankohtineen.
+Lähtökohdaksi sanotaan täysi palautus.
+
+**Molempien osapuolten kirjaamat viat ovat mukana.** Vain toisen
+huomioiminen tekisi pöytäkirjasta yksipuolisen listan. Korjattu vika ja
+peruttu ilmoitus jäävät pois: edellinen on hoidettu, jälkimmäinen ei ole
+vika lainkaan.
+
+**Vuokranantajan kirjaama vähennysehdotus jätettiin tekemättä.** Se vaatisi
+oman sarakkeen ja ennen kaikkea juridisen sanamuodon tarkistuksen:
+vähennysehdotus yhteisesti allekirjoitetussa asiakirjassa on oikeudellinen
+kannanotto, ja sen muotoilu on CLAUDE.md kohdan 9.4 mukaan Jukan vastuulla.
+
+Sanamuodot ovat `DEPOSIT_TEXTS`-vakiossa yhdessä paikassa juuri siksi, että
+ne on helppo löytää ja korjata.

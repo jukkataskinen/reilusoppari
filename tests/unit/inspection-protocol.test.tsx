@@ -8,7 +8,7 @@ import {
 } from "@/documents/InspectionProtocol";
 import { RentalAgreement, type RentalAgreementData } from "@/documents/RentalAgreement";
 import { renderDocumentPdf } from "@/documents/render";
-import { inkedPixels, rasterizePage, saturatedPixels } from "../rasterize";
+import { documentText, inkedPixels, rasterizePage, saturatedPixels } from "../rasterize";
 
 /**
  * Katselmuspöytäkirjan testit.
@@ -51,6 +51,8 @@ const DATA: InspectionProtocolData = {
   tenantNames: ["Maija Meikäläinen"],
   lockedAt: "2026-08-30T14:20:00.000Z",
   lockedByName: "Matti Virtanen",
+  // Alkukatselmuksessa vakuusosiota ei ole.
+  deposit: null,
   place: "Jyväskylä",
   rooms: ROOMS,
 };
@@ -191,4 +193,111 @@ describe("pöytäkirjassa ei ole koristekuvitusta", () => {
     // Kuvitusta ei: pöytäkirjassa kuva on todiste.
     expect(saturatedPixels(page, VINJETTI)).toBe(0);
   }, 30_000);
+});
+
+describe("vakuuden palautusosio", () => {
+  const VIKA = {
+    title: "Keittiön hana vuotaa",
+    reportedAt: "2026-05-10",
+    reportedByRole: "tenant" as const,
+  };
+
+  it("ei ole alkukatselmuksessa", async () => {
+    /*
+      Alkukatselmuksessa vakuudesta ei ole mitään sanottavaa: se palautetaan
+      vuokrasuhteen päättyessä.
+    */
+    const teksti = await documentText(
+      (await renderDocumentPdf(<InspectionProtocol data={DATA} />)).bytes,
+    );
+
+    expect(teksti).not.toContain("Vakuuden palautus");
+  });
+
+  it("kertoo täydestä palautuksesta, kun avoimia vikoja ei ole", async () => {
+    const teksti = await documentText(
+      (
+        await renderDocumentPdf(
+          <InspectionProtocol
+            data={{
+              ...DATA,
+              kind: "final",
+              deposit: { amount: 1700, grounds: [], hasOpenItems: false },
+            }}
+          />,
+        )
+      ).bytes,
+    );
+
+    expect(teksti).toContain("Vakuuden palautus");
+    expect(teksti).toContain("1 700");
+    expect(teksti).toContain("kokonaisuudessaan");
+  });
+
+  it("luettelee avoimet viat muttei ehdota vähennystä", async () => {
+    /*
+      Palvelu ei voi tietää, kuuluuko avoin vika vuokralaisen vastuulle vai
+      tavanomaiseen kulumiseen. Automaattinen vähennysehdotus olisi
+      puolueenotto, jota ei ole mihinkään perustettu.
+    */
+    const teksti = await documentText(
+      (
+        await renderDocumentPdf(
+          <InspectionProtocol
+            data={{
+              ...DATA,
+              kind: "final",
+              deposit: { amount: 1700, grounds: [VIKA], hasOpenItems: true },
+            }}
+          />,
+        )
+      ).bytes,
+    );
+
+    expect(teksti).toContain("Keittiön hana vuotaa");
+    expect(teksti).toContain("Lähtökohta on täysi palautus");
+    expect(teksti).toContain("eivät sellaisenaan peruste");
+  });
+
+  it("kertoo kumpi osapuoli vian kirjasi", async () => {
+    // Yksipuolinen luettelo tekisi pöytäkirjasta toisen osapuolen listan.
+    const teksti = await documentText(
+      (
+        await renderDocumentPdf(
+          <InspectionProtocol
+            data={{
+              ...DATA,
+              kind: "final",
+              deposit: {
+                amount: 1700,
+                grounds: [VIKA, { ...VIKA, title: "Parvekkeen ovi", reportedByRole: "landlord" }],
+                hasOpenItems: true,
+              },
+            }}
+          />,
+        )
+      ).bytes,
+    );
+
+    expect(teksti).toContain("vuokralainen");
+    expect(teksti).toContain("vuokranantaja");
+  });
+
+  it("kertoo, jos vakuutta ei ole sovittu", async () => {
+    const teksti = await documentText(
+      (
+        await renderDocumentPdf(
+          <InspectionProtocol
+            data={{
+              ...DATA,
+              kind: "final",
+              deposit: { amount: null, grounds: [], hasOpenItems: false },
+            }}
+          />,
+        )
+      ).bytes,
+    );
+
+    expect(teksti).toContain("ei ole sovittu vakuutta");
+  });
 });

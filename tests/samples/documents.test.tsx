@@ -93,6 +93,8 @@ const KATSELMUS: InspectionProtocolData = {
   tenantNames: ["Maija Meikäläinen"],
   lockedAt: "2026-08-30T14:20:00.000Z",
   lockedByName: "Matti Virtanen",
+  // Alkukatselmuksessa vakuusosiota ei ole.
+  deposit: null,
   place: "Jyväskylä",
   rooms: [
     {

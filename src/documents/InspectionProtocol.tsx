@@ -44,7 +44,12 @@ import {
   type Fact,
 } from "./components";
 import { PageDecoration } from "./decorations";
-import { formatAddress, formatCount, formatDate, formatNames } from "./format";
+import { formatAddress, formatCount, formatDate, formatEuro, formatNames } from "./format";
+import {
+  DEPOSIT_TEXTS,
+  depositText,
+  type DepositProposal,
+} from "@/lib/tenancy/deposit";
 import { colors, radius, spacing, type as typeScale, weight } from "./theme";
 
 export type PartyRole = "landlord" | "tenant";
@@ -81,6 +86,14 @@ export interface InspectionProtocolData {
   lockedByName: string;
 
   rooms: InspectionRoomGroup[];
+
+  /**
+   * Vakuuden palautusosio. Vain loppukatselmuksessa.
+   *
+   * `null` alkukatselmuksessa: vakuus palautetaan vuokrasuhteen päättyessä,
+   * eikä siitä ole alussa mitään sanottavaa.
+   */
+  deposit: DepositProposal | null;
 
   place: string;
 }
@@ -267,6 +280,74 @@ function buildFacts(data: InspectionProtocolData): Fact[] {
   ];
 }
 
+/**
+ * Vakuuden palautusosio loppupöytäkirjaan (CLAUDE.md 5.8).
+ *
+ * ===========================================================================
+ * EI SUMMIA KULUISTA, EI VÄHENNYSEHDOTUSTA
+ *
+ * Pöytäkirjan allekirjoittavat molemmat osapuolet, joten se on
+ * vuokralaiselle näkyvä asiakirja. Kulut ja kuitit ovat vuokranantajan
+ * kirjanpitoa, eivätkä ne kulje tästä läpi.
+ *
+ * Osio kokoaa sen, mikä on kirjattu: vakuuden määrä ja avoimet
+ * vikailmoitukset. Se ei ehdota vähennystä — palvelu ei voi tietää, kuuluuko
+ * avoin vika vuokralaisen vastuulle vai tavanomaiseen kulumiseen.
+ * ===========================================================================
+ */
+function DepositBlock({ proposal }: { proposal: DepositProposal }) {
+  return (
+    <View style={{ marginTop: spacing.block }} wrap={false}>
+      <Text style={{ fontSize: typeScale.heading, fontWeight: weight.bold, marginBottom: 8 }}>
+        {DEPOSIT_TEXTS.otsikko}
+      </Text>
+
+      {proposal.amount !== null && proposal.amount > 0 ? (
+        <Text style={{ marginBottom: 6 }}>
+          Sovittu vakuus: {formatEuro(proposal.amount)}
+        </Text>
+      ) : null}
+
+      <Text style={{ fontSize: typeScale.small, color: colors.inkSoft, lineHeight: 1.5 }}>
+        {depositText(proposal)}
+      </Text>
+
+      {proposal.grounds.length > 0 ? (
+        <View style={{ marginTop: 10 }}>
+          {proposal.grounds.map((ground) => (
+            <View
+              key={`${ground.reportedAt}-${ground.title}`}
+              style={{
+                flexDirection: "row",
+                borderBottomWidth: 1,
+                borderBottomColor: colors.line,
+                paddingVertical: 4,
+              }}
+            >
+              <Text style={{ flex: 1, fontSize: typeScale.small }}>{ground.title}</Text>
+              <Text style={{ fontSize: typeScale.label, color: colors.inkFaint }}>
+                {formatDate(ground.reportedAt)} ·{" "}
+                {ground.reportedByRole === "landlord" ? "vuokranantaja" : "vuokralainen"}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <Text
+        style={{
+          fontSize: typeScale.small,
+          color: colors.inkSoft,
+          marginTop: 10,
+          lineHeight: 1.5,
+        }}
+      >
+        {DEPOSIT_TEXTS.palautusAika}
+      </Text>
+    </View>
+  );
+}
+
 export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
   const isFinal = data.kind === "final";
   const title = isFinal ? "Loppukatselmus" : "Alkukatselmus";
@@ -383,6 +464,15 @@ export function InspectionProtocol({ data }: { data: InspectionProtocolData }) {
             päättymisestä kolme vuotta.
           </Text>
         </Panel>
+
+        {/*
+          Vakuuden palautus vain loppukatselmuksessa.
+
+          Osio on tiivistesivulla eikä kuvien seassa: se koskee koko
+          vuokrasuhdetta eikä yksittäistä tilaa, ja allekirjoitus on samalla
+          sivulla — jolloin allekirjoitus kattaa myös tämän.
+        */}
+        {isFinal && data.deposit ? <DepositBlock proposal={data.deposit} /> : null}
 
         {/*
           Loppusana ja allekirjoitukset ovat viimeisellä sivulla eivätkä

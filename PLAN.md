@@ -165,7 +165,10 @@ Polku 5.8. DoD: koko e2e-kaari läpi.
       kuukauden viimeisestä päivästä (AHVL), ja päivä näytetään ennen
       vahvistusta
 - [x] Loppukatselmus samoista tiloista, alkukuvat rinnalla
-- [ ] Loppupöytäkirja: vakuuden palautusehdotus ja perusteet huoltokirjasta
+- [x] Loppupöytäkirja: vakuuden palautusosio ja perusteet huoltokirjasta
+- [ ] Vuokranantajan kirjaama vähennysehdotus — vaatisi oman sarakkeen JA
+      juridisen sanamuodon tarkistuksen (Jukka): vähennysehdotus
+      yhteisesti allekirjoitetussa asiakirjassa on oikeudellinen kannanotto
 - [x] Allekirjoitus eSinetissä, tila `ended` (webhook)
 - [x] Vakuuden palautuksen kirjaus (pvm, summa)
 - [x] Vuokratodistus (`src/documents/TenancyCertificate.tsx`): molemmat roolit,

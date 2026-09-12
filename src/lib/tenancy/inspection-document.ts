@@ -42,6 +42,8 @@ import type {
 } from "@/documents/InspectionProtocol";
 import { downloadPhoto, getInspectionOverview, type InspectionKind } from "../db/inspections";
 import { getTenancy, getTenancyProperty } from "../db/tenancies";
+import { listMaintenanceEntries } from "../db/maintenance";
+import { depositProposal } from "./deposit";
 import { listPartyDetails } from "./party-details";
 import { inspectionRooms, mergeRooms } from "../inspection/rooms";
 
@@ -146,6 +148,28 @@ export async function buildInspectionProtocolData(
       sopimuksessakin.
     */
     lockedByName: landlord?.name ?? "",
+    /*
+      Vakuusosio vain loppukatselmukseen.
+
+      Alkukatselmuksessa vakuudesta ei ole mitään sanottavaa: se palautetaan
+      vuokrasuhteen päättyessä. Perusteet tulevat huoltokirjasta eivätkä
+      kuluista — pöytäkirjan allekirjoittavat molemmat, ja kulut ovat
+      vuokranantajan kirjanpitoa (`tenancy/deposit.ts`).
+    */
+    deposit:
+      kind === "final"
+        ? depositProposal(
+            tenancy.depositAmount,
+            (await listMaintenanceEntries(userId, tenancyId)).map((entry) => ({
+              kind: entry.kind,
+              title: entry.title,
+              createdAt: entry.createdAt,
+              authorRole: entry.authorRole,
+              resolvedAt: entry.resolvedAt,
+              cancelledAt: entry.cancelledAt,
+            })),
+          )
+        : null,
     rooms: [...byRoom.values()],
     place: property.city,
   };
