@@ -14,6 +14,7 @@ import {
 } from "@/lib/inspection/rooms";
 import { AppShell } from "@/components/AppShell";
 import { PhotoCapture } from "@/components/PhotoCapture";
+import { FlagPhoto } from "@/components/FlagPhoto";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -150,7 +151,9 @@ export default async function RoomPage({
                 <p className="mt-2 text-sm text-coral">
                   Merkitty kuulumattomaksi{photo.flaggedReason ? `: ${photo.flaggedReason}` : ""}
                 </p>
-              ) : null}
+              ) : (
+                <FlagPhoto tenancyId={id} photoId={photo.id} disabled={locked} />
+              )}
             </figcaption>
           </figure>
         ))}

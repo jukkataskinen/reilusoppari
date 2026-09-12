@@ -29,3 +29,8 @@ export async function hasColumn(table: string, column: string): Promise<boolean>
 export async function hasInspectionRooms(): Promise<boolean> {
   return hasColumn("rs_photos", "room");
 }
+
+/** `true`, jos migraatio 0006 (sopimuksen kommentit) on ajettu. */
+export async function hasContractComments(): Promise<boolean> {
+  return hasColumn("rs_contract_comments", "body");
+}

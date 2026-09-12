@@ -881,3 +881,38 @@ mikä oikeasti puuttuu.
 ohitetaan **näkyvästi**: konsoliin tulee rivi, joka nimeää migraation. Tämä
 ei ole lupa jättää migraatioita ajamatta vaan tapa kertoa siitä selvästi
 silloin, kun niin on käynyt.
+
+
+## Sopimusluonnoksesta keskustellaan palvelussa, ei puhelimessa (2026-09-12)
+
+CLAUDE.md 5.2 sanoo, että vuokralainen voi ehdottaa muutosta kommenttina.
+Toteutin sen keskusteluna, jossa **kumpikin osapuoli saa kommentoida**:
+yksisuuntainen kanava olisi outo, koska vuokranantajan on voitava vastata.
+
+Kumpikin näkee keskustelun kokonaisuudessaan. Sama periaate kuin
+kuittauksissa ja huoltokirjassa — kummastakaan osapuolesta ei puhuta hänen
+selkänsä takana palvelun sisällä.
+
+**Kommenttia ei voi poistaa.** Ei poisto-operaatiota eikä `deleted_at`-
+saraketta. Jos kommentin voisi poistaa, keskustelu kertoisi vain sen, mitä
+poistamatta jättänyt halusi sen kertovan — sama sääntö kuin katselmuksen
+kuvilla.
+
+**Liian pitkä kommentti katkaistaan 300 merkkiin eikä hylätä.** Hylkäys
+hukkaisi kirjoitetun tekstin, ja raja on sama kuin muissa kommenttikentissä.
+
+Vuokralainen ei edelleenkään muokkaa sopimusta. Hän kertoo mitä haluaisi
+muuttaa; vuokranantaja muuttaa ehtoja ja esikatselu päivittyy. Muuten sopimus
+voisi muuttua sen jälkeen, kun toinen on sen lukenut.
+
+
+## "Ei kuulu tähän" on virheen korjaus, ei mielipide toisen kuvasta (2026-09-12)
+
+Kuvaa ei voi poistaa kumpikaan osapuoli. Virheellisen kuvan voi merkitä, ja
+merkintä näkyy molemmille sekä tulee pöytäkirjaan **kuvan viereen** — kuva
+jää siis pöytäkirjaan merkittynä.
+
+Siksi merkintää ei voi käyttää toisen havainnon hiljentämiseen: lukija näkee
+sekä kuvan että merkinnän ja päättää itse. Lomake on suljettuna oletuksena ja
+avautuu erikseen; se on tarkoituksella hieman hankalampi kuin kuvan
+ottaminen.

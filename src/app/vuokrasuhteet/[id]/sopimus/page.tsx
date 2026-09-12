@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getContractTerms } from "@/lib/db/contracts";
+import { getContractTerms, listContractComments } from "@/lib/db/contracts";
 import { getTenancy } from "@/lib/db/tenancies";
 import { listPartyDetails, missingPartyDetails } from "@/lib/tenancy/party-details";
 import { ContractForm } from "./ContractForm";
 import { AppShell } from "@/components/AppShell";
+import { ContractComments } from "@/components/ContractComments";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: "Vuokrasopimus" };
@@ -27,9 +28,10 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [terms, parties] = await Promise.all([
+  const [terms, parties, comments] = await Promise.all([
     getContractTerms(user.id, id),
     listPartyDetails(user.id, id),
+    listContractComments(user.id, id),
   ]);
 
   const puuttuu = missingPartyDetails(parties);
@@ -82,17 +84,9 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         </Link>
       </div>
 
-      {isLandlord ? (
-        <ContractForm tenancyId={id} terms={terms} />
-      ) : (
-        <div className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-          <p className="font-medium">Haluatko muutoksia?</p>
-          <p className="mt-2 text-sm text-ink/70">
-            Kerro vuokranantajalle, mitä haluaisit muuttaa. Hän muokkaa sopimusta, ja esikatselu
-            päivittyy. Kumpikaan ei allekirjoita ennen kuin alkukatselmus on tehty.
-          </p>
-        </div>
-      )}
+      {isLandlord ? <ContractForm tenancyId={id} terms={terms} /> : null}
+
+      <ContractComments tenancyId={id} comments={comments} isLandlord={isLandlord} />
 
       <p className="mt-10 text-sm">
         <Link href={`/vuokrasuhteet/${id}`} className="underline underline-offset-4">

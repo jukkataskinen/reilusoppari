@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { saveContractTerms } from "@/lib/db/contracts";
+import { addContractComment, saveContractTerms } from "@/lib/db/contracts";
 import { fieldErrors } from "@/lib/property/schema";
 import { contractFormToInput, contractTermsSchema } from "@/lib/tenancy/contract-schema";
 
@@ -49,4 +49,36 @@ export async function saveContractAction(
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}`);
   return { errors: {}, saved: true };
+}
+
+export interface CommentActionState {
+  message?: string;
+  sent?: boolean;
+}
+
+/**
+ * Kommentti sopimusluonnoksesta (CLAUDE.md 5.2).
+ *
+ * Kumpikin osapuoli saa kommentoida. Osapuolitarkistus on datakerroksessa,
+ * ei täällä.
+ */
+export async function addContractCommentAction(
+  _previous: CommentActionState,
+  formData: FormData,
+): Promise<CommentActionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const tenancyId = String(formData.get("tenancyId") ?? "");
+  const body = String(formData.get("body") ?? "");
+
+  try {
+    const result = await addContractComment(user.id, tenancyId, body);
+    if (!result.ok) return { message: "Kirjoita kommentti ennen lähettämistä." };
+  } catch {
+    return { message: "Lähetys ei onnistunut. Yritä hetken kuluttua uudelleen." };
+  }
+
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/sopimus`);
+  return { sent: true };
 }

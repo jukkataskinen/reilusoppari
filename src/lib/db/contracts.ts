@@ -21,6 +21,7 @@
 
 import { getServiceClient } from "./supabase";
 import { getTenancy } from "./tenancies";
+import { requireTenancyParty } from "./access";
 import {
   CONTRACT_TEMPLATE_KEY,
   CONTRACT_TEMPLATE_VERSION,
@@ -148,4 +149,105 @@ export async function getContractTerms(
 ): Promise<ContractTerms> {
   const contract = await getContract(userId, tenancyId);
   return contract?.terms ?? DEFAULT_CONTRACT_TERMS;
+}
+
+/**
+ * Sopimusluonnoksen kommentit (CLAUDE.md 5.2).
+ *
+ * ===========================================================================
+ * VUOKRALAINEN EI MUOKKAA SOPIMUSTA
+ *
+ * Hän lukee luonnoksen ja kertoo, mitä haluaisi muuttaa. Vuokranantaja
+ * muokkaa ehtoja, ja esikatselu päivittyy. Muuten sopimus voisi muuttua sen
+ * jälkeen, kun toinen on sen lukenut (DECISIONS.md 2026-09-11).
+ *
+ * Kumpikin osapuoli saa kommentoida: yksisuuntainen kanava olisi outo, koska
+ * vuokranantajan on voitava vastata. Kommenttia ei voi poistaa.
+ * ===========================================================================
+ */
+
+export interface ContractComment {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorUserId: string;
+  authorName: string | null;
+  authorRole: "landlord" | "tenant";
+  isSelf: boolean;
+}
+
+export async function listContractComments(
+  userId: string,
+  tenancyId: string,
+): Promise<ContractComment[]> {
+  await requireTenancyParty(userId, tenancyId);
+
+  const supabase = getServiceClient();
+
+  const [{ data: comments, error }, { data: parties }] = await Promise.all([
+    supabase
+      .from("rs_contract_comments")
+      .select("id, body, created_at, author_user_id")
+      .eq("tenancy_id", tenancyId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("rs_tenancy_parties")
+      .select("user_id, role, party_name")
+      .eq("tenancy_id", tenancyId),
+  ]);
+
+  if (error) {
+    console.error("[contracts] kommenttien haku epäonnistui:", error.message);
+    throw new Error("Kommenttien haku epäonnistui.");
+  }
+
+  const byUser = new Map<string, { role: "landlord" | "tenant"; name: string | null }>();
+  for (const party of (parties ?? []) as Array<{
+    user_id: string | null;
+    role: "landlord" | "tenant";
+    party_name: string | null;
+  }>) {
+    if (party.user_id) byUser.set(party.user_id, { role: party.role, name: party.party_name });
+  }
+
+  return ((comments ?? []) as Array<{
+    id: string;
+    body: string;
+    created_at: string;
+    author_user_id: string;
+  }>).map((row) => {
+    const party = byUser.get(row.author_user_id);
+    return {
+      id: row.id,
+      body: row.body,
+      createdAt: row.created_at,
+      authorUserId: row.author_user_id,
+      authorName: party?.name ?? null,
+      authorRole: party?.role ?? "tenant",
+      isSelf: row.author_user_id === userId,
+    };
+  });
+}
+
+/** Lisää kommentin. Tyhjä ei kelpaa, ja 300 merkkiä on raja kuten muualla. */
+export async function addContractComment(
+  userId: string,
+  tenancyId: string,
+  body: string,
+): Promise<{ ok: boolean }> {
+  await requireTenancyParty(userId, tenancyId);
+
+  const trimmed = body.trim().slice(0, 300);
+  if (trimmed === "") return { ok: false };
+
+  const { error } = await getServiceClient()
+    .from("rs_contract_comments")
+    .insert({ tenancy_id: tenancyId, author_user_id: userId, body: trimmed });
+
+  if (error) {
+    console.error("[contracts] kommentin tallennus epäonnistui:", error.message);
+    throw new Error("Kommentin tallennus epäonnistui.");
+  }
+
+  return { ok: true };
 }

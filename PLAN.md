@@ -104,7 +104,8 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
       tiivisteenä, uudelleenlähetys mitätöi vanhan, sähköpostin on täsmättävä
 - [x] Vuokralaisen liittyminen: julkinen kutsusivu, kirjautuminen, liittyminen
 - [x] Vuokralaisen näkymä sopimusluonnokseen
-- [ ] Vuokralaisen kommentointi sopimukseen
+- [x] Vuokralaisen kommentointi sopimukseen — kumpikin osapuoli kommentoi,
+      kumpikin näkee kaiken, kommenttia ei voi poistaa
 - [x] Osapuolten tunnistetiedot: henkilö- tai y-tunnus, puhelin, sähköposti,
       maksutili. Tunnus salattuna, näytöllä aina peitettynä
 - [x] Omat perustiedot, jotka kopioituvat uuteen vuokrasuhteeseen
@@ -126,7 +127,8 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 - [x] Webhook `round.completed`: sinetöidyt PDF:t, `identity_verified_at`,
       tenancy → `active`, `rs_rent_periods` generoidaan. Idempotentti
 - [ ] e2e mockilla: asunto → vuokrasuhde → kutsu → kuvat → lukitus → allekirjoitus
-- [ ] Kuvan merkintä "ei kuulu tähän" käyttöliittymässä (datakerros on valmis)
+- [x] Kuvan merkintä "ei kuulu tähän" — kuva ei poistu, merkintä näkyy
+      molemmille ja tulee pöytäkirjaan kuvan viereen
 
 ## Vaihe 2 — Kuittaus ja huoltokirja
 
