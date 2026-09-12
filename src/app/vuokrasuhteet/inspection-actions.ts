@@ -5,6 +5,17 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { flagPhoto, lockInspection, markTenantReady } from "@/lib/db/inspections";
 import { normalizeRoomName, roomSlug } from "@/lib/inspection/rooms";
+import type { InspectionKind } from "@/lib/db/inspections";
+
+/** Kumpi katselmus lomake koski. Tuntematon arvo on alkukatselmus. */
+function kindOf(formData: FormData): InspectionKind {
+  return formData.get("kind") === "final" ? "final" : "initial";
+}
+
+/** Polun osa, jolle ohjataan. Sama valinta kuin `kindOf`, mutta osoitteeseen. */
+function basePathOf(formData: FormData): string {
+  return formData.get("kind") === "final" ? "loppukatselmus" : "katselmus";
+}
 
 /**
  * Katselmuksen toiminnot (CLAUDE.md 5.3).
@@ -29,12 +40,12 @@ export async function markReadyAction(
   const tenancyId = String(formData.get("tenancyId") ?? "");
 
   try {
-    await markTenantReady(user.id, tenancyId);
+    await markTenantReady(user.id, tenancyId, kindOf(formData));
   } catch {
     return { message: "Merkintä ei onnistunut. Yritä hetken kuluttua uudelleen." };
   }
 
-  revalidatePath(`/vuokrasuhteet/${tenancyId}/katselmus`);
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/${basePathOf(formData)}`);
   return { done: true };
 }
 
@@ -48,14 +59,14 @@ export async function lockInspectionAction(
   const tenancyId = String(formData.get("tenancyId") ?? "");
 
   try {
-    const decision = await lockInspection(user.id, tenancyId);
+    const decision = await lockInspection(user.id, tenancyId, kindOf(formData));
     // Sääntö tarkistetaan myös täällä: nappi on vihje, tarkistus on portti.
     if (!decision.allowed) return { message: decision.message };
   } catch {
     return { message: "Lukitus ei onnistunut. Yritä hetken kuluttua uudelleen." };
   }
 
-  revalidatePath(`/vuokrasuhteet/${tenancyId}/katselmus`);
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/${basePathOf(formData)}`);
   revalidatePath(`/vuokrasuhteet/${tenancyId}`);
   return { done: true };
 }
@@ -84,6 +95,7 @@ export async function flagPhotoAction(
   }
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/katselmus`);
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/loppukatselmus`);
   return { done: true };
 }
 
@@ -110,6 +122,6 @@ export async function addRoomAction(
   if (!slug) return { message: "Nimessä on oltava kirjaimia tai numeroita." };
 
   redirect(
-    `/vuokrasuhteet/${tenancyId}/katselmus/${slug}?nimi=${encodeURIComponent(name)}`,
+    `/vuokrasuhteet/${tenancyId}/${basePathOf(formData)}/${slug}?nimi=${encodeURIComponent(name)}`,
   );
 }

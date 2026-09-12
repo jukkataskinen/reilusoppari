@@ -24,6 +24,7 @@ const initialState: InspectionActionState = {};
  */
 export function InspectionControls({
   tenancyId,
+  kind = "initial",
   isLandlord,
   locked,
   photoCount,
@@ -33,6 +34,8 @@ export function InspectionControls({
   waitUntil,
 }: {
   tenancyId: string;
+  /** Alku- vai loppukatselmus. Ohjaa toiminnot oikeaan katselmukseen. */
+  kind?: "initial" | "final";
   isLandlord: boolean;
   locked: boolean;
   photoCount: number;
@@ -54,6 +57,7 @@ export function InspectionControls({
           Puuttuuko listalta huone tai tila?
         </label>
         <input type="hidden" name="tenancyId" value={tenancyId} />
+        <input type="hidden" name="kind" value={kind} />
         <input
           id="uusi-huone"
           name="room"
@@ -81,10 +85,12 @@ export function InspectionControls({
       {isLandlord ? (
         <form action={lockAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
+          <input type="hidden" name="kind" value={kind} />
           <p className="font-medium">Lukitse katselmus</p>
           <p className="mt-2 text-sm text-ink/70">
-            Lukitus tekee kuvista pöytäkirjan, joka allekirjoitetaan sopimuksen kanssa. Sen
-            jälkeen kuvia ei voi lisätä.
+            {kind === "final"
+              ? "Lukitus tekee kuvista pöytäkirjan, joka allekirjoitetaan. Sen jälkeen kuvia ei voi lisätä, ja vuorossa ovat arviot ja todistukset."
+              : "Lukitus tekee kuvista pöytäkirjan, joka allekirjoitetaan sopimuksen kanssa. Sen jälkeen kuvia ei voi lisätä."}
           </p>
 
           {lockMessage ? (
@@ -123,6 +129,7 @@ export function InspectionControls({
       ) : (
         <form action={readyAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
+          <input type="hidden" name="kind" value={kind} />
           <p className="font-medium">Oletko valmis?</p>
           <p className="mt-2 text-sm text-ink/70">
             Kun merkitset olevasi valmis, vuokranantaja voi lukita katselmuksen. Siihen asti hän

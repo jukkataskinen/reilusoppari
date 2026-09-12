@@ -16,18 +16,24 @@ import { InspectionRoomView } from "@/components/InspectionRoomView";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
-  title: "Katselmus",
+  title: "Loppukatselmus",
   robots: { index: false, follow: false },
 };
 
 /**
- * Alkukatselmuksen yhden tilan näkymä (CLAUDE.md 5.3).
+ * Loppukatselmuksen yhden tilan näkymä (CLAUDE.md 5.8).
  *
- * Itse näkymä on `InspectionRoomView`, jota loppukatselmus käyttää samana.
- * Jos näkymiä olisi kaksi, ne erkanisivat toisistaan — ja juuri niiden
- * vertailukelpoisuus on loppukatselmuksen tarkoitus.
+ * ===========================================================================
+ * ALKUKUVAT OVAT MUKANA, JOTTA ON MIHIN VERRATA
+ *
+ * Sama näkymä kuin alkukatselmuksessa, mutta alkukatselmuksen kuvat näkyvät
+ * alla. Ilman niitä loppukatselmus olisi vain toinen kuvaussessio, eikä
+ * kukaan muistaisi, miltä lattia näytti kolme vuotta sitten.
+ *
+ * Alkukuvia ei voi muuttaa eikä merkitä: ne on lukittu ja allekirjoitettu.
+ * ===========================================================================
  */
-export default async function RoomPage({
+export default async function FinalRoomPage({
   params,
   searchParams,
 }: {
@@ -42,22 +48,20 @@ export default async function RoomPage({
 
   if (!(await getTenancy(user.id, id))) notFound();
 
-  const [overview, property] = await Promise.all([
-    getInspectionOverview(user.id, id),
+  const [final, initial, property] = await Promise.all([
+    getInspectionOverview(user.id, id, "final"),
+    getInspectionOverview(user.id, id, "initial"),
     getTenancyProperty(user.id, id),
   ]);
 
   const rooms = mergeRooms(
     inspectionRooms(property?.propertyType ?? "kerrostalo", property?.rooms ?? null),
-    overview.photos.map((photo) => photo.room ?? ""),
+    [
+      ...initial.photos.map((photo) => photo.room ?? ""),
+      ...final.photos.map((photo) => photo.room ?? ""),
+    ],
   );
 
-  /*
-    Uusi tila ei ole vielä luettelossa: se syntyy vasta ensimmäisestä
-    kuvasta. Nimi tulee silloin kyselyparametrista, mutta vain jos se todella
-    vastaa polun tunnistetta — muuten osoitteen voisi väärentää näyttämään
-    toisen tilan kuvat toisen tilan otsikon alla.
-  */
   const known = findRoomBySlug(rooms, huone);
   const proposed = nimi ? normalizeRoomName(nimi) : null;
   const room =
@@ -65,11 +69,18 @@ export default async function RoomPage({
 
   if (!room) notFound();
 
-  const photos = await Promise.all(
-    overview.photos
-      .filter((photo) => photo.room === room.name)
-      .map(async (photo) => ({ ...photo, url: await photoUrl(photo.storagePath) })),
-  );
+  const [photos, previousPhotos] = await Promise.all([
+    Promise.all(
+      final.photos
+        .filter((photo) => photo.room === room.name)
+        .map(async (photo) => ({ ...photo, url: await photoUrl(photo.storagePath) })),
+    ),
+    Promise.all(
+      initial.photos
+        .filter((photo) => photo.room === room.name)
+        .map(async (photo) => ({ ...photo, url: await photoUrl(photo.storagePath) })),
+    ),
+  ]);
 
   return (
     <AppShell>
@@ -79,14 +90,18 @@ export default async function RoomPage({
         roomName={room.name}
         hints={room.hints}
         photos={photos}
+        previousPhotos={previousPhotos}
         tenancyId={id}
-        endpoint={`/vuokrasuhteet/${id}/katselmus/kuva`}
-        locked={overview.inspection.status !== "open"}
-        lockedMessage="Katselmus on lukittu, joten kuvia ei voi enää lisätä."
+        endpoint={`/vuokrasuhteet/${id}/loppukatselmus/kuva`}
+        locked={final.inspection.status !== "open"}
+        lockedMessage="Loppukatselmus on lukittu, joten kuvia ei voi enää lisätä."
       />
 
       <p className="mt-10 text-sm">
-        <Link href={`/vuokrasuhteet/${id}/katselmus`} className="underline underline-offset-4">
+        <Link
+          href={`/vuokrasuhteet/${id}/loppukatselmus`}
+          className="underline underline-offset-4"
+        >
           {fi.common.back}
         </Link>
       </p>

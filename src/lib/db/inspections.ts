@@ -134,27 +134,36 @@ export async function getOrCreateInspection(
  * kirjoitetaan vain kerran: muuten jokainen käynti siirtäisi määräaikaa
  * eteenpäin, eikä lukitus tulisi koskaan mahdolliseksi.
  */
-export async function markTenantSeenInspection(userId: string, tenancyId: string): Promise<void> {
+export async function markTenantSeenInspection(
+  userId: string,
+  tenancyId: string,
+  kind: InspectionKind = "initial",
+): Promise<void> {
   const supabase = getServiceClient();
+  const column = SEEN_COLUMN[kind];
 
   const { error } = await supabase
     .from("rs_tenancy_parties")
-    .update({ first_seen_inspection_at: new Date().toISOString() })
+    .update({ [column]: new Date().toISOString() })
     .eq("tenancy_id", tenancyId)
     .eq("user_id", userId)
     .eq("role", "tenant")
-    .is("first_seen_inspection_at", null);
+    .is(column, null);
 
   if (error) console.error("[inspections] käyntileiman kirjaus epäonnistui:", error.message);
 }
 
 /** Vuokralainen merkitsee olevansa valmis. Lukitus on sen jälkeen mahdollinen heti. */
-export async function markTenantReady(userId: string, tenancyId: string): Promise<void> {
+export async function markTenantReady(
+  userId: string,
+  tenancyId: string,
+  kind: InspectionKind = "initial",
+): Promise<void> {
   await requireTenancyParty(userId, tenancyId);
 
   const { error } = await getServiceClient()
     .from("rs_tenancy_parties")
-    .update({ inspection_ready_at: new Date().toISOString() })
+    .update({ [READY_COLUMN[kind]]: new Date().toISOString() })
     .eq("tenancy_id", tenancyId)
     .eq("user_id", userId)
     .eq("role", "tenant");
@@ -164,6 +173,23 @@ export async function markTenantReady(userId: string, tenancyId: string): Promis
     throw new Error("Merkintä ei onnistunut.");
   }
 }
+
+/*
+  Alku- ja loppukatselmuksella on omat valmiusleimansa (migraatio 0010).
+
+  Jos ne jakaisivat sarakkeet, lukitussääntö ei toimisi loppukatselmuksessa
+  lainkaan: vuokralainen on merkinnyt olevansa valmis vuosia aiemmin, ja
+  lukitus olisi mahdollinen ennen kuin hän on nähnyt loppukatselmusta.
+*/
+const SEEN_COLUMN: Record<InspectionKind, string> = {
+  initial: "first_seen_inspection_at",
+  final: "final_seen_inspection_at",
+};
+
+const READY_COLUMN: Record<InspectionKind, string> = {
+  initial: "inspection_ready_at",
+  final: "final_inspection_ready_at",
+};
 
 interface PhotoRow {
   id: string;
@@ -331,16 +357,17 @@ export async function getInspectionOverview(
   const supabase = getServiceClient();
   const { data: parties } = await supabase
     .from("rs_tenancy_parties")
-    .select("user_id, role, joined_at, first_seen_inspection_at, inspection_ready_at")
+    .select(
+      `user_id, role, joined_at, ${SEEN_COLUMN[kind]}, ${READY_COLUMN[kind]}`,
+    )
     .eq("tenancy_id", tenancyId);
 
-  const rows = (parties ?? []) as Array<{
-    user_id: string | null;
-    role: PartyRole;
-    joined_at: string | null;
-    first_seen_inspection_at: string | null;
-    inspection_ready_at: string | null;
-  }>;
+  const rows = (parties ?? []) as unknown as Array<
+    { user_id: string | null; role: PartyRole; joined_at: string | null } & Record<
+      string,
+      string | null
+    >
+  >;
 
   const isLandlord = rows.some((row) => row.user_id === userId && row.role === "landlord");
   const tenants = rows.filter((row) => row.role === "tenant");
@@ -355,18 +382,18 @@ export async function getInspectionOverview(
     estyy. Muuten myöhäisin leima, koska määräaika lasketaan siitä
     vuokralaisesta, joka näki näkymän viimeisenä.
   */
-  const seenTimes = tenants.map((row) => row.first_seen_inspection_at);
+  const seenTimes = tenants.map((row) => row[SEEN_COLUMN[kind]] as string | null);
   const firstSeen = seenTimes.some((value) => value === null)
     ? null
     : (seenTimes as string[]).sort().at(-1) ?? null;
 
-  const readyTimes = tenants.map((row) => row.inspection_ready_at);
+  const readyTimes = tenants.map((row) => row[READY_COLUMN[kind]] as string | null);
   const allReady =
     tenants.length > 0 && readyTimes.every((value) => value !== null)
       ? (readyTimes as string[]).sort().at(-1)!
       : null;
 
-  if (!isLandlord) await markTenantSeenInspection(userId, tenancyId);
+  if (!isLandlord) await markTenantSeenInspection(userId, tenancyId, kind);
 
   const photos = await listInspectionPhotos(userId, tenancyId, inspection.id);
 
