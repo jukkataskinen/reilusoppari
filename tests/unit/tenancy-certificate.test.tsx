@@ -26,7 +26,14 @@ const DATA: CertificateData = {
   rating: "recommend",
   comment: "Luotettava ja mukava vuokralainen.",
   reply: null,
-  stats: { months: 36, rentConfirmedOnTime: 36, rentPeriods: 36, depositReturnedFull: true },
+  stats: {
+    months: 36,
+    rentPeriods: 36,
+    rentOnTime: 34,
+    rentSlightlyLate: 2,
+    rentDelayed: 0,
+    depositReturnedFull: true,
+  },
   verifyUrl: "https://reilusoppari.fi/todistus/8f2a1c7d9e",
   sealedDate: "2026-09-08",
 };
@@ -46,7 +53,11 @@ describe("tilastorivit", () => {
   it("vuokralaisen todistuksessa kerrotaan kuittaukset, ei vikoja", () => {
     const rows = buildStatRows(DATA);
     expect(rows.map((r) => r.label)).toEqual(["Vuokrasuhde", "Vuokrat", "Vakuus"]);
-    expect(rows[1].value).toBe("Kuitattu ajallaan 36 / 36");
+    /*
+      Kolme lukua, ei yhtä. "34/36 ajallaan" kertoo vähemmän kuin se, oliko
+      kaksi muuta viikon myöhässä vai maksamatta (Jukan linjaus 2026-09-12).
+    */
+    expect(rows[1].value).toBe("36 kuukaudesta 34 ajallaan, 2 vähän myöhässä");
     // Lähde sanotaan ääneen: nämä eivät ole pankin vahvistamia maksuja.
     expect(rows[1].detail).toBe("Vuokranantajan omat kuittaukset");
   });
@@ -97,29 +108,46 @@ describe("todistus mahtuu yhdelle sivulle", () => {
 });
 
 describe("puuttuva suositus ei näy todistuksessa", () => {
-  it("ei jätä tyhjää tilaa eikä paikanvaraajaa", async () => {
-    const ilman = await renderDocumentPdf(
-      <TenancyCertificate data={{ ...DATA, rating: null, comment: null }} />,
-    );
-    const page = await rasterizePage(ilman.bytes, 1);
+  /**
+   * Paneelin taustavärin kokonaispinta-ala ensimmäisellä sivulla.
+   *
+   * ===========================================================================
+   * MIKSI PINTA-ALA EIKÄ SIJAINTI
+   *
+   * Testi mittasi ensin kiinteää kaistaa sivulla (y 500–700) ja odotti siitä
+   * nollaa. Se hajosi heti kun tilastorivi piteni ja sisältö siirtyi — vaikka
+   * väite oli edelleen tosi. Kiinteä kaista mittaa taittoa, ei väitettä.
+   *
+   * Sijaintikaan ei kelpaa: asiakirjan pehmeät taustamuodot käyttävät samaa
+   * sinistä, ja niitä on sivun ylä- ja alalaidassa riippumatta siitä, onko
+   * suositusta.
+   *
+   * Pinta-ala erottelee sen, mikä tässä merkitsee. Jos suositus puuttuu,
+   * KOKO paneeli puuttuu — ei tyhjää paneelia, ei paikanvaraajaa. Ero on
+   * silloin paneelin kokoinen.
+   * ===========================================================================
+   */
+  async function panelArea(bytes: Uint8Array): Promise<number> {
+    const page = await rasterizePage(bytes, 1);
+    return colorPixels(page, { x0: 0, y0: 0, x1: page.width, y1: page.height }, "#eaf1fb");
+  }
 
-    /**
-     * Tilastopaneelin alapuolella ei saa olla YHTÄÄN paneelin taustaväriä.
-     *
-     * Tyhjän tilan mittaaminen ei kelpaisi: ilman suositusta seuraava sisältö
-     * siirtyy ylös ja täyttää saman kohdan. Juuri se on tarkoituskin. Siksi
-     * testi etsii paneelin taustaväriä, jota siellä ei ole jos paneelia ei ole.
-     */
-    const alue = { x0: 0, y0: 500, x1: page.width, y1: 700 };
-    expect(colorPixels(page, alue, "#eaf1fb")).toBe(0);
-  }, 30_000);
+  it("koko paneeli puuttuu, ei vain sen teksti", async () => {
+    const [kanssa, ilman] = await Promise.all([
+      renderDocumentPdf(<TenancyCertificate data={DATA} />),
+      renderDocumentPdf(<TenancyCertificate data={{ ...DATA, rating: null, comment: null }} />),
+    ]);
 
-  it("suosituksen kanssa samassa kohdassa on paneeli", async () => {
+    const ero = (await panelArea(kanssa.bytes)) - (await panelArea(ilman.bytes));
+
+    // Tyhjä paneeli tai paikanvaraaja veisi saman tilan, jolloin ero olisi
+    // pieni. Kokonaisen paneelin verran on kymmeniätuhansia pikseleitä.
+    expect(ero).toBeGreaterThan(40_000);
+  }, 60_000);
+
+  it("suosituksen kanssa paneeli on olemassa", async () => {
     const kanssa = await renderDocumentPdf(<TenancyCertificate data={DATA} />);
-    const page = await rasterizePage(kanssa.bytes, 1);
-
-    const alue = { x0: 0, y0: 500, x1: page.width, y1: 700 };
-    expect(colorPixels(page, alue, "#eaf1fb")).toBeGreaterThan(10_000);
+    expect(await panelArea(kanssa.bytes)).toBeGreaterThan(100_000);
   }, 30_000);
 
   it("todistus syntyy aina, myös ilman suositusta ja kommenttia", async () => {

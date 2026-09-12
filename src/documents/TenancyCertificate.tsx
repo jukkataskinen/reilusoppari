@@ -50,9 +50,14 @@ export type CertificateFor = "tenant" | "landlord";
  */
 export interface CertificateStats {
   months: number;
-  /** Kuinka moni vuokrakausi kuitattiin ajallaan, ja kuinka monta niitä oli. */
-  rentConfirmedOnTime?: number;
+  /**
+   * Vuokranmaksu kolmessa luokassa (Jukan linjaus 2026-09-12,
+   * `lib/rent/history.ts`). Luvut ovat kuukausia.
+   */
   rentPeriods?: number;
+  rentOnTime?: number;
+  rentSlightlyLate?: number;
+  rentDelayed?: number;
   /** Korjatut viat / ilmoitetut viat. */
   defectsResolved?: number;
   defectsReported?: number;
@@ -145,9 +150,21 @@ export function buildStatRows(data: CertificateData): StatRow[] {
   ];
 
   if (data.for === "tenant" && stats.rentPeriods !== undefined) {
+    /*
+      Kolme lukua, ei yhtä.
+
+      "32/34 ajallaan" kertoo vähemmän kuin se, oliko kaksi muuta viikon
+      myöhässä vai maksamatta. Luokat ovat samat kuin muistutusketjun rajat:
+      vähän myöhässä tarkoittaa, että asia hoitui heti kun siitä
+      huomautettiin (`lib/rent/history.ts`).
+    */
+    const osat = [`${stats.rentOnTime ?? 0} ajallaan`];
+    if (stats.rentSlightlyLate) osat.push(`${stats.rentSlightlyLate} vähän myöhässä`);
+    if (stats.rentDelayed) osat.push(`${stats.rentDelayed} viivästyi`);
+
     rows.push({
       label: "Vuokrat",
-      value: `Kuitattu ajallaan ${stats.rentConfirmedOnTime ?? 0} / ${stats.rentPeriods}`,
+      value: `${stats.rentPeriods} kuukaudesta ${osat.join(", ")}`,
       detail: "Vuokranantajan omat kuittaukset",
     });
   }

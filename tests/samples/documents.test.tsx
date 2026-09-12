@@ -179,8 +179,10 @@ const TODISTUS: CertificateData = {
   reply: null,
   stats: {
     months: 36,
-    rentConfirmedOnTime: 36,
     rentPeriods: 36,
+    rentOnTime: 34,
+    rentSlightlyLate: 2,
+    rentDelayed: 0,
     depositReturnedFull: true,
   },
   verifyUrl: "https://reilusoppari.fi/todistus/8f2a1c7d9e",
