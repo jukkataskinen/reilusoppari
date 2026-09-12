@@ -161,11 +161,13 @@ Polut 5.5–5.6. DoD: kuittaus toimii pushista ja sähköpostista, historia näk
 
 Polku 5.8. DoD: koko e2e-kaari läpi.
 
-- [ ] Irtisanomisen kirjaus, tila `ending`
-- [ ] Loppukatselmus samoista kohdista, alkukuvat rinnalla
+- [x] Irtisanomisen kirjaus, tila `ending`. Irtisanomisaika lasketaan
+      kuukauden viimeisestä päivästä (AHVL), ja päivä näytetään ennen
+      vahvistusta
+- [x] Loppukatselmus samoista tiloista, alkukuvat rinnalla
 - [ ] Loppupöytäkirja: vakuuden palautusehdotus ja perusteet huoltokirjasta
-- [ ] Allekirjoitus eSinetissä, tila `ended`
-- [ ] Vakuuden palautuksen kirjaus (pvm, summa)
+- [x] Allekirjoitus eSinetissä, tila `ended` (webhook)
+- [x] Vakuuden palautuksen kirjaus (pvm, summa)
 - [x] Vuokratodistus (`src/documents/TenancyCertificate.tsx`): molemmat roolit,
       QR-aitoustarkistus, tilastot ilman luottotietosanastoa
 - [ ] Arviot: **`recommend` tai ei arviota** — kielteistä vaihtoehtoa ei ole
@@ -173,7 +175,9 @@ Polku 5.8. DoD: koko e2e-kaari läpi.
 - [x] **Puuttuva suositus ei näy todistuksessa mitenkään** — toteutettu ja
       testattu pikselitasolla: paneelin taustaväriä ei ole sivulla lainkaan,
       kun suositusta ei ole (DECISIONS.md: tämä on päätöksen ydin)
-- [ ] `stats` kuittauksista ja katselmuksista
+- [~] `stats` kuittauksista ja katselmuksista. Vuokranmaksun kolme luokkaa
+      valmiina asiakirjassa ja `lib/rent/history.ts`:ssä; kokoaminen
+      todistukseen vielä tekemättä
 - [ ] Sinetöinti eSinetin `/documents/seal`-kutsulla
 - [ ] Jakolinkit (30 pv, mitätöitävissä), katselukerrat omistajalle näkyviin
 
