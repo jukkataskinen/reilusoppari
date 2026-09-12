@@ -125,7 +125,49 @@ export function parseBillingEvent(payload: string): BillingEvent | null {
       ? readId(object.id)
       : readId(object.subscription),
     amountCents: typeof object.amount_total === "number" ? object.amount_total : null,
+    /*
+      Määrä ja kausi luetaan tilausoliosta, EI metadatasta.
+
+      Ensimmäinen versio luki ne metadatasta, jonne Stripe ei niitä kirjoita.
+      Lopputulos olisi ollut hiljainen: jokainen salkkutilaus olisi
+      tallentunut yhden asunnon tilauksena ja kausi tyhjänä, ilman virhettä.
+    */
+    quantity: readQuantity(object),
+    currentPeriodEnd: readPeriodEnd(object),
   };
+}
+
+/** Tilauksen määrä ensimmäiseltä riviltä. Salkussa se on asuntojen määrä. */
+function readQuantity(object: Record<string, unknown>): number | null {
+  const items = object.items;
+  if (typeof items !== "object" || items === null) return null;
+
+  const data = (items as { data?: unknown }).data;
+  if (!Array.isArray(data) || data.length === 0) return null;
+
+  const first = data[0] as { quantity?: unknown };
+  return typeof first.quantity === "number" ? first.quantity : null;
+}
+
+/**
+ * Kauden loppu ISO-muotoon.
+ *
+ * Stripe antaa sen unix-sekunteina. `current_period_end` on tilauksen
+ * juuressa vanhemmissa API-versioissa ja rivillä uudemmissa, joten
+ * kumpikin paikka katsotaan.
+ */
+function readPeriodEnd(object: Record<string, unknown>): string | null {
+  const direct = object.current_period_end;
+  if (typeof direct === "number") return new Date(direct * 1000).toISOString();
+
+  const items = object.items;
+  if (typeof items !== "object" || items === null) return null;
+
+  const data = (items as { data?: unknown }).data;
+  if (!Array.isArray(data) || data.length === 0) return null;
+
+  const onItem = (data[0] as { current_period_end?: unknown }).current_period_end;
+  return typeof onItem === "number" ? new Date(onItem * 1000).toISOString() : null;
 }
 
 /** Stripe palauttaa id:n joko merkkijonona tai laajennettuna oliona. */

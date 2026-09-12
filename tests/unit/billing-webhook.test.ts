@@ -187,3 +187,61 @@ describe("tapahtuman tulkinta", () => {
     expect(parseBillingEvent(tilaus)?.subscriptionId).toBe("sub_1");
   });
 });
+
+describe("tilauksen määrä ja kausi", () => {
+  it("luetaan tilausoliosta eikä metadatasta", () => {
+    /*
+      Ensimmäinen versio luki nämä metadatasta, jonne Stripe ei niitä
+      kirjoita. Vika olisi ollut hiljainen: jokainen salkkutilaus olisi
+      tallentunut yhden asunnon tilauksena ja kausi tyhjänä, ilman virhettä.
+    */
+    const tilaus = JSON.stringify({
+      id: "evt_6",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_2",
+          customer: "cus_2",
+          current_period_end: 1788134400,
+          items: { data: [{ quantity: 8 }] },
+          metadata: { userId: "u1", kind: "portfolio_yearly" },
+        },
+      },
+    });
+
+    const event = parseBillingEvent(tilaus);
+    expect(event?.quantity).toBe(8);
+    expect(event?.currentPeriodEnd).toBe(new Date(1788134400 * 1000).toISOString());
+  });
+
+  it("löytää kauden lopun myös tilausriviltä", () => {
+    // Uudemmissa API-versioissa `current_period_end` on rivillä, ei juuressa.
+    const tilaus = JSON.stringify({
+      id: "evt_7",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_3",
+          items: { data: [{ quantity: 5, current_period_end: 1788134400 }] },
+          metadata: {},
+        },
+      },
+    });
+
+    expect(parseBillingEvent(tilaus)?.currentPeriodEnd).toBe(
+      new Date(1788134400 * 1000).toISOString(),
+    );
+  });
+
+  it("kestää puuttuvat rivit kaatumatta", () => {
+    const tilaus = JSON.stringify({
+      id: "evt_8",
+      type: "customer.subscription.updated",
+      data: { object: { id: "sub_4", metadata: {} } },
+    });
+
+    const event = parseBillingEvent(tilaus);
+    expect(event?.quantity).toBeNull();
+    expect(event?.currentPeriodEnd).toBeNull();
+  });
+});

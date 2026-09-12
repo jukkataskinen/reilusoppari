@@ -121,9 +121,9 @@ async function handle(event: BillingEvent): Promise<void> {
       userId,
       kind: kind === "plus_yearly" ? "plus_yearly" : "portfolio_yearly",
       stripeSubscriptionId: event.subscriptionId,
-      quantity: Number(event.metadata.quantity) || 1,
+      quantity: event.quantity ?? 1,
       status: "active",
-      currentPeriodEnd: event.metadata.currentPeriodEnd || null,
+      currentPeriodEnd: event.currentPeriodEnd,
     });
     return;
   }

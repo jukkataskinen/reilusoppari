@@ -87,4 +87,8 @@ export interface BillingEvent {
   paymentIntentId: string | null;
   subscriptionId: string | null;
   amountCents: number | null;
+  /** Tilauksen määrä (asuntoja salkussa). `null`, jos tapahtuma ei ole tilaus. */
+  quantity: number | null;
+  /** Tilauskauden loppu ISO-muodossa. `null`, jos tapahtuma ei ole tilaus. */
+  currentPeriodEnd: string | null;
 }
