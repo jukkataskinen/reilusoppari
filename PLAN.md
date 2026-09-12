@@ -201,6 +201,24 @@ Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 - [ ] Ensimmäinen tulostus laukaisee Plus-maksun — odottaa vaihetta 5
 - [ ] Ohjetekstien tarkistus (Jukka, `content/tax-guidance.fi.ts`)
 
+## Tietosuoja ja kuormituksen rajaus
+
+CLAUDE.md kohta 6. Nämä eivät ole oma vaiheensa vaan velvoitteita, jotka
+kuuluvat valmiiseen tuotteeseen.
+
+- [x] Kutsuraja kuvien lataukseen, 100/h/käyttäjä (migraatio 0015)
+- [x] Kutsuraja kuitin luvulle, 20/min — ainoa reitti jossa kutsu maksaa rahaa
+- [x] Omien tietojen vienti zipinä (tietosuoja-asetus art. 20)
+- [x] Kaksi vahtia avaimen vuotamista vastaan: lähdekoodi ja selainpaketti
+- [ ] Kutsulinkkien kutsuraja — vaatii IP-kohtaisen rajan, jota nykyinen
+      käyttäjäkohtainen taulu ei ilmaise. Tunnus on 256-bittinen ja
+      tiivisteenä, joten arvaaminen ei ole realistinen uhka; kyse olisi
+      kuormituksen rajaamisesta
+- [ ] Säilytysaika: tiedot ja kuvat poistetaan 3 vuotta vuokrasuhteen
+      päättymisestä, todistukset ja tiivisteet jäävät
+- [ ] Tietosuojaselosteeseen maininta viennin peitetystä henkilötunnuksesta
+      ja kuitin käsittelystä palvelun ulkopuolella (Jukka)
+
 ## Vaihe 5 — Laskutus, suosittelu, salkku
 
 - [x] Stripe Checkout + Customer Portal (REST-rajapinta, ei kirjastoa; mock

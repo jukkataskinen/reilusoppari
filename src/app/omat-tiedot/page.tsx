@@ -64,6 +64,30 @@ export default async function OwnDetailsPage() {
       </div>
 
       {/*
+        Omien tietojen vienti on tietosuoja-asetuksen oikeus (art. 20) ja
+        CLAUDE.md:n lupaus. Se on tällä sivulla eikä asetuksissa, koska tämä
+        on se sivu, jolta omia tietoja katsotaan.
+      */}
+      <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+        <p className="font-medium">Vie omat tietosi</p>
+        <p className="mt-2 text-sm text-ink/70">
+          Saat zip-paketin, jossa on vuokrasuhteesi, vuokrahistoria, huoltokirja,
+          katselmusten kuvat ja allekirjoitetut asiakirjat. Kokoaminen voi kestää hetken, jos
+          kuvia on paljon.
+        </p>
+        <p className="mt-2 text-sm text-ink/70">
+          Henkilötunnus on paketissa peitettynä. Kokonaisena se on vuokrasopimuksessa, joka on
+          paketissa mukana.
+        </p>
+        <a
+          href="/api/omat-tiedot/vienti"
+          className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+        >
+          Lataa tietoni
+        </a>
+      </div>
+
+      {/*
         Suosittelu on täällä eikä päänavigaatiossa: se on etu, ei työkalu,
         eikä sen kuulu kilpailla huomiosta asuntojen ja vuokrasuhteiden
         kanssa. Kuka etsii sitä, löytää sen omista tiedoistaan.

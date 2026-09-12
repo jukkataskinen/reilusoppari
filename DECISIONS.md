@@ -1530,3 +1530,46 @@ sanarajan sijaan, `[.]` pisteen sijaan). Syy on konkreettinen: `` muuttui
 tiedostoa muokatessa oikeaksi askelpalautinmerkiksi, ja vahti naytti
 toimivalta halyttamatta koskaan. Rikkoutunut vahti on pahempi kuin ei
 vahtia, koska siihen luotetaan.
+
+
+## Omien tietojen vienti zipinä (2026-09-12)
+
+CLAUDE.md kohta 2 lupaa sen ja tietosuoja-asetuksen 20 artikla vaatii sen.
+Toteutus oli tekemättä.
+
+**ZIP kirjoitetaan käsin ilman kirjastoa.** Sama peruste kuin metatietojen
+poistossa ja Stripe-liitännässä: muoto on pieni ja tarkasti määritelty.
+Tarvittava osa on kolme tietuetta, ja pakkaus tulee Noden omasta `zlib`:stä.
+
+**Testit avaavat tiedoston Pythonin `zipfile`-moduulilla.** Itse kirjoitetun
+ja itse luetun tiedoston pyöräytys ei todistaisi mitään: sama väärinkäsitys
+olisi molemmissa päissä, ja testi menisi läpi vaikka tiedosto ei avautuisi
+millään oikealla ohjelmalla. `testzip()` tarkistaa myös jokaisen tiedoston
+CRC:n.
+
+**Henkilötunnus tulee peitettynä.** Vaikka se on käyttäjän omaa tietoa ja hän
+on siihen oikeutettu, paketti päätyy lataushakemistoon salaamattomana.
+Kokonainen tunnus siellä olisi uusi riski ilman uutta hyötyä: käyttäjä tietää
+oman tunnuksensa jo, ja kokonaisena se on sopimuksessa, joka on paketissa
+mukana. **Tämä on kirjattava tietosuojaselosteeseen.**
+
+**Vain OMA todistus.** Toisen osapuolen vuokratodistus on hänen omaisuuttaan
+ja hän päättää kenelle se näytetään (CLAUDE.md 5.8). Sen liittäminen
+pakettiin olisi kiertotie sen ympäri.
+
+**Paketti kulkee Storagen kautta, ei vastauksena.** Kuvineen se on kymmeniä
+megatavuja ja ylittäisi funktion vastauksen koon. Paketti tallennetaan
+käyttäjän omaan polkuun ja hänet ohjataan tunnin voimassa olevaan
+allekirjoitettuun osoitteeseen. Edellinen paketti korvautuu joka viennillä.
+
+**Tiedossa oleva raja:** paketti kootaan muistissa, joten hyvin suuri tili voi
+osua funktion aika- tai muistirajaan. Jos siihen törmätään, ratkaisu on
+pakettien jakaminen vuokrasuhteittain eikä muistin kasvattaminen.
+
+**Kutsuraja 3/tunti.** Vienti lukee kaikki käyttäjän kuvat ja asiakirjat; se
+on raskain yksittäinen toiminto koko sovelluksessa. Rajan tarkoitus ei ole
+rajoittaa oikeutta omiin tietoihin vaan estää sen käyttäminen
+kuormitusvälineenä.
+
+**Lukuohje paketin juuressa.** Zip, jossa on pelkkiä JSON-tiedostoja, on
+kirjanpitäjälle käyttökelpoinen ja kaikille muille läpinäkymätön.
