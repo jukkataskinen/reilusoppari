@@ -20,6 +20,7 @@ export const fi = {
     rent: "Vuokranmaksu",
     maintenance: "Huoltokirja",
     expenses: "Kulut",
+    ending: "Päättyminen",
     settings: "Asetukset",
   },
   role: {
