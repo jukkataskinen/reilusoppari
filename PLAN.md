@@ -197,13 +197,19 @@ Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 
 ## Vaihe 5 — Laskutus, suosittelu, salkku
 
-- [ ] Stripe Checkout + Customer Portal
-- [ ] Tuotteet `tenancy_29`, `plus_yearly`, `portfolio_yearly`
-- [ ] Ensimmäinen vuokrasuhde ilmainen (`free_tenancy_used`)
-- [ ] Suosittelu ja krediitit (`rs_referrals`, `rs_credits`)
-- [ ] Salkkutilaus 5+ asunnolle
-- [ ] Kuluttajakauppa: tilausvahvistus, peruutusoikeus 14 pv ja sen menetys
-      nimenomaisella suostumuksella
+- [x] Stripe Checkout + Customer Portal (REST-rajapinta, ei kirjastoa; mock
+      ilman avainta samalla säännöllä kuin eSinetti)
+- [x] Tuotteet `tenancy_29`, `plus_yearly`, `portfolio_yearly`
+- [x] Ensimmäinen vuokrasuhde ilmainen (`free_tenancy_used`)
+- [x] Suosittelu ja krediitit (`rs_referrals`, `rs_credits`)
+- [x] Salkkuhinnan laskenta ja rehellinen kannattavuusvertailu
+- [x] Kuluttajakauppa: peruutusoikeus 14 pv ja sen menetys nimenomaisella
+      suostumuksella; suostumus ehtona maksulle
+- [x] Webhook allekirjoitustarkistuksella ja toiston estolla
+- [ ] Salkkutilauksen tilaaminen käyttöliittymästä (laskenta valmis, sivu
+      puuttuu)
+- [ ] Tilausvahvistus sähköpostiin — odottaa `RESEND_API_KEY`:tä
+- [ ] Testaus Stripe test modessa — odottaa avaimia (Jukka)
 
 ## Vaihe 6 — Yhteydenottolupa (lisäominaisuus)
 

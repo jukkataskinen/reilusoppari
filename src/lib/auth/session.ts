@@ -21,6 +21,7 @@
  */
 
 import { auth0 } from "./auth0";
+import { REFERRAL_COOKIE } from "../billing/referral-cookie";
 import { getServiceClient } from "@/lib/db/supabase";
 
 export interface CurrentUser {
@@ -95,6 +96,15 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     throw new Error("Käyttäjätietojen haku epäonnistui.");
   }
 
+  /*
+    Suosittelu kirjataan VAIN uudelle riville.
+
+    Yhteys on olemassa siitä hetkestä, kun tili syntyy. Jos sen voisi liittää
+    myöhemmin, kuka tahansa voisi merkitä itsensä olemassa olevien käyttäjien
+    suosittelijaksi käymällä suosittelulinkissä (CLAUDE.md 5.9).
+  */
+  if (!existing) await linkReferral(data.id, data.email);
+
   return {
     id: data.id,
     email: data.email,
@@ -109,4 +119,32 @@ export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) throw new NotSignedInError();
   return user;
+}
+
+/**
+ * Liittää suosittelun uuteen tiliin, jos evästeessä on kelvollinen tunnus.
+ *
+ * Ei heitä koskaan: suosittelun kirjaaminen on etu, eikä sen epäonnistuminen
+ * saa estää kirjautumista. Evästettä ei poisteta tässä — sen elinikä hoitaa
+ * sen, ja poisto vaatisi vastauksen, jota tällä funktiolla ei ole.
+ */
+async function linkReferral(userId: string, email: string): Promise<void> {
+  try {
+    const { cookies } = await import("next/headers");
+    const code = (await cookies()).get(REFERRAL_COOKIE)?.value;
+    if (!code) return;
+
+    const { recordReferral, userByReferralCode } = await import("../db/referrals");
+
+    const referrer = await userByReferralCode(code);
+    if (!referrer) return;
+
+    await recordReferral({
+      referrerUserId: referrer,
+      referredUserId: userId,
+      referredEmail: email,
+    });
+  } catch (err) {
+    console.error("[auth] suosittelun liittäminen epäonnistui:", err instanceof Error ? err.message : err);
+  }
 }

@@ -1284,3 +1284,38 @@ syy näkyy.
 **Uudelleensinetöinti on sallittu.** Kirjaus voi puuttua tai olla väärässä
 luokassa, ja korjattu laskelma on parempi kuin väärä. Vanha korvautuu — kaksi
 ristiriitaista laskelmaa samalta vuodelta olisi pahempi ongelma.
+
+
+## Maksu on allekirjoituksen VIIMEINEN portti (2026-09-12)
+
+`signingReadiness` tarkistaa ensin katselmuksen lukituksen ja osapuolten
+tiedot, ja vasta viimeisenä maksun. Järjestys on tarkoituksellinen: rahaa ei
+oteta ennen kuin kaikki muu on valmista. Jos maksu kysyttäisiin ensin,
+käyttäjä voisi maksaa ja törmätä vasta sen jälkeen puuttuviin
+osapuolitietoihin — ja maksu olisi tehty asiasta, jota ei voi vielä lähettää.
+
+Ilmainen ensimmäinen, salkku ja krediitti merkitään kaikki samaan
+`paid_via`-sarakkeeseen, joten yksi tarkistus riittää kaikkiin.
+
+**Hinnoittelun järjestys: ilmainen → salkku → krediitti → maksu.** Jos
+krediitti kuluisi ennen ilmaista ensimmäistä, käyttäjä menettäisi
+suositteluetunsa siihen, mikä oli muutenkin ilmaista — ja huomaisi sen vasta
+kun seuraava vuokrasuhde yllättäen maksaa.
+
+**Käyttöoikeus myönnetään webhookissa, ei paluuosoitteessa.** `success_url` on
+pelkkä uudelleenohjaus selaimessa; kuka tahansa voi avata sen ilman että
+mitään on maksettu.
+
+**Peruutusoikeus raukeaa allekirjoituskierroksen lähetyksessä.** Siinä
+hetkessä vuokralaiselle lähtee kutsu ja tunnistautuminen maksaa. Suostumus
+kysytään ENNEN maksua eikä kuitissa: kuluttajansuojalaki 6:14 vaatii, että
+tieto oikeuden raukeamisesta on annettu ennen palvelun aloittamista.
+Valintaruutu näytetään vain silloin, kun maksettavaa on — turha valintaruutu
+opettaa klikkaamaan läpi lukematta.
+
+**Krediitti syntyy vasta kun suositeltu lähettää ensimmäisen kierroksensa**,
+ei rekisteröitymisestä. Rekisteröitymisestä palkitseminen tekisi tilien
+luomisesta kannattavaa, ja silloin krediittejä kerättäisiin tekemällä tilejä.
+
+**Stripe-kirjastoa ei oteta riippuvuudeksi.** Tuote tarvitsee neljä kutsua ja
+HMAC-tarkistuksen; sama ratkaisu kuin eSinetti-clientissä ja samasta syystä.

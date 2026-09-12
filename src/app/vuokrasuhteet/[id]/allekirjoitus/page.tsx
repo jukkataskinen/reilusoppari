@@ -5,8 +5,13 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy } from "@/lib/db/tenancies";
 import { signingReadiness, signingStatus } from "@/lib/tenancy/signing";
 import { isUsingMockEsinetti } from "@/lib/esinetti";
+import { isUsingMockBilling } from "@/lib/billing";
+import { quoteTenancy } from "@/lib/billing/checkout";
+import { formatPrice, requiresPayment } from "@/lib/billing/pricing";
+import { getTenancyBillingState } from "@/lib/db/billing";
 import { AppShell } from "@/components/AppShell";
 import { SendForSigning } from "@/components/SendForSigning";
+import { TenancyPayment } from "@/components/TenancyPayment";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -46,10 +51,19 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [readiness, round] = await Promise.all([
+  const [readiness, round, billing] = await Promise.all([
     signingReadiness(user.id, id),
     signingStatus(user.id, id),
+    getTenancyBillingState(id),
   ]);
+
+  /*
+    Hinta lasketaan vain, jos maksua ei ole vielä tehty ja kierros on vielä
+    lähettämättä. Maksetun vuokrasuhteen kohdalla hinnan näyttäminen olisi
+    hämmentävää — ja hinta voi muuttua, koska ilmainen ensimmäinen ja
+    krediitit kuluvat.
+  */
+  const quote = isLandlord && !billing?.paidVia && !round ? await quoteTenancy(user.id, id) : null;
 
   return (
     <AppShell>
@@ -65,6 +79,23 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
           eSinetti-yhteyttä ei ole määritetty, joten allekirjoitus on harjoittelutilassa. Kukaan
           ei allekirjoita mitään oikeasti.
         </p>
+      ) : null}
+
+      {quote ? (
+        <>
+          {isUsingMockBilling() ? (
+            <p className="mt-6 rounded-[var(--radius-panel)] border border-coral bg-paper p-5 text-sm">
+              Stripe-yhteyttä ei ole määritetty, joten maksaminen on harjoittelutilassa. Mitään
+              ei veloiteta.
+            </p>
+          ) : null}
+
+          <TenancyPayment
+            tenancyId={id}
+            price={requiresPayment(quote) ? formatPrice(quote.amountCents) : null}
+            free={quote.reason}
+          />
+        </>
       ) : null}
 
       {round ? (

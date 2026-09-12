@@ -63,6 +63,24 @@ export default async function OwnDetailsPage() {
         </p>
       </div>
 
+      {/*
+        Suosittelu on täällä eikä päänavigaatiossa: se on etu, ei työkalu,
+        eikä sen kuulu kilpailla huomiosta asuntojen ja vuokrasuhteiden
+        kanssa. Kuka etsii sitä, löytää sen omista tiedoistaan.
+      */}
+      <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+        <p className="font-medium">Tuo kaveri</p>
+        <p className="mt-2 text-sm text-ink/70">
+          Kun tuomasi vuokranantaja lähettää ensimmäisen sopimuksensa allekirjoitettavaksi,
+          saatte molemmat yhden vuokrasuhteen veloituksetta.
+        </p>
+        <p className="mt-3 text-sm">
+          <Link href="/suosittele" className="underline underline-offset-4">
+            Oma suositteluosoitteesi
+          </Link>
+        </p>
+      </div>
+
       <p className="mt-10 text-sm">
         <Link href="/" className="underline underline-offset-4">
           {fi.common.back}

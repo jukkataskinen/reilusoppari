@@ -127,6 +127,20 @@ async function lockInspectionDirectly(userId: string, tenancyId: string) {
     .eq("kind", "initial");
 }
 
+/**
+ * Merkitsee vuokrasuhteen maksetuksi suoraan kantaan.
+ *
+ * Hinnoittelusäännöt on testattu erikseen puhtaina funktioina
+ * (`billing-pricing.test.ts`). Tässä tarvitaan vain lopputila: maksu on
+ * allekirjoituksen viimeinen portti, eikä sen läpi pääse ilman merkintää.
+ */
+async function markPaidDirectly(tenancyId: string) {
+  await getServiceClient()
+    .from("rs_tenancies")
+    .update({ paid_via: "free", paid_at: new Date().toISOString() })
+    .eq("id", tenancyId);
+}
+
 function completedEvent(roundId: string, tenancyId: string): WebhookEvent {
   return {
     id: `evt_${roundId}`,
@@ -210,10 +224,26 @@ describe.skipIf(!RUN)("allekirjoituskierroksen ehdot", () => {
     if (!valmius.ready) expect(valmius.reason).toBe("not_landlord");
   }, 30_000);
 
+  it("estyy ennen maksua, vaikka kaikki muu olisi kunnossa", async () => {
+    /*
+      Maksu on viimeinen portti: kierroksen lähetys vie vuokralaiselle kutsun
+      ja maksaa tunnistautumisen. Se on myös se hetki, jossa kuluttajan
+      peruutusoikeus raukeaa (`billing/withdrawal.ts`).
+    */
+    const { landlord, tenancyId } = await setup();
+    await fillParties(landlord, tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
+
+    const valmius = await signingReadiness(landlord, tenancyId);
+    expect(valmius.ready).toBe(false);
+    if (!valmius.ready) expect(valmius.reason).toBe("not_paid");
+  }, 30_000);
+
   it("onnistuu kun kaikki on kunnossa", async () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
     await lockInspectionDirectly(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
     expect(await signingReadiness(landlord, tenancyId)).toEqual({ ready: true });
   }, 30_000);
@@ -224,6 +254,7 @@ describe.skipIf(!RUN)("kierroksen lähetys", () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
     await lockInspectionDirectly(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
     const result = await sendForSigning(landlord, tenancyId);
     // Viesti mukaan väitteeseen: pelkkä `ok: false` ei kerro miksi.
@@ -242,6 +273,7 @@ describe.skipIf(!RUN)("kierroksen lähetys", () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
     await lockInspectionDirectly(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
     expect((await sendForSigning(landlord, tenancyId)).ok).toBe(true);
 
@@ -256,6 +288,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
     await lockInspectionDirectly(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
     const sent = await sendForSigning(landlord, tenancyId);
     const roundId = sent.round!.id;
@@ -282,6 +315,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
     await lockInspectionDirectly(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
     const sent = await sendForSigning(landlord, tenancyId);
     const event = completedEvent(sent.round!.id, tenancyId);
@@ -312,6 +346,7 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
     await lockInspectionDirectly(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
     const sent = await sendForSigning(landlord, tenancyId);
     await handleRoundCompleted(completedEvent(sent.round!.id, tenancyId), tenancyId);

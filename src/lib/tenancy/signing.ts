@@ -41,6 +41,11 @@ import {
   type Round,
   type RoundSigner,
 } from "../esinetti";
+import {
+  getTenancyBillingState,
+  recordSigningStarted,
+} from "../db/billing";
+import { completeReferral } from "../db/referrals";
 import { buildRentalAgreementData } from "./contract-document";
 import { buildInspectionProtocolData } from "./inspection-document";
 import { listPartyDetails, missingPartyDetails } from "./party-details";
@@ -50,7 +55,8 @@ export type SigningBlockReason =
   | "inspection_not_locked"
   | "party_details_missing"
   | "already_sent"
-  | "contract_incomplete";
+  | "contract_incomplete"
+  | "not_paid";
 
 export type SigningReadiness =
   | { ready: true }
@@ -112,6 +118,26 @@ export async function signingReadiness(
       reason: "party_details_missing",
       message: "Jokaiselta osapuolelta puuttuu sähköpostiosoite.",
       missing: ["Sähköpostiosoite allekirjoituslinkkiä varten"],
+    };
+  }
+
+  /*
+    Maksu on VIIMEINEN portti.
+
+    Järjestys on tarkoituksellinen: rahaa ei oteta ennen kuin kaikki muu on
+    valmista. Jos maksu kysyttäisiin ensin, käyttäjä voisi maksaa ja törmätä
+    vasta sen jälkeen puuttuviin osapuolitietoihin — ja maksu olisi tehty
+    asiasta, jota ei voi vielä lähettää.
+
+    Ilmainen ensimmäinen, salkku ja krediitti merkitään samalla tavalla
+    `paid_via`-sarakkeeseen, joten yksi tarkistus riittää kaikkiin.
+  */
+  const billing = await getTenancyBillingState(tenancyId);
+  if (!billing?.paidVia) {
+    return {
+      ready: false,
+      reason: "not_paid",
+      message: "Vahvista vuokrasuhteen maksu ennen kuin lähetät asiakirjat allekirjoitettavaksi.",
     };
   }
 
@@ -230,6 +256,27 @@ export async function sendForSigning(userId: string, tenancyId: string): Promise
       .update({ status: "signing", updated_at: now })
       .eq("id", tenancyId),
   ]);
+
+  /*
+    Palvelu on nyt aloitettu kuluttajan pyynnöstä: peruutusoikeus raukeaa
+    tästä hetkestä (`billing/withdrawal.ts`). Merkintä tehdään vasta kun
+    kierros on oikeasti lähtenyt — jos lähetys epäonnistui, mitään ei ole
+    aloitettu eikä oikeutta ole menetetty.
+  */
+  await recordSigningStarted(tenancyId, new Date(now));
+
+  /*
+    Suosittelu täyttyy tässä, ei rekisteröitymisessä (CLAUDE.md 5.9).
+
+    Ei heitetä, jos epäonnistuu: krediitin myöntäminen on etu, eikä sen
+    kariutuminen saa tehdä juuri lähetetystä allekirjoituskierroksesta
+    virhettä käyttäjän silmissä.
+  */
+  try {
+    await completeReferral(userId, new Date(now));
+  } catch (err) {
+    console.error("[signing] suosittelun täyttö epäonnistui:", err instanceof Error ? err.message : err);
+  }
 
   return { ok: true, round };
 }
