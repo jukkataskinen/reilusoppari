@@ -135,7 +135,10 @@ työtä.
    > **Puuttuu vielä DMARC.** `_dmarc.reilusoppari.fi` on tyhjä. SPF ja DKIM
    > kertovat että viesti on aito; DMARC kertoo vastaanottajalle mitä tehdä
    > kun ne eivät täsmää. Tietue ja perustelu: `auth0/README.md`.
-3. **Pohja suomeksi:** Branding → Email Templates → Verification Code.
+3. **Pohja suomeksi:** Authentication → Passwordless → **Email**, yhteyden
+   oma viestipohja. **Ei** Branding → Email Templates: se lista hoitaa
+   salasanan vaihdon, MFA:n ja sähköpostin vahvistuksen, ei
+   kirjautumiskoodia.
    Valmis pohja on repossa: `auth0/kirjautumiskoodi.liquid`. Se käyttää
    `{{ application.name }}`-muuttujaa, joten sama pohja kelpaa kaikille
    tenantin sovelluksille, ja alatunnisteen yhtiö valitaan sen mukaan.

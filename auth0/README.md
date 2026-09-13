@@ -6,7 +6,13 @@ versionhallinnassa ja muutokset näkyvät historiassa.
 
 | | |
 |---|---|
-| `kirjautumiskoodi.liquid` | Branding → Email Templates → **Verification Code** |
+| `kirjautumiskoodi.liquid` | Authentication → Passwordless → **Email** → yhteyden oma viestipohja |
+
+> **Ei Branding → Email Templates.** Passwordless-kirjautumisen viesti on
+> yhteyden omissa asetuksissa, ei tenantin pohjalistassa. Tuo lista hoitaa
+> salasanan vaihdon, MFA:n ja sähköpostin vahvistuksen — ei kirjautumiskoodia.
+> Tämä meni ensin väärin (2026-09-13), ja korjaus on kirjattu tähän, koska
+> väärä paikka ohjeessa maksaa saman ajan joka kerta.
 
 ---
 
@@ -51,7 +57,8 @@ kirjautumiseen mitenkään.
 
 ## Kohta 4: pohja ja otsikko
 
-Liitä `kirjautumiskoodi.liquid` pohjaeditoriin. Aihekenttään:
+**Authentication → Passwordless → Email.** Liitä `kirjautumiskoodi.liquid`
+viestin sisällöksi. Aiheeksi:
 
     {{ application.name }}: kirjautumiskoodi
 
@@ -63,8 +70,14 @@ Pohja käyttää `{{ application.name }}`-muuttujaa, joten sama pohja kelpaa
 kaikille tenantin sovelluksille. Alatunnisteen yhtiö valitaan sovelluksen
 mukaan: Reilusoppari on Adepta Tilat Oy:n tuote, muut Adepta Oy:n.
 
-**Testaa lähetys** Auth0:n omalla "Send test email" -napilla ennen kuin
-uskot pohjan olevan käytössä.
+**Testaaminen: kirjaudu oikeasti.** Pohjanäkymässä ei ole "Send test email"
+-nappia — se on vain Email Provider -sivulla, ja se lähettää Auth0:n oman
+testiviestin eikä tätä pohjaa. Ainoa tapa nähdä pohja on pyytää
+kirjautumiskoodi sovelluksesta.
+
+Muista myös, että sama pohja on nyt eSinetin, PPR:n ja SKOGin käytössä.
+Kirjaudu kerran johonkin niistä ja katso, että `{{ application.name }}`
+näyttää oikean nimen ja alatunniste oikean yhtiön.
 
 ---
 
