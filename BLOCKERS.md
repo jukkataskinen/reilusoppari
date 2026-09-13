@@ -117,20 +117,28 @@ sähköpostipalvelin on konfiguroitu.** Tämä lukee Auth0:n omassa varoituksess
 pohjan muokkausnäkymässä. Templaten kääntäminen ensin olisi hukkaan heitettyä
 työtä.
 
-1. **Oma sähköpostipalvelin Auth0:aan.** Resend on jo pinossa (`.env.example`).
-   Auth0: Branding → Email Provider → Resend/SMTP, lähettäjäksi
-   `noreply@reilusoppari.fi`.
+1. **Oma sähköpostipalvelin Auth0:aan.** Auth0:n valmiissa listassa ei ole
+   Resendiä, joten valitaan `SMTP`: `smtp.resend.com`, portti 465, käyttäjä
+   `resend`, salasanaksi Resendin API-avain, lähettäjäksi
+   `noreply@reilusoppari.fi`. Tarkat kentät: `auth0/README.md`.
 2. **Resendin domain-vahvistus.** SPF-, DKIM- ja DMARC-tietueet lisätään
    **Vercelin DNS-hallintaan**, koska nimipalvelimet ovat siellä. Tämä on se,
    joka poistaa kohdan 1 varoituksen — ei pelkkä lähettäjäosoitteen vaihto.
 
-   > **Tilanne 2026-09-13:** DNS toimii nyt. `reilusoppari.fi` ja
-   > `esinetti.fi` vastaavat molemmat (216.150.x.x), eli aiemmin kirjattu
-   > "Query refused" on korjattu. Sähköpostitietueita ei kuitenkaan ole
-   > yhtään: ei SPF:ää, ei DKIM:iä, ei DMARCia, ei MX:ää. Juuri siksi
-   > vastaanottajan palvelimella ei ole mitään, mitä vasten lähettäjän voisi
-   > tarkistaa. Este on siis nyt Resend-tili, ei DNS.
+   > **Tilanne 2026-09-13 (päivitetty samana päivänä): VALMIS.** DNS toimii,
+   > ja Resendin tietueet on lisätty. Todennettu julkisesta resolverista:
+   > SPF `send.reilusoppari.fi` → `v=spf1 include:amazonses.com ~all`,
+   > DKIM `resend._domainkey.reilusoppari.fi`, ja bounce-MX
+   > `send.reilusoppari.fi` → `feedback-smtp.eu-west-1.amazonses.com`
+   > (EU-alue, kuten pitääkin).
+   >
+   > **Puuttuu vielä DMARC.** `_dmarc.reilusoppari.fi` on tyhjä. SPF ja DKIM
+   > kertovat että viesti on aito; DMARC kertoo vastaanottajalle mitä tehdä
+   > kun ne eivät täsmää. Tietue ja perustelu: `auth0/README.md`.
 3. **Pohja suomeksi:** Branding → Email Templates → Verification Code.
+   Valmis pohja on repossa: `auth0/kirjautumiskoodi.liquid`. Se käyttää
+   `{{ application.name }}`-muuttujaa, joten sama pohja kelpaa kaikille
+   tenantin sovelluksille, ja alatunnisteen yhtiö valitaan sen mukaan.
 4. **Tenantin Friendly Name.** Se näkyy viestissä (kohta 3). ⚠️ Sama tenant
    palvelee eSinettiä, PPR:ää ja SKOGia, joten nimeksi EI sovi "Reilusoppari"
    vaan jokin neutraali, esim. `Adepta`.

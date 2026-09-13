@@ -1,0 +1,111 @@
+{%- comment -%}
+  Auth0: Branding → Email Templates → Verification Code (passwordless).
+
+  Liitä tämä Auth0:n pohjaeditoriin. Tiedosto on repossa siksi, että
+  hallintapaneelissa oleva teksti unohtuu — täällä se on versionhallinnassa ja
+  näkyy muutoshistoriassa.
+
+  YHTEINEN TENANT
+
+  Sama tenant palvelee Reilusopparia, eSinettiä, Adepta PPR:ää ja SKOGia,
+  joten pohja ei saa olla kenenkään näköinen yksin. Sovelluksen nimi tulee
+  `{{ application.name }}`-muuttujasta ja alatunnisteen yhtiö valitaan sen
+  mukaan: Reilusoppari on Adepta Tilat Oy:n tuote, muut Adepta Oy:n.
+
+  Jos tenantit joskus jaetaan (ks. BLOCKERS.md), ehtolauseen voi poistaa.
+
+  MUUTTUJAT
+
+  {{ code }}              kirjautumiskoodi
+  {{ application.name }}  sovellus, jolle käyttäjä kirjautuu
+
+  SÄHKÖPOSTIN HTML
+
+  Taulukot ja inline-tyylit eivät ole tyylivalinta: Outlook ei tue
+  flexboxia, gridiä eikä ulkoisia tyylitiedostoja. Sama pohja on luettava
+  myös silloin, kun kuvat on estetty — siksi tunnus on tekstiä, ei kuva.
+{%- endcomment -%}
+
+<div style="margin:0;padding:0;background:#f3f6fa;">
+  <!-- Esikatselurivi: näkyy postilaatikon listassa ennen avaamista. -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    Kirjautumiskoodisi on {{ code }}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background:#f3f6fa;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:480px;background:#ffffff;border:1px solid #dfe6f0;border-radius:16px;">
+
+          <tr>
+            <td style="padding:28px 28px 0 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0;font-size:14px;font-weight:700;color:#1b2a41;letter-spacing:-0.01em;">
+                {{ application.name }}
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:20px 28px 0 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <h1 style="margin:0;font-size:24px;line-height:1.2;font-weight:800;color:#1b2a41;letter-spacing:-0.02em;">
+                Kirjautumiskoodisi
+              </h1>
+              <p style="margin:12px 0 0 0;font-size:15px;line-height:1.6;color:#1b2a41;opacity:0.8;">
+                Kirjoita tämä koodi kirjautumissivulle.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Koodi. Välit numeroiden välissä, jotta sen voi lukea ääneen ja
+               kirjoittaa kerralla oikein. -->
+          <tr>
+            <td style="padding:20px 28px 0 28px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f3f6fa;border-radius:12px;">
+                <tr>
+                  <td align="center" style="padding:20px 12px;">
+                    <span style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:30px;font-weight:700;letter-spacing:6px;color:#1b2a41;">
+                      {{ code }}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:20px 28px 0 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#1b2a41;opacity:0.7;">
+                Koodi on voimassa muutaman minuutin. Jos et pyytänyt sitä, voit jättää
+                tämän viestin huomiotta — pelkällä sähköpostiosoitteella kukaan ei pääse
+                tilillesi.
+              </p>
+              <p style="margin:12px 0 0 0;font-size:14px;line-height:1.6;color:#1b2a41;opacity:0.7;">
+                Emme kysy koodia puhelimessa emmekä sähköpostilla. Älä kerro sitä kenellekään.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:24px 28px 28px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <div style="border-top:1px solid #dfe6f0;padding-top:16px;">
+                <p style="margin:0;font-size:12px;line-height:1.6;color:#1b2a41;opacity:0.55;">
+                  {% if application.name == 'Reilusoppari' %}
+                    Adepta Tilat Oy · Y-tunnus 2145627-7<br>
+                    Yhdystie 4, 19650 Joutsa
+                  {% else %}
+                    Adepta Oy · Y-tunnus 2237131-2<br>
+                    Yhdystie 4, 19650 Joutsa
+                  {% endif %}
+                </p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>
