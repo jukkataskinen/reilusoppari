@@ -135,10 +135,15 @@ työtä.
    > **Puuttuu vielä DMARC.** `_dmarc.reilusoppari.fi` on tyhjä. SPF ja DKIM
    > kertovat että viesti on aito; DMARC kertoo vastaanottajalle mitä tehdä
    > kun ne eivät täsmää. Tietue ja perustelu: `auth0/README.md`.
-3. **Pohja suomeksi:** Authentication → Passwordless → **Email**, yhteyden
-   oma viestipohja. **Ei** Branding → Email Templates: se lista hoitaa
-   salasanan vaihdon, MFA:n ja sähköpostin vahvistuksen, ei
+3. **Pohja suomeksi JA lähettäjä:** Authentication → Passwordless →
+   **Email**, yhteyden omat asetukset. **Ei** Branding → Email Templates: se
+   lista hoitaa salasanan vaihdon, MFA:n ja sähköpostin vahvistuksen, ei
    kirjautumiskoodia.
+
+   ⚠️ Yhteydellä on **oma From**, oletuksena `root@auth0.com`, ja se ohittaa
+   Email Provider -sivun asetuksen. Jos sitä ei vaihda, kirjautumiskoodi ei
+   tule perille lainkaan vaikka testiviesti toimisi. Todennettu Resendin
+   lokista 2026-09-13. Ks. `auth0/README.md`.
    Valmis pohja on repossa: `auth0/kirjautumiskoodi.liquid`. Se käyttää
    `{{ application.name }}`-muuttujaa, joten sama pohja kelpaa kaikille
    tenantin sovelluksille, ja alatunnisteen yhtiö valitaan sen mukaan.

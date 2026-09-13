@@ -57,10 +57,30 @@ kirjautumiseen mitenkään.
 
 ## Kohta 4: pohja ja otsikko
 
-**Authentication → Passwordless → Email.** Liitä `kirjautumiskoodi.liquid`
-viestin sisällöksi. Aiheeksi:
+**Authentication → Passwordless → Email.** Samassa näkymässä on kolme
+kenttää, ja kaikki kolme on asetettava:
 
-    {{ application.name }}: kirjautumiskoodi
+| Kenttä | Arvo |
+|---|---|
+| From | `noreply@reilusoppari.fi` |
+| Subject | `{{ application.name }}: kirjautumiskoodi` |
+| Message | `kirjautumiskoodi.liquid` kokonaisuudessaan |
+
+> ⚠️ **From on kahdessa paikassa, ja yhteyden kenttä voittaa.**
+>
+> Email Provider -sivun From on tenantin oletus. Passwordless-yhteydellä on
+> oma From, jonka oletus on `root@auth0.com`, ja **se ohittaa tenantin
+> oletuksen**.
+>
+> Todennettu 2026-09-13 Resendin lokista: vaikka Email Provider -sivulla luki
+> `noreply@reilusoppari.fi`, lähtevän viestin otsikkorivi oli
+> `"Reilusoppari" <root@auth0.com>`. Resend lähettää vain vahvistetuista
+> domaineista, joten viesti ei mennyt perille — eikä olisi mennyt vaikka
+> menisi, koska `auth0.com`:lla on oma DMARC-politiikkansa.
+>
+> Oire on harhaanjohtava: Email Provider -sivun "Send Test Email" toimii,
+> koska se käyttää tenantin oletusta. Kirjautumiskoodi ei tule, koska se
+> käyttää yhteyden omaa kenttää.
 
 Koodi on tarkoituksella **jätetty pois aiheesta**, vaikka se olisi
 kätevämpää puhelimessa. Aihe näkyy lukitusnäytön ilmoituksessa, ja
