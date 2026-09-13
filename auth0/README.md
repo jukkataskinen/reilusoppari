@@ -6,7 +6,14 @@ versionhallinnassa ja muutokset näkyvät historiassa.
 
 | | |
 |---|---|
+| `AJO-OHJE.md` | **Reilusopparin siirto omaan tenanttiin** — aloita tästä |
 | `kirjautumiskoodi.liquid` | Authentication → Passwordless → **Email** → yhteyden oma viestipohja |
+| `../scripts/auth0-asetukset.mts` | Asettaa uuden tenantin Management API:n kautta |
+
+> **Uutta tenanttia pystyttäessä älä seuraa alla olevia käsiohjeita.** Skripti
+> tekee saman toistettavasti ja kieltäytyy ajamasta väärään tenanttiin:
+> `auth0/AJO-OHJE.md`. Alla olevat ohjeet ovat nykyisen, käsin tehdyn tenantin
+> dokumentaatiota.
 
 > **Ei Branding → Email Templates.** Passwordless-kirjautumisen viesti on
 > yhteyden omissa asetuksissa, ei tenantin pohjalistassa. Tuo lista hoitaa

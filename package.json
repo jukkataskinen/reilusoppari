@@ -19,7 +19,8 @@
     "tarkista:selainpaketti": "node scripts/tarkista-selainpaketti.mjs",
     "raportti:sailytys": "tsx scripts/raportti-sailytys.mts",
     "testi:vuokraherätteet": "tsx scripts/testaa-vuokraheratteet.mts",
-    "testi:allekirjoitus": "tsx scripts/testaa-allekirjoitus.mts"
+    "testi:allekirjoitus": "tsx scripts/testaa-allekirjoitus.mts",
+    "auth0:asetukset": "tsx scripts/auth0-asetukset.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
