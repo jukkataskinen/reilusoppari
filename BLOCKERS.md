@@ -123,6 +123,13 @@ työtä.
 2. **Resendin domain-vahvistus.** SPF-, DKIM- ja DMARC-tietueet lisätään
    **Vercelin DNS-hallintaan**, koska nimipalvelimet ovat siellä. Tämä on se,
    joka poistaa kohdan 1 varoituksen — ei pelkkä lähettäjäosoitteen vaihto.
+
+   > **Tilanne 2026-09-13:** DNS toimii nyt. `reilusoppari.fi` ja
+   > `esinetti.fi` vastaavat molemmat (216.150.x.x), eli aiemmin kirjattu
+   > "Query refused" on korjattu. Sähköpostitietueita ei kuitenkaan ole
+   > yhtään: ei SPF:ää, ei DKIM:iä, ei DMARCia, ei MX:ää. Juuri siksi
+   > vastaanottajan palvelimella ei ole mitään, mitä vasten lähettäjän voisi
+   > tarkistaa. Este on siis nyt Resend-tili, ei DNS.
 3. **Pohja suomeksi:** Branding → Email Templates → Verification Code.
 4. **Tenantin Friendly Name.** Se näkyy viestissä (kohta 3). ⚠️ Sama tenant
    palvelee eSinettiä, PPR:ää ja SKOGia, joten nimeksi EI sovi "Reilusoppari"
@@ -132,6 +139,33 @@ Huom kohta 4: yhteinen tenant tarkoittaa myös yhteistä sähköpostipohjaa. Jos
 viestin on oltava Reilusopparin näköinen ja eSinetin viestin eSinetin
 näköinen, se vaatii joko tenantin jakamisen tai pohjan, joka käyttää
 `{{ application.name }}`-muuttujaa kaikkialla missä nyt on tenantin nimi.
+
+### Yhtiöjako muuttaa tämän painavammaksi (2026-09-13)
+
+Reilusoppari on nyt **Adepta Tilat Oy:n** (2145627-7) tuote ja eSinetti
+**Adepta Oy:n** (2237131-2). Yhteinen Auth0-tenant tarkoittaa siis, että
+toisen yhtiön tunnistuspalvelu hoitaa toisen yhtiön asiakkaiden
+kirjautumisen.
+
+Kaksi seurausta, jotka eivät ole muotoseikkoja:
+
+**1. Sähköpostipalvelin on tenant-laajuinen.** Jos lähettäjäksi asetetaan
+`noreply@reilusoppari.fi`, myös eSinetin, PPR:n ja SKOGin kirjautumiskoodit
+lähtevät Adepta Tilat Oy:n domainista. Toisin päin sama ongelma. Kierto:
+vahvista Resendissä useampi domain ja käytä lähettäjäkentässä Liquidia
+(`{{ application.name }}`) — **tämä on testattava**, sillä Auth0:n
+dokumentaatio lupaa muuttujat mutta ei ehtolauseita.
+
+**2. Tietosuoja.** Kun Adepta Oy:n tenant käsittelee Adepta Tilat Oy:n
+käyttäjien sähköpostiosoitteita ja kirjautumistapahtumia, se on
+henkilötietojen käsittelijä — eri oikeushenkilönä, eli GDPR 28 art. vaatii
+kirjallisen sopimuksen. Sama koskee eSinettiä allekirjoituksissa
+(`reilusoppari-web/BLOCKERS.md`).
+
+**Päätettävä ennen EU-siirtoa:** yksi tenant vai kaksi. Siirto on jo päätetty
+tehtäväksi, ja se on luonteva hetki jakaa tenantit, jos ne jaetaan. Toinen
+tenant maksaa 35 $/kk — se on hinta siitä, ettei kahden yhtiön
+käyttäjähallinta ole samassa laatikossa.
 
 ## Auth0: siirto EU-tenanttiin — PÄÄTETTY 2026-09-11, ajankohta avoin
 
