@@ -91,7 +91,13 @@ julkaistu sivu on paikanvaraaja, mutta heti kun tietokantakerros otetaan
 käyttöön näkymissä, deploy tarvitsee ainakin `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY` ja `SUPABASE_ANON_KEY`.
 
-## Kirjautumissähköposti on nykyisellään huono — korjattava ennen lanseerausta
+## Kirjautumissähköposti — KORJATTU 2026-09-13
+
+**Todennettu: koodi tulee perille ja on suomeksi.** Lähettäjä on
+`noreply@reilusoppari.fi`, Resendin kautta, SPF ja DKIM kunnossa.
+
+Alla oleva kuvaus on ongelmasta sellaisena kuin se oli, ja korjausohje on
+`auth0/README.md`:ssä. Kaksi asiaa jäi vielä auki, ks. tämän luvun loppu.
 
 Havaittu 2026-09-11 oikeasta viestistä. Neljä erillistä ongelmaa, joista
 ensimmäinen on vakavin:
@@ -155,6 +161,20 @@ Huom kohta 4: yhteinen tenant tarkoittaa myös yhteistä sähköpostipohjaa. Jos
 viestin on oltava Reilusopparin näköinen ja eSinetin viestin eSinetin
 näköinen, se vaatii joko tenantin jakamisen tai pohjan, joka käyttää
 `{{ application.name }}`-muuttujaa kaikkialla missä nyt on tenantin nimi.
+
+### Jäljellä korjauksen jälkeen (2026-09-13)
+
+**1. DMARC puuttuu.** `_dmarc.reilusoppari.fi` on tyhjä. SPF ja DKIM
+kertovat, että viesti on aito; DMARC kertoo vastaanottajalle, mitä tehdä kun
+ne eivät täsmää, ja tuo raportit siitä kuka domainin nimissä lähettää.
+Tietue ja perustelu `p=none`-aloitukselle: `auth0/README.md`.
+
+**2. Muiden sovellusten viestit muuttuivat samalla.** eSinetti, Adepta PPR ja
+SKOG käyttävät samaa yhteyttä, joten niiden kirjautumiskoodit lähtevät nyt
+osoitteesta `noreply@reilusoppari.fi` ja samasta pohjasta. Pohja lukee
+sovelluksen nimen `{{ application.name }}`-muuttujasta ja valitsee
+alatunnisteen yhtiön sen mukaan, mutta **tätä ei ole vielä todennettu
+kirjautumalla**. Yksi kirjautuminen eSinettiin riittää.
 
 ### Yhtiöjako muuttaa tämän painavammaksi (2026-09-13)
 
