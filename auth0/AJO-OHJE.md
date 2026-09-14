@@ -1,9 +1,10 @@
 # Reilusoppari omaan Auth0-tenanttiin
 
-> **Tila 2026-09-14:** vaiheet 1 ja 3–8 tehty. Kirjautuminen toimii
-> uudessa tenantissa `reilusoppari.eu.auth0.com`: koodi tulee perille
-> suomeksi. **Kesken:** vaihe 2 (vanhan tenantin nimi), vaihe 9 (Vercel) ja
-> vaihe 10 (eSinetin tarkistus, DMARC).
+> **Tila 2026-09-14:** vaiheet 1–8 tehty. Kirjautuminen toimii uudessa
+> tenantissa `reilusoppari.eu.auth0.com`: koodi tulee perille suomeksi.
+> Vanhan tenantin Friendly Name on `Adepta`, ja eSinetin kirjautumissivulla
+> lukee nyt "Syötä Adepta-salasanasi" (todennettu). **Kesken:** vaihe 9
+> (Vercel) ja DMARC.
 
 Tämä on ajo-ohje, ei taustapaperi. Perustelut ovat `BLOCKERS.md`:ssä.
 

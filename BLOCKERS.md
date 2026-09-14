@@ -213,8 +213,11 @@ kirjautumiskoodi tulee perille suomeksi ja kirjautuminen onnistuu.
 Käyttäjiä ei siirretty: 66 testiriviä ja 2 Jukan omaa jäivät vanhoille
 `auth0_sub`-tunnisteille. Uudessa tenantissa kirjautuja on uusi käyttäjä.
 
-**Kesken:** Vercelin ympäristömuuttujat (tuotanto osoittaa yhä vanhaan
-tenanttiin), vanhan tenantin nimi → Adepta, eSinetin kirjautumisen tarkistus.
+Vanhan tenantin Friendly Name vaihdettu `Adepta`:ksi; eSinetin
+kirjautumissivulla lukee nyt "Syötä Adepta-salasanasi" (todennettu).
+
+**Kesken:** Vercelin ympäristömuuttujat — tuotanto osoittaa yhä vanhaan
+tenanttiin. Lisäksi DMARC.
 
 Alla oleva siirtosuunnitelma koskee enää eSinettiä, PPR:ää ja SKOGia.
 
