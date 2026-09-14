@@ -203,6 +203,21 @@ tehtäväksi, ja se on luonteva hetki jakaa tenantit, jos ne jaetaan. Toinen
 tenant maksaa 35 $/kk — se on hinta siitä, ettei kahden yhtiön
 käyttäjähallinta ole samassa laatikossa.
 
+## Auth0: Reilusoppari omassa EU-tenantissa — TEHTY 2026-09-14
+
+Reilusopparilla on oma Auth0-tili (`info@adeptatilat.fi`, Adepta Tilat Oy) ja
+sillä tenantti `reilusoppari.eu.auth0.com`, alue EU-2, ilmaistaso. Asetettu
+skriptillä `npm run auth0:asetukset`; ohje `auth0/AJO-OHJE.md`. Todennettu:
+kirjautumiskoodi tulee perille suomeksi ja kirjautuminen onnistuu.
+
+Käyttäjiä ei siirretty: 66 testiriviä ja 2 Jukan omaa jäivät vanhoille
+`auth0_sub`-tunnisteille. Uudessa tenantissa kirjautuja on uusi käyttäjä.
+
+**Kesken:** Vercelin ympäristömuuttujat (tuotanto osoittaa yhä vanhaan
+tenanttiin), vanhan tenantin nimi → Adepta, eSinetin kirjautumisen tarkistus.
+
+Alla oleva siirtosuunnitelma koskee enää eSinettiä, PPR:ää ja SKOGia.
+
 ## Auth0: siirto EU-tenanttiin — PÄÄTETTY 2026-09-11, ajankohta avoin
 
 Jukan päätös: kaikki viisi sovellusta siirretään uuteen EU-alueen tenanttiin

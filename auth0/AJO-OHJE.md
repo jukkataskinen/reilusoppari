@@ -1,5 +1,10 @@
 # Reilusoppari omaan Auth0-tenanttiin
 
+> **Tila 2026-09-14:** vaiheet 1 ja 3–8 tehty. Kirjautuminen toimii
+> uudessa tenantissa `reilusoppari.eu.auth0.com`: koodi tulee perille
+> suomeksi. **Kesken:** vaihe 2 (vanhan tenantin nimi), vaihe 9 (Vercel) ja
+> vaihe 10 (eSinetin tarkistus, DMARC).
+
 Tämä on ajo-ohje, ei taustapaperi. Perustelut ovat `BLOCKERS.md`:ssä.
 
 **Lopputulos:** Reilusopparilla on oma EU-alueen tenantti. eSinetti, Adepta
@@ -251,7 +256,8 @@ luetaan käynnistyksessä, joten pelkkä tallennus ei riitä.
 - [ ] Kirjaudu `app.reilusoppari.fi`:hin ja tarkista että toimii
 - [ ] Kirjaudu **eSinettiin** ja tarkista että sekin toimii — vanha tenantti
       ei saanut muuttua
-- [ ] Merkitse 35 $/kk `KUSTANNUKSET.md`:hen
+- [ ] ~~Merkitse 35 $/kk~~ — ei maksua: oma tili ilmaistasolla (`reilusoppari-web/KUSTANNUKSET.md`)
+- [ ] Vanhan tenantin passwordless-yhteydessä lähettäjä on yhä `noreply@reilusoppari.fi` ja pohjassa Reilusoppari-ehtolause. Vaihda lähettäjä neutraaliksi, kun eSinetille on oma lähetysdomain
 - [ ] Lisää DMARC, jos ei ole vielä (`auth0/README.md`)
 
 ---
