@@ -105,15 +105,21 @@ Palaa **uuteen** tenanttiin. Applications → **Create Application**:
 | Type | **Machine to Machine** |
 | API | **Auth0 Management API** |
 
-Oikeuksiksi (scopes) nämä kymmenen:
+Oikeuksiksi (scopes) nämä:
 
 ```
-read:clients      create:clients      update:clients
-read:connections  update:connections
-read:tenant_settings  update:tenant_settings
-read:prompts      update:prompts
-read:email_provider   create:email_provider   update:email_provider
+read:clients              create:clients          update:clients
+read:connections          update:connections
+read:connections_options  update:connections_options
+read:tenant_settings      update:tenant_settings
+read:prompts              update:prompts
+read:email_provider       create:email_provider   update:email_provider
 ```
+
+> `update:connections_options` on erillinen oikeus, eikä `update:connections`
+> riitä sen tilalle. Ilman sitä skripti tekee kaiken muun ja kaatuu vasta
+> viimeiseen vaiheeseen virheellä *"Updating the options property requires the
+> update:connections_options scope"*. Todennettu 2026-09-14.
 
 > Anna vain nämä. "Select All" antaisi skriptille oikeuden poistaa käyttäjiä
 > ja sovelluksia — oikeuksia, joita se ei käytä eikä tarvitse.

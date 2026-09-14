@@ -297,6 +297,54 @@ async function asetaSahkopostipalvelin(): Promise<void> {
 }
 
 /**
+ * Yhteyden ja sovelluksen kytkentä.
+ *
+ * Auth0 siirsi tämän omaan päätepisteeseensä: `enabled_clients` yhteyden
+ * päivityksessä tuottaa nyt virheen "Additional properties not allowed".
+ * Vanha muoto on silti käytössä osassa tenantteja, joten uutta kokeillaan
+ * ensin ja vanhaan palataan vain jos päätepistettä ei ole.
+ */
+async function haeYhteydenAsiakkaat(
+  yhteysId: string,
+  vanhaKentta: string[] | undefined,
+): Promise<Set<string>> {
+  try {
+    const vastaus = await kutsu<{ clients?: Array<{ client_id: string }> } | Array<{ client_id: string }>>(
+      "GET",
+      `/connections/${yhteysId}/clients`,
+    );
+    const lista = Array.isArray(vastaus) ? vastaus : (vastaus.clients ?? []);
+    return new Set(lista.map((rivi) => rivi.client_id));
+  } catch {
+    return new Set(vanhaKentta ?? []);
+  }
+}
+
+/** Kytkee sovelluksen yhteyteen päälle tai pois. */
+async function kytkeAsiakas(
+  yhteysId: string,
+  clientId: string,
+  paalle: boolean,
+): Promise<void> {
+  try {
+    await kutsu("PATCH", `/connections/${yhteysId}/clients`, [
+      { client_id: clientId, status: paalle },
+    ]);
+  } catch (virhe) {
+    // Vanha tenantti: kytkentä on yhteyden oma kenttä.
+    const yhteys = await kutsu<{ enabled_clients?: string[] }>("GET", `/connections/${yhteysId}`);
+    const nyt = new Set(yhteys.enabled_clients ?? []);
+
+    if (paalle) nyt.add(clientId);
+    else nyt.delete(clientId);
+
+    await kutsu("PATCH", `/connections/${yhteysId}`, { enabled_clients: [...nyt] }).catch(() => {
+      throw virhe;
+    });
+  }
+}
+
+/**
  * Passwordless-sähköpostiyhteys.
  *
  * Asetukset luetaan ensin ja kirjoitetaan siihen muotoon, jossa ne jo ovat:
@@ -340,17 +388,17 @@ async function asetaYhteys(clientId: string): Promise<void> {
     `passwordless-yhteys: lähettäjä, aihe ja pohja (${sisakkainen ? "options.email" : "options"})`,
   );
 
-  const asiakkaat = new Set([...(yhteys.enabled_clients ?? []), clientId].filter(Boolean));
-  if (clientId && !(yhteys.enabled_clients ?? []).includes(clientId)) {
-    kerro(`passwordless-yhteys päälle sovellukselle ${SOVELLUS}`);
-  }
+  const asiakkaat = await haeYhteydenAsiakkaat(yhteys.id, yhteys.enabled_clients);
+  const kytkettava = Boolean(clientId) && !asiakkaat.has(clientId);
+
+  if (kytkettava) kerro(`passwordless-yhteys päälle sovellukselle ${SOVELLUS}`);
 
   if (!aja) return;
 
-  await kutsu("PATCH", `/connections/${yhteys.id}`, {
-    options,
-    enabled_clients: [...asiakkaat],
-  });
+  // Asetukset ja kytkentä ovat eri kutsuja: `enabled_clients` yhteyden
+  // päivityksessä tuottaa virheen "Additional properties not allowed".
+  await kutsu("PATCH", `/connections/${yhteys.id}`, { options });
+  if (kytkettava) await kytkeAsiakas(yhteys.id, clientId, true);
 }
 
 /** Salasanayhteys pois sovellukselta: Reilusopparissa ei ole salasanoja. */
@@ -363,15 +411,13 @@ async function poistaSalasanayhteys(clientId: string): Promise<void> {
   );
 
   for (const yhteys of yhteydet) {
-    const kaytossa = yhteys.enabled_clients ?? [];
-    if (!kaytossa.includes(clientId)) continue;
+    const kaytossa = await haeYhteydenAsiakkaat(yhteys.id, yhteys.enabled_clients);
+    if (!kaytossa.has(clientId)) continue;
 
     kerro(`tietokantayhteys ${yhteys.name} pois sovellukselta ${SOVELLUS}`);
     if (!aja) continue;
 
-    await kutsu("PATCH", `/connections/${yhteys.id}`, {
-      enabled_clients: kaytossa.filter((id) => id !== clientId),
-    });
+    await kytkeAsiakas(yhteys.id, clientId, false);
   }
 }
 
