@@ -108,24 +108,29 @@ näyttää oikean nimen ja alatunniste oikean yhtiön.
 
 ---
 
-## DMARC puuttuu vielä
+## DMARC — lisätty 2026-09-14
 
-`_dmarc.reilusoppari.fi` on tyhjä. SPF ja DKIM kertovat, että viesti on aito;
-DMARC kertoo vastaanottajalle, mitä tehdä kun ne eivät täsmää — ja pyytää
-raportit, joista näkee kuka domainin nimissä lähettää.
+Todennettu Googlen, Cloudflaren ja Vercelin nimipalvelimista:
 
-Lisää Vercelin DNS-hallintaan:
+    _dmarc.reilusoppari.fi  TXT  "v=DMARC1; p=none; rua=mailto:dmarc@reilusoppari.fi"
 
-| | |
-|---|---|
-| Nimi | `_dmarc` |
-| Tyyppi | `TXT` |
-| Arvo | `v=DMARC1; p=none; rua=mailto:dmarc@reilusoppari.fi` |
+SPF, DKIM ja DMARC ovat nyt kaikki paikallaan.
 
-**Aloita `p=none`:sta.** Se ei hylkää mitään vaan kerää raportit. Kun
-raporteista näkee, että kaikki oma liikenne menee läpi, voi kiristää
-`p=quarantine`-tilaan ja lopulta `p=reject`iin. Suoraan `p=reject` estäisi
-myös oman postin, jos jokin lähetyskanava on unohtunut.
+**Raportit eivät mene perille.** `reilusoppari.fi`:llä ei ole MX-tietuetta,
+joten `dmarc@reilusoppari.fi` ei vastaanota postia. Tämä ei estä mitään —
+`p=none` ei hylkää viestejä, ja kirjautumiskoodit menevät perille — mutta
+raporteista ei näe, kuka domainin nimissä lähettää.
 
-`rua`-osoitteen pitää olla olemassa. Jos `reilusoppari.fi`-osoitteisiin ei
-oteta postia vastaan, käytä osoitetta, johon se menee perille.
+Raportteja tarvitaan vasta ennen kiristystä (`p=quarantine` → `p=reject`).
+Silloin:
+
+1. Vaihda `rua` osoitteeseen, johon posti tulee, esim.
+   `mailto:info@adeptatilat.fi`
+2. Toisen domainin osoite vaatii sen domainin luvan. Lisää
+   **adeptatilat.fi**:n DNS:ään:
+
+       reilusoppari.fi._report._dmarc.adeptatilat.fi  TXT  "v=DMARC1"
+
+   Ilman tätä raportoijat hylkäävät osoitteen hiljaa.
+3. Seuraa raportteja pari viikkoa ennen kuin kiristät. Suoraan `p=reject`
+   estäisi myös oman postin, jos jokin lähetyskanava on unohtunut.

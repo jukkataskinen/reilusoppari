@@ -203,7 +203,7 @@ tehtäväksi, ja se on luonteva hetki jakaa tenantit, jos ne jaetaan. Toinen
 tenant maksaa 35 $/kk — se on hinta siitä, ettei kahden yhtiön
 käyttäjähallinta ole samassa laatikossa.
 
-## Auth0: Reilusoppari omassa EU-tenantissa — TEHTY 2026-09-14
+## Auth0: Reilusoppari omassa EU-tenantissa — VALMIS 2026-09-14
 
 Reilusopparilla on oma Auth0-tili (`info@adeptatilat.fi`, Adepta Tilat Oy) ja
 sillä tenantti `reilusoppari.eu.auth0.com`, alue EU-2, ilmaistaso. Asetettu
@@ -231,8 +231,12 @@ Auth0:n tunnisteen muutos jättää käyttäjän tiedot hiljaa näkymättömiin.
 Vanhan tenantin Friendly Name vaihdettu `Adepta`:ksi; eSinetin
 kirjautumissivulla lukee nyt "Syötä Adepta-salasanasi" (todennettu).
 
-**Kesken:** Vercelin ympäristömuuttujat — tuotanto osoittaa yhä vanhaan
-tenanttiin. Lisäksi DMARC.
+Vercelin ympäristömuuttujat vaihdettu ja uudelleenjulkaistu: tuotannon
+kirjautuminen toimii uudessa tenantissa (todennettu). DMARC lisätty. E2e
+32/32 ja yksikkötestit 626/626 läpi.
+
+**Siirto on valmis.** Ainoa avoin asia on DMARC-raporttien vastaanotto
+(`auth0/README.md`), jota tarvitaan vasta ennen säännön kiristystä.
 
 Alla oleva siirtosuunnitelma koskee enää eSinettiä, PPR:ää ja SKOGia.
 
