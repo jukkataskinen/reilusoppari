@@ -27,21 +27,53 @@ vanhan tilanteen.
 
 ---
 
-## 1. Uusi tenantti
+## 1. Uusi tili ja tenantti
 
-Auth0:n hallintapaneeli → vasemmalta ylhäältä tenantin nimi → **Create tenant**
+**Reilusoppari tarvitsee oman Auth0-tilin, ei vain omaa tenanttia.**
+Ilmaistasolle mahtuu yksi tenantti per tili, ja maksullinen taso on kallis
+(2026-09-14: 5 000 käyttäjää = 350 $/kk, ks. `reilusoppari-web/KUSTANNUKSET.md`).
+Toinen tili saa oman ilmaistasonsa: 1 tenantti ja 25 000 käyttäjää, 0 €.
+
+Se vastaa myös yhtiörakennetta — Reilusoppari on Adepta Tilat Oy:n tuote.
+Tili luotiin osoitteella `info@adeptatilat.fi`.
+
+Kirjaudu **yksityisessä selainikkunassa**, jotta vanhan tilin istunto pysyy
+auki toisessa ikkunassa.
+
+### Kolme ansaa, jotka maksoivat kolme yritystä (2026-09-14)
+
+**1. Rekisteröityminen luo tenantin itse.** Auth0 tekee ensimmäisen tenantin
+automaattisesti kysymättä: nimeksi tulee `dev-3tmsn0x6ccc7awwc` ja alueeksi
+**US**. Kumpaakaan ei voi muuttaa jälkikäteen.
+
+**2. Uutta ei voi luoda ennen kuin vanha on poistettu.** Ilmaistason raja on
+yksi tenantti, joten järjestys on pakotettu: **poista ensin, luo sitten.**
+Poisto on Tenant Settings → **Advanced** → alalaita, ei Generalissa.
+
+**3. Create tenant -dialogissa nimikenttä on ylimpänä, ruudun ulkopuolella.**
+Pienellä näytöllä näkyvät vain Environment Tag ja Region. Jos nimikenttää ei
+täytä, Auth0 generoi taas `dev-`-alkuisen nimen — ja se näkyy käyttäjälle
+kirjautumisosoitteessa. **Vieritä dialogia ylöspäin.**
+
+### Luonti
+
+Vasemmalta ylhäältä tenantin nimi → **Create tenant**
 
 | Kenttä | Arvo |
 |---|---|
-| Domain | `reilusoppari` (siitä tulee `reilusoppari.eu.auth0.com`) |
-| Region | **EU** |
-| Environment | Production |
+| Tenant Domain | `reilusoppari` (siitä tulee `reilusoppari.eu.auth0.com`) |
+| Region | **Europe** |
+| Environment | Production, tai Development jos Production on estetty |
 
-> **Region on ainoa valinta, jota ei voi myöhemmin muuttaa.** Tenantin alue on
-> pysyvä. Väärä valinta tarkoittaa koko tämän ohjeen ajamista uudelleen.
+> **Nimi ja alue ovat pysyviä.** Kumpaakaan ei voi muuttaa jälkikäteen.
+> Environment Tagin voi vaihtaa myöhemmin.
 
-Tässä vaiheessa maksullinen taso otetaan käyttöön (35 $/kk), koska ilmaistaso
-kattaa yhden tenantin ja niitä on nyt kaksi.
+Tarkista lopuksi Tenant Settings → General: pitää lukea `reilusoppari` ja
+`EU-2`. Osoiterivillä pitää lukea `/dashboard/eu/reilusoppari/`.
+
+**Älä syötä laskutustietoja.** Uudella tilillä on 22 päivän kokeilujakso
+maksullisiin ominaisuuksiin. Sen päätyttyä tili putoaa ilmaistasolle
+itsestään, ja juuri sitä halutaan.
 
 ---
 
