@@ -213,6 +213,21 @@ kirjautumiskoodi tulee perille suomeksi ja kirjautuminen onnistuu.
 Käyttäjiä ei siirretty: 66 testiriviä ja 2 Jukan omaa jäivät vanhoille
 `auth0_sub`-tunnisteille. Uudessa tenantissa kirjautuja on uusi käyttäjä.
 
+Todennettu 2026-09-14 tuotannossa: kirjautuminen loi Jukan `adepta.fi`-
+osoitteelle **toisen** `rs_users`-rivin (sähköposti ei ole uniikki,
+`auth0_sub` on). Demoasunto, vuokrasuhde ja 8 kuvaa ovat tallessa vanhalla
+rivillä. `kunnollinen.fi`-osoite (vuokralaisena samassa vuokrasuhteessa)
+saa saman kohtelun ensimmäisellä kirjautumisella.
+
+Jukan linjaus: demoasuntoja ei välttämättä tarvita, joten kytkentää ei
+tehty. Jos tarvitaan: poista uusi tyhjä rivi ja kirjoita sen `auth0_sub`
+vanhalle riville. Vanha `id` säilyy, joten kaikki viittaukset toimivat
+sellaisenaan.
+
+**Ennen oikeita käyttäjiä kannattaa harkita**, pitäisikö kirjautumisen
+yhdistää saman sähköpostin rivit automaattisesti. Nyt tenantin vaihto tai
+Auth0:n tunnisteen muutos jättää käyttäjän tiedot hiljaa näkymättömiin.
+
 Vanhan tenantin Friendly Name vaihdettu `Adepta`:ksi; eSinetin
 kirjautumissivulla lukee nyt "Syötä Adepta-salasanasi" (todennettu).
 
