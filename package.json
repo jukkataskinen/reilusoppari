@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "esinetti:sync-client": "tsx scripts/sync-esinetti-client.mts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
