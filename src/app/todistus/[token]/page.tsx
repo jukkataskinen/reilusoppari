@@ -1,8 +1,14 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { findCertificateByShare } from "@/lib/db/certificates";
 import { resolveShare } from "@/lib/db/certificate-contact";
 import { AppShell } from "@/components/AppShell";
+import {
+  checkLinkRateLimit,
+  JAKOLINKKIRAJA,
+  LINKKIRAJA_VIESTI,
+} from "@/lib/security/link-rate-limit";
 
 export const metadata: Metadata = {
   title: "Vuokratodistus",
@@ -32,6 +38,20 @@ export default async function SharedCertificatePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+
+  // Raja ennen hakua. Katselukerta ei kasva, jos sivua ei näytetä.
+  const { allowed } = await checkLinkRateLimit(await headers(), JAKOLINKKIRAJA);
+  if (!allowed) {
+    return (
+      <AppShell nav={false} signedIn={false}>
+        <div className="py-10">
+          <h1 className="text-2xl">Odota hetki</h1>
+          <p className="mt-3 text-ink/70">{LINKKIRAJA_VIESTI}</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   const certificate = await findCertificateByShare(token);
 
   /*

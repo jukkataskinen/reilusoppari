@@ -5,6 +5,27 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Kutsu- ja jakolinkkien raja verkko-osoitteen mukaan (2026-09-26)
+
+Linkin avaaja ei ole kirjautunut, joten raja lasketaan verkko-osoitteesta.
+Oma taulu `rs_kutsurajat_linkit` (migraatio 0016), koska 0015:n taulu
+viittaa käyttäjään.
+
+**IP-osoitetta ei tallenneta.** Avain on HMAC(salaisuus, päivä + IP):
+salaisuus estää kääntämisen kokeilemalla kaikki osoitteet, päivä estää
+rivien yhdistämisen päivien yli, ja rivit poistetaan vuorokaudessa.
+Salaisuus johdetaan `INVITE_TOKEN_SECRET`:stä, jottei Verceliin tarvita uutta
+muuttujaa, jonka unohtuminen kytkisi rajan hiljaa pois.
+
+**60 avausta 10 minuutissa, erikseen kutsu- ja jakolinkeille.** Mobiiliverkot
+jakavat julkisen osoitteen monelle (CGNAT), joten tiukka raja osuisi oikeaan
+vuokralaiseen. Raja on silmukkaa ja hakkausta vastaan. Todistussivu ja sen
+PDF kuluttavat samaa laskuria.
+
+Kuten käyttäjäkohtaisessa rajassa, epäonnistunut tarkistus päästää läpi ja
+kirjaa lokiin — ilman osoitetta ja tunnistetta.
+
+
 ## Identifier First -kirjautumistyyli koko tenantille (2026-09-11)
 
 Passwordless-sähköpostikirjautuminen ei toiminut, vaikka yhteys oli kytketty

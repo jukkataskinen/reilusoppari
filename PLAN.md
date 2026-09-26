@@ -23,6 +23,7 @@ tekstit muutetaan silloin — laajuutta ei karsita etukäteen.
 | eSinetti-tenant `reilusoppari` + API-avain | odottaa Jukkaa | oikea eSinetti-yhteys (mock riittää siihen asti) |
 | ~~Migraatio `0009`~~ tarvitaan yhä | odottaa Jukkaa | `/documents/seal` (allekirjoittamattomat todistukset) |
 | Supabase, Auth0, Vercel, Stripe, VAPID | odottaa Jukkaa | vaihe 0:n DoD |
+| Migraatio `0016` (linkkien kutsuraja) live-Supabaseen | odottaa Jukkaa | kutsu- ja jakolinkkien raja (linkit toimivat ilman) |
 
 Mock-toteutus `lib/esinetti/`:ssä tarkoittaa, että vaiheet 0–1 etenevät ilman
 eSinetti-tunnuksia. Vasta oikea läpivienti vaatii ne.
@@ -216,10 +217,11 @@ kuuluvat valmiiseen tuotteeseen.
 - [x] Kutsuraja kuitin luvulle, 20/min — ainoa reitti jossa kutsu maksaa rahaa
 - [x] Omien tietojen vienti zipinä (tietosuoja-asetus art. 20)
 - [x] Kaksi vahtia avaimen vuotamista vastaan: lähdekoodi ja selainpaketti
-- [ ] Kutsulinkkien kutsuraja — vaatii IP-kohtaisen rajan, jota nykyinen
-      käyttäjäkohtainen taulu ei ilmaise. Tunnus on 256-bittinen ja
-      tiivisteenä, joten arvaaminen ei ole realistinen uhka; kyse olisi
-      kuormituksen rajaamisesta
+- [x] Kutsulinkkien kutsuraja: IP-kohtainen, 60 / 10 min kutsu- ja
+      jakolinkeille (migraatio 0016, `lib/security/link-rate-limit.ts`).
+      IP-osoitetta ei tallenneta, vain päivittäin vaihtuva HMAC-avain.
+      **Migraatio 0016 on ajettava live-Supabaseen (Jukka)** — ennen sitä
+      raja on pois päältä ja virhe kirjataan lokiin, linkit toimivat
 - [x] Säilytysajan sääntö kirjoitettu ja testattu (`lib/retention/rules.ts`)
 - [x] Kuivaharjoitus: `npm run raportti:sailytys` kertoo mitä poistettaisiin
 - [ ] Poiston käyttöönotto — odottaa Jukan katsausta. Poisto on

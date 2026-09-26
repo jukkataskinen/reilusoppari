@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { acceptInvite, findTenancyByInvite } from "@/lib/db/tenancies";
 import { AppShell } from "@/components/AppShell";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { fi } from "@/i18n/fi";
+import {
+  checkLinkRateLimit,
+  KUTSULINKKIRAJA,
+  LINKKIRAJA_VIESTI,
+} from "@/lib/security/link-rate-limit";
 
 /**
  * Kutsulinkki (CLAUDE.md 5.2).
@@ -42,6 +48,20 @@ function formatDate(value: string | null): string {
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+
+  // Raja ennen tunnistehakua: juuri haku on se, mitä rajalla suojataan.
+  const { allowed } = await checkLinkRateLimit(await headers(), KUTSULINKKIRAJA);
+  if (!allowed) {
+    return (
+      <AppShell nav={false} signedIn={false}>
+        <div className="py-10">
+          <h1 className="text-2xl">Odota hetki</h1>
+          <p className="mt-3 text-ink/70">{LINKKIRAJA_VIESTI}</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   const preview = await findTenancyByInvite(token);
 
   if (!preview) {
