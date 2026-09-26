@@ -234,6 +234,11 @@ kuuluvat valmiiseen tuotteeseen.
       peruuttamaton, ja ensimmäinen poistettava rivi syntyy aikaisintaan 2029
 - [ ] Tietosuojaselosteeseen maininta viennin peitetystä henkilötunnuksesta
       ja kuitin käsittelystä palvelun ulkopuolella (Jukka)
+      — **luonnos** `docs/luonnos-tietosuoja-ja-kayttoehdot.md` (2026-09-26),
+      mukana myös eSinetti käsittelijänä ja linkkirajan pseudonyymi tunniste
+- [ ] Käsittelysopimus Adepta Tilat Oy ↔ Adepta Oy (eSinetti) — **luonnos**
+      `docs/luonnos-kasittelysopimus-esinetti.md` (2026-09-26), Jukka
+      täydentää ja allekirjoittaa
 
 ## Vaihe 5 — Laskutus, suosittelu, salkku
 
@@ -267,7 +272,7 @@ yhteystiedot eivät paljastu, vuokralainen näkee keskustelun.
       `identity_verified_at`:ia. Päätepisteen valmistuttua tarvitaan vain
       linkki tunnistautumiseen (BLOCKERS.md)
 - [ ] Käyttöehtoihin maininta siitä, että keskustelu voi siirtyä puhelimeen
-      eikä palvelu estä sitä (Jukka)
+      eikä palvelu estä sitä (Jukka) — **luonnos** samassa tiedostossa, kohta B1
 
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 

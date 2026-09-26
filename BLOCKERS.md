@@ -1,13 +1,25 @@
 # BLOCKERS — reilusoppari (sovellus)
 
-## Tila 2026-09-10: rakennusohje paikallaan, riippuvuudet ratkaistu
+## Tila 2026-09-26: avoimet esteet lyhyesti
 
-`CLAUDE.md` on kopioitu tänne Downloads-kansiosta 2026-09-10. Alkuperäinen on
-edelleen `Downloads/REILUSOPPARI_RAKENNUSOHJE.md`.
+Repo on GitHubissa (<https://github.com/jukkataskinen/reilusoppari>), tuotanto
+osoitteessa `app.reilusoppari.fi`, ja Auth0 omassa EU-tenantissa. Alla
+olevista luvuista osa on historiaa; ne on merkitty yliviivatulla otsikolla
+tai RATKAISTU-merkinnällä. Auki olevat:
 
-Hakemisto **ei ole git-repo**. Repoa ei luotu tarkoituksella: jos GitHubiin
-luodaan repo README:n kanssa ja se kloonataan, paikallinen `git init` johtaisi
-kahteen eri historiaan.
+| Este | Kuka | Ks. |
+|---|---|---|
+| eSinetti-tenant `reilusoppari` ja API-avain | Jukka | kohta 4 |
+| eSinetin migraatio `0009` live-kantaan (`/documents/seal`) | Jukka | kohta 1 |
+| Migraatio `0016` (linkkien kutsuraja) live-Supabaseen | Jukka | PLAN.md |
+| Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
+| Stripe test -avaimet, `RESEND_API_KEY` sovellukselle, VAPID Verceliin | Jukka | kohta 4 |
+| Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
+| Tietosuojaseloste, käyttöehdot ja käsittelysopimus: luonnokset `docs/` | Jukka | kohta 4 |
+| E2e-alkukaari: tarvitsee erillisen testikannan ja kirjautumisen ohituksen | Jukka | luku lopussa |
+
+`CLAUDE.md` kopioitiin Downloads-kansiosta 2026-09-10. ~~Hakemisto ei ole
+git-repo~~ — vanhentunut: repo luotiin 2026-09-11.
 
 Sisarprojektit: `esinetti` (moottori), `reilusoppari-web` (julkinen sivusto,
 <https://github.com/jukkataskinen/reilusoppari-web>).
@@ -71,7 +83,7 @@ Jukan päätös, ks. `DECISIONS.md`:
 `CLAUDE.md` on päivitetty vastaamaan tätä (kohta 2, tietomalli, kohta 5.8).
 Sivuston tekstit on korjattu samana päivänä.
 
-## Ympäristön tila (päivitetty 2026-09-11)
+## Ympäristön tila (2026-09-11; ajantasainen tila luvun alun taulukossa)
 
 | Palvelu | Tila |
 |---|---|
@@ -82,11 +94,12 @@ Sivuston tekstit on korjattu samana päivänä.
 | eSinetti-tenant + API-avain | puuttuu – mock riittää vaiheisiin 0 ja 1 |
 | VAPID, Resend, Stripe | puuttuu – tarvitaan vaiheissa 2 ja 5 |
 
-**`app.reilusoppari.fi` ei ole vielä liitetty** (404). Koska `reilusoppari.fi`:n
+~~**`app.reilusoppari.fi` ei ole vielä liitetty**~~ — RATKAISTU 2026-09-11,
+ks. "Tuotanto pystyssä". Alkuperäinen teksti: (404). Koska `reilusoppari.fi`:n
 DNS-vyöhyke on Vercelillä, liittäminen on yksi askel: projekti → Settings →
 Domains → Add `app.reilusoppari.fi`. Tietue syntyy automaattisesti.
 
-**Ympäristömuuttujat puuttuvat Vercelistä.** Niitä ei vielä tarvita, koska
+~~**Ympäristömuuttujat puuttuvat Vercelistä.**~~ — RATKAISTU 2026-09-11. Niitä ei vielä tarvita, koska
 julkaistu sivu on paikanvaraaja, mutta heti kun tietokantakerros otetaan
 käyttöön näkymissä, deploy tarvitsee ainakin `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY` ja `SUPABASE_ANON_KEY`.
@@ -292,7 +305,11 @@ vuokrasuhteisiinsa.
 Ennen lanseerausta. Luonteva hetki on **ennen kuin Reilusopparilla on oikeita
 käyttäjiä** — jokainen uusi tili kasvattaa kartoitustyötä kohdassa 2.
 
-## eSinetissä ei ole reittiä pohjien listaamiseen (2026-09-11)
+## ~~eSinetissä ei ole reittiä pohjien listaamiseen~~ — VANHENTUNUT (2026-09-11)
+
+Ei koske enää Reilusopparia: asiakirjat tehdään itse (`src/documents/`,
+DECISIONS.md 2026-09-11), eikä `/documents/render`-reittiä käytetä.
+`template-ids.ts` on poistettu. Alkuperäinen kirjaus alla.
 
 `POST /documents/render` ottaa vastaan `template_id`:n (uuid), mutta eSinetin
 API:ssa ei ole `GET /templates`-reittiä. Reilusoppari tuntee pohjat nimellä
@@ -309,15 +326,19 @@ myös `esinetti/BLOCKERS.md`:hen.
 
 ## 4. Jukan tehtävät (CLAUDE.md kohta 9)
 
+Päivitetty 2026-09-26.
+
 | # | Tehtävä | Tila |
 |---|---|---|
-| 1 | Repo `reilusoppari` GitHubiin | tekemättä |
-| 2 | Supabase (EU), Auth0 passwordless, Vercel `app.reilusoppari.fi`, Resend, VAPID, Stripe test | tekemättä |
-| 3 | eSinetti-tenant `reilusoppari` + API-avain; `/documents/render` ja `/documents/seal` eSinetin PLANiin | tekemättä, ks. kohta 1 |
+| 1 | Repo `reilusoppari` GitHubiin | **valmis** 2026-09-11 |
+| 2 | Supabase (EU), Auth0 passwordless, Vercel `app.reilusoppari.fi`, Resend, VAPID, Stripe test | Supabase, Auth0 (oma EU-tenant), Vercel ja domain **valmiit**; Resend Auth0:n postille valmis. Auki: `RESEND_API_KEY` sovellukselle (tilausvahvistus), VAPID-avaimet Verceliin (tarkista), Stripe test -avaimet |
+| 3 | eSinetti-tenant `reilusoppari` + API-avain | tekemättä; `/documents/seal` valmis eSinetissä, sen migraatio 0009 ajamatta. `/documents/render` ei enää tarpeen |
 | 4 | Vuokrasopimuspohjan juridinen sisältö (AHVL 481/1995) | tekemättä, harkitse juristia |
-| 5 | Verolaskelman ohjetekstit ja km-taksa | tekemättä |
+| 5 | Verolaskelman ohjetekstit ja km-taksa | tekemättä (`content/tax-guidance.fi.ts`) |
 | 6 | Todistuspohjien tekstit ja sanasto | tekemättä; linjaus lukittu, ks. DECISIONS.md |
-| 7 | Kuluttajakäyttöehdot ja tietosuojaseloste | luonnokset olemassa `reilusoppari-web`-repossa, sovellukselle omat |
+| 7 | Kuluttajakäyttöehdot ja tietosuojaseloste | pohjat `reilusoppari-web`-repossa; **lisäysluonnokset** `docs/luonnos-tietosuoja-ja-kayttoehdot.md` (2026-09-26) |
+| 8 | Käsittelysopimus Adepta Tilat Oy ↔ Adepta Oy (eSinetti) | **luonnos** `docs/luonnos-kasittelysopimus-esinetti.md` (2026-09-26) |
+| 9 | Migraatio `0016` live-Supabaseen | tekemättä |
 
 Huom kohta 7: `reilusoppari-web/src/app/{tietosuoja,kayttoehdot}` sisältää jo
 pohjat, joissa on käsitelty kuvat kodista, molempien oikeus samaan aineistoon ja
@@ -337,12 +358,9 @@ tarjous kannattaa pyytää ennen kuin hinta lyödään lukkoon.
 
 ---
 
-## Ensimmäinen kehote, kun repo on olemassa
+## ~~Ensimmäinen kehote, kun repo on olemassa~~ — VANHENTUNUT
 
-> Lue CLAUDE.md, BLOCKERS.md ja esinetti-repon CLAUDE.md kohdat 0 ja 0.1.
-> Luo PLAN.md kohdan 8 pohjalta ja aloita vaihe 0. BLOCKERS.md:n kohdat 1–3
-> on ratkaistu; jäljellä on ympäristö (kohta 3 alempana) ja Jukan omat
-> sisältötehtävät.
+Repo on olemassa ja PLAN.md luotu 2026-09-11.
 
 
 ## Tuotanto pystyssä 2026-09-11
@@ -362,7 +380,8 @@ dynaamista latausta. CI tarkistaa tämän nyt jokaisella käännöksellä.
 Tehty: tenantin nimi, kieli suomeksi, logo ja värit kirjautumissivulla.
 `dev-qanv0hdzfjjsybgm` ei enää näy käyttäjälle.
 
-**Jäljellä: kirjautumissähköposti.** Se on edelleen englanniksi ja tulee
+~~**Jäljellä: kirjautumissähköposti.**~~ — RATKAISTU 2026-09-13/14, ks.
+"Kirjautumissähköposti" ja "Auth0: oma EU-tenant". Alkuperäinen: se on edelleen englanniksi ja tulee
 osoitteesta `root@auth0.com`. Auth0 sallii sähköpostipohjien muokkaamisen
 vasta, kun tenantille on määritetty oma sähköpostipalvelu — käytännössä
 Resend, jonka domain on todennettava. Tämä on tehtävä ennen lanseerausta,
@@ -393,3 +412,27 @@ valmistuttuaan. Ei henkilötunnusta (CLAUDE.md kohta 6).
 Sen valmistuttua tarvitaan Reilusopparissa vain linkki tunnistautumiseen
 `todistus/[token]/kysy`-sivulle ja `identity_verified_at`:in kirjaus
 webhookista — sama kohta, jossa se jo kirjataan allekirjoituksen yhteydessä.
+
+
+---
+
+## E2e-alkukaari: testikanta ja kirjautuminen (2026-09-26)
+
+**Estää:** PLAN.md vaihe 1:n viimeisen rivin merkitsemisen tehdyksi.
+
+Kaaritesti on kirjoitettu (`tests/unit/alkukaari.test.ts`), mutta sitä ei
+ole ajettu: yötyössä ei saa käyttää tuotantokantaa, eikä erillistä
+testikantaa ole. Testi ohittuu ilman `SUPABASE_*`-muuttujia.
+
+Kaksi päätettävää:
+
+1. **Missä kantatestit ajetaan.** Nyt `.env.local` osoittaa kantaan, jota
+   myös tuotanto käyttää, ja testit luovat sinne `testi-`-etuliitteisiä
+   rivejä ja siivoavat ne. Erillinen Supabase-projekti testeille (ilmainen
+   taso riittää) poistaisi riskin, että testin siivous jää kesken
+   tuotantokannassa.
+2. **Selaintason e2e.** Playwright-kaari vaatisi kirjautumisen ilman
+   Auth0:aa. Turvallinen tapa olisi testikirjautuminen, joka on käännetty
+   pois tuotantobuildista kokonaan (ei pelkkä ympäristömuuttuja). Ei
+   toteutettu ilman Jukan linjausta, koska väärin tehtynä se on takaovi.
+
