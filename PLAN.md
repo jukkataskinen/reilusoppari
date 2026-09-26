@@ -128,6 +128,12 @@ Polut 5.1–5.4. DoD: e2e-alkukaari mockilla läpi.
 - [x] Webhook `round.completed`: sinetöidyt PDF:t, `identity_verified_at`,
       tenancy → `active`, `rs_rent_periods` generoidaan. Idempotentti
 - [ ] e2e mockilla: asunto → vuokrasuhde → kutsu → kuvat → lukitus → allekirjoitus
+      — **kirjoitettu, ei vielä ajettu** (2026-09-26): `tests/unit/alkukaari.test.ts`
+      kulkee kaaren samoilla funktioilla kuin reitit, kirjautumisen jälkeisestä
+      kohdasta alkaen. Ohittuu ilman kantaa; yötyössä ei ollut kantaa, jota
+      saisi käyttää. Merkitään tehdyksi, kun se on ajettu vihreäksi
+      testikantaa vasten. Selaintason e2e vaatisi testikirjautumisen
+      (BLOCKERS.md)
 - [x] Kaaren käsiajo mahdollinen ilman eSinettiä:
       `npm run testi:allekirjoitus` simuloi `round.completed`-webhookin ja
       `npm run testi:vuokraherätteet` ajaa muistutusketjun toisena päivänä
