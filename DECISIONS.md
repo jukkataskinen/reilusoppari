@@ -5,6 +5,22 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Anon-oikeudet pois ja migraatioiden staattinen tarkistus (2026-09-26)
+
+Supabase myöntää uusille tauluille ja funktioille oletuksena oikeudet
+`anon`-roolille nimeltä. Migraation 0015 `revoke ... from public` ei siksi
+poistanut julkisen avaimen oikeutta kutsua `rs_kasvata_kutsuraja`-funktiota,
+joka on `security definer` ja ottaa käyttäjätunnisteen parametrina: sillä
+olisi voinut täyttää toisen käyttäjän kuvarajan. Migraatio 0017 poistaa
+oikeuden ja lisäksi kaikki anon-oikeudet rs_-tauluista. Sovellus ei käytä
+julkista avainta mihinkään.
+
+Koska kantatestit ohittuvat ilman tunnuksia, lisättiin tarkistus, joka lukee
+SQL-tiedostot: numerointi, RLS jokaisella taululla, `search_path`
+jokaisessa `security definer` -funktiossa ja laskurifunktioiden anon-esto.
+Se toimii aina, myös CI:ssä ilman kantaa.
+
+
 ## Kutsu- ja jakolinkkien raja verkko-osoitteen mukaan (2026-09-26)
 
 Linkin avaaja ei ole kirjautunut, joten raja lasketaan verkko-osoitteesta.

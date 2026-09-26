@@ -11,7 +11,7 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 |---|---|---|
 | eSinetti-tenant `reilusoppari` ja API-avain | Jukka | kohta 4 |
 | eSinetin migraatio `0009` live-kantaan (`/documents/seal`) | Jukka | kohta 1 |
-| Migraatio `0016` (linkkien kutsuraja) live-Supabaseen | Jukka | PLAN.md |
+| Migraatiot `0016` (linkkien kutsuraja) ja `0017` (anon-oikeudet pois) live-Supabaseen | Jukka | PLAN.md |
 | Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
 | Stripe test -avaimet, `RESEND_API_KEY` sovellukselle, VAPID Verceliin | Jukka | kohta 4 |
 | Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
@@ -338,7 +338,7 @@ Päivitetty 2026-09-26.
 | 6 | Todistuspohjien tekstit ja sanasto | tekemättä; linjaus lukittu, ks. DECISIONS.md |
 | 7 | Kuluttajakäyttöehdot ja tietosuojaseloste | pohjat `reilusoppari-web`-repossa; **lisäysluonnokset** `docs/luonnos-tietosuoja-ja-kayttoehdot.md` (2026-09-26) |
 | 8 | Käsittelysopimus Adepta Tilat Oy ↔ Adepta Oy (eSinetti) | **luonnos** `docs/luonnos-kasittelysopimus-esinetti.md` (2026-09-26) |
-| 9 | Migraatio `0016` live-Supabaseen | tekemättä |
+| 9 | Migraatiot `0016` ja `0017` live-Supabaseen | tekemättä |
 
 Huom kohta 7: `reilusoppari-web/src/app/{tietosuoja,kayttoehdot}` sisältää jo
 pohjat, joissa on käsitelty kuvat kodista, molempien oikeus samaan aineistoon ja

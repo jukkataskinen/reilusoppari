@@ -24,6 +24,7 @@ tekstit muutetaan silloin — laajuutta ei karsita etukäteen.
 | ~~Migraatio `0009`~~ tarvitaan yhä | odottaa Jukkaa | `/documents/seal` (allekirjoittamattomat todistukset) |
 | Supabase, Auth0, Vercel, Stripe, VAPID | odottaa Jukkaa | vaihe 0:n DoD |
 | Migraatio `0016` (linkkien kutsuraja) live-Supabaseen | odottaa Jukkaa | kutsu- ja jakolinkkien raja (linkit toimivat ilman) |
+| Migraatio `0017` (anon-oikeudet pois) live-Supabaseen | odottaa Jukkaa | – (puolustussyvyys; ajetaan 0016:n jälkeen) |
 
 Mock-toteutus `lib/esinetti/`:ssä tarkoittaa, että vaiheet 0–1 etenevät ilman
 eSinetti-tunnuksia. Vasta oikea läpivienti vaatii ne.
@@ -223,6 +224,11 @@ kuuluvat valmiiseen tuotteeseen.
 - [x] Kutsuraja kuitin luvulle, 20/min — ainoa reitti jossa kutsu maksaa rahaa
 - [x] Omien tietojen vienti zipinä (tietosuoja-asetus art. 20)
 - [x] Kaksi vahtia avaimen vuotamista vastaan: lähdekoodi ja selainpaketti
+- [x] Julkisen avaimen (anon) oikeudet pois rs_-tauluista ja
+      kutsurajafunktiosta (migraatio 0017). Staattinen migraatiotesti
+      (`tests/unit/migrations-static.test.ts`): numerointi, RLS jokaisella
+      taululla, `search_path` security definer -funktioissa, laskurit eivät
+      anonin kutsuttavissa. Toimii ilman kantaa
 - [x] Kutsulinkkien kutsuraja: IP-kohtainen, 60 / 10 min kutsu- ja
       jakolinkeille (migraatio 0016, `lib/security/link-rate-limit.ts`).
       IP-osoitetta ei tallenneta, vain päivittäin vaihtuva HMAC-avain.
