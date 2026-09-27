@@ -11,7 +11,7 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 |---|---|---|
 | eSinetti-tenant `reilusoppari` ja API-avain | Jukka | kohta 4 |
 | eSinetin migraatio `0009` live-kantaan (`/documents/seal`) | Jukka | kohta 1 |
-| Migraatiot `0016` (linkkien kutsuraja), `0017` (anon-oikeudet pois) ja `0018` (kehitystoiveet) live-Supabaseen, `FEATURE_REQUEST_ADMIN_EMAILS` Verceliin | Jukka | PLAN.md |
+| Migraatiot `0016` (linkkien kutsuraja) ja `0017` (anon-oikeudet pois) live-Supabaseen. `0018` ja `FEATURE_REQUEST_ADMIN_EMAILS` tehty 27.9.2026 | Jukka | PLAN.md |
 | Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
 | Stripe test -avaimet, `RESEND_API_KEY` sovellukselle, VAPID Verceliin | Jukka | kohta 4 |
 | Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
