@@ -25,6 +25,7 @@ tekstit muutetaan silloin — laajuutta ei karsita etukäteen.
 | Supabase, Auth0, Vercel, Stripe, VAPID | odottaa Jukkaa | vaihe 0:n DoD |
 | Migraatio `0016` (linkkien kutsuraja) live-Supabaseen | odottaa Jukkaa | kutsu- ja jakolinkkien raja (linkit toimivat ilman) |
 | Migraatio `0017` (anon-oikeudet pois) live-Supabaseen | odottaa Jukkaa | – (puolustussyvyys; ajetaan 0016:n jälkeen) |
+| Migraatio `0018` (kehitystoiveet) live-Supabaseen | odottaa Jukkaa | kehitystoiveiden tallennus (ohjeet toimivat ilman) |
 
 Mock-toteutus `lib/esinetti/`:ssä tarkoittaa, että vaiheet 0–1 etenevät ilman
 eSinetti-tunnuksia. Vasta oikea läpivienti vaatii ne.
@@ -279,6 +280,22 @@ yhteystiedot eivät paljastu, vuokralainen näkee keskustelun.
       linkki tunnistautumiseen (BLOCKERS.md)
 - [ ] Käyttöehtoihin maininta siitä, että keskustelu voi siirtyä puhelimeen
       eikä palvelu estä sitä (Jukka) — **luonnos** samassa tiedostossa, kohta B1
+
+## Ohjeet ja kehitystoiveet (2026-09-27)
+
+Sama malli kuin Mittarilukemassa. DECISIONS.md 2026-09-27.
+
+- [x] Ohjeaiheet kaikille toiminnoille (`src/lib/help/topics.ts`),
+      selkokielellä, rooli merkitty; julkinen ohjesivusto `/ohjeet`
+- [x] Ohje- ja Kehitystoive-linkit jokaisella kirjautuneen käyttäjän
+      sivulla (`HelpLink` kehyksessä, kartta `src/lib/help/routes.ts`);
+      kattavuustesti `tests/unit/help-routes.test.ts`
+- [x] Kehitystoiveet `/kehitystoiveet`: taulu `rs_feature_requests`
+      (migraatio 0018), omat toiveet ja ylläpidon käsittely
+- [ ] Migraatio `0018` live-Supabaseen (Jukka) ja
+      `FEATURE_REQUEST_ADMIN_EMAILS` Verceliin
+- [ ] Kirjautuneen näkymän selaintesti (ohjelinkit, toiveen lähetys):
+      vaatii testikannan ja kirjautumisen, ks. BLOCKERS.md e2e
 
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 

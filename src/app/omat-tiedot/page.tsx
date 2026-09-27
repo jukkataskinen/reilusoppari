@@ -118,6 +118,26 @@ export default async function OwnDetailsPage() {
         </p>
       </div>
 
+      {/*
+        Ohjeet ja kehitystoiveet löytyvät jokaisen sivun yläreunasta. Täällä
+        ne ovat sitä varten, joka haluaa nähdä kaikki ohjeet tai omat
+        aiemmat toiveensa.
+      */}
+      <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+        <p className="font-medium">Ohjeet ja toiveet</p>
+        <p className="mt-2 text-sm text-ink/70">
+          Jokaisen sivun yläreunassa on Ohje ja Kehitystoive. Täältä näet kaikki ohjeet ja omat toiveesi.
+        </p>
+        <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href="/ohjeet" className="underline underline-offset-4">
+            Kaikki ohjeet
+          </Link>
+          <Link href="/kehitystoiveet" className="underline underline-offset-4">
+            Omat kehitystoiveesi
+          </Link>
+        </p>
+      </div>
+
       <p className="mt-10 text-sm">
         <Link href="/" className="underline underline-offset-4">
           {fi.common.back}

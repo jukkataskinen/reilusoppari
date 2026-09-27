@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Brand } from "./Brand";
+import { HelpLink } from "./HelpLink";
 import { fi } from "@/i18n/fi";
 
 /**
@@ -110,6 +111,16 @@ export function AppShell({
       </header>
 
       <main className="mx-auto w-full max-w-[var(--container-content)] flex-1 px-5 py-8">
+        {/*
+          Kirjautuneelle jokaisella sivulla linkki sivun ohjeeseen ja
+          kehitystoiveeseen. Julkisilla sivuilla (kutsu ennen kirjautumista,
+          todistuksen jakolinkki) sitä ei näytetä: kehitystoive vaatii tilin.
+        */}
+        {signedIn ? (
+          <div className="-mt-4 mb-4">
+            <HelpLink />
+          </div>
+        ) : null}
         {children}
       </main>
 

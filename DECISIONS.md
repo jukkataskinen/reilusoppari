@@ -5,6 +5,46 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Ohjekirja ja kehitystoiveet (2026-09-27)
+
+Sama malli kuin Mittarilukemassa ja Skogissa: julkinen ohjesivusto
+`/ohjeet`, ohjeaiheet `src/lib/help/topics.ts`:ssä ja jokaisella
+kirjautuneen käyttäjän sivulla linkit Ohje ja Kehitystoive. Ne ovat
+`AppShell`issa eivätkä sivuilla, koska sivut käyttävät kehystä kukin
+erikseen eikä yhteistä layoutia ole. Linkit näytetään vain kirjautuneelle
+(`signedIn`): kutsu- ja jakolinkin katselijalla ei ole tiliä, jolla toiveen
+voisi jättää. Aiheissa on `roles`, koska sama sivu palvelee vuokranantajaa ja
+vuokralaista eri tavoin.
+
+**Kuka näkee toiveet.** Reilusopparissa ei ole organisaatiota eikä
+pääkäyttäjää, ja käyttäjät ovat toisilleen tuntemattomia. Käyttäjä näkee
+vain omat toiveensa, koska toiveessa voi olla omaa vuokrasuhdetta koskevaa
+tekstiä. Toiveen voi jättää kuka tahansa kirjautunut, myös vuokralainen.
+
+**Kuka käsittelee.** Palvelun ylläpito. Käsittelijät ovat
+ympäristömuuttujassa `FEATURE_REQUEST_ADMIN_EMAILS` (pilkuilla erotettu
+lista). Sähköposti tulee Auth0-istunnosta, jossa se on todennettu koodilla.
+Erillistä ylläpitoroolia kantaan ei tehty, koska sitä ei tarvita muuhun ja
+yksi muuttuja on helpompi pitää ajan tasalla. Käsittelijä näkee kaikki
+toiveet ja jättäjän sähköpostin ja muuttaa tilaa ja vastausta.
+
+**Kanta.** Taulu `rs_feature_requests` (migraatio 0018): RLS päällä, oma
+rivi `rs_current_user_id()`:lla, authenticated saa vain lukea ja lisätä,
+käsittely kulkee palvelinkoodissa service_rolella kuten muukin sovellus.
+Rivi poistuu käyttäjän mukana: toive on käyttäjän omaa tietoa. Lokiin
+(`rs_audit_log`) kirjataan luonti ja käsittely ilman toiveen tekstiä. Raja
+20 toivetta tunnissa.
+
+**Ohjesivut renderöidään pyynnöllä** (`dynamic = "force-dynamic"`), koska
+CSP:n nonce syntyy middlewaressa pyynnöllä; käännösaikana tehty sivu jäisi
+ilman sitä.
+
+**Tunnetut puutteet ohjeissa:** asunnon ja kulun muokkausta tai poistoa ei
+ole sovelluksessa, ja se sanotaan ohjeessa suoraan. Yhteydenottokeskustelu
+on merkitty `upcoming`, koska pankkitunnistautuminen puuttuu eSinetistä.
+Verolaskelman Plus-maksua ei mainita, koska sitä ei ole vielä käyttöliittymässä.
+
+
 ## Anon-oikeudet pois ja migraatioiden staattinen tarkistus (2026-09-26)
 
 Supabase myöntää uusille tauluille ja funktioille oletuksena oikeudet

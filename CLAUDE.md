@@ -30,6 +30,13 @@ Vuokranantaja luo asunnon ja vuokrasuhteen, täyttää huoneenvuokralain mukaise
 | Säilytys | Vuokrasuhteen tiedot ja kuvat säilytetään vuokrasuhteen päättymisestä 3 vuotta (yleinen vanhentumisaika), sitten poistetaan; todistukset ja tiivisteet pysyvästi. Molemmat osapuolet voivat viedä omat tietonsa zipinä milloin vain. |
 | Kieli | UI suomi, `src/i18n/fi.ts`. Sävy kuten sivustolla: sinuttelu, rauhallinen, ei huutomerkkejä. |
 | Hosting | Vercel (`app.reilusoppari.fi`). Ei omaa konttia – renderöinti ja sinetöinti eSinetissä. |
+| Ohjeet ja kehitystoiveet | Julkinen ohjesivusto `/ohjeet` (sisältö `src/lib/help/topics.ts`). Jokaisella kirjautuneen käyttäjän sivulla on kehyksessä (`AppShell` → `HelpLink`) linkit Ohje ja Kehitystoive; sivun ohje valitaan kartasta `src/lib/help/routes.ts`. Kehitystoiveet `/kehitystoiveet` (taulu `rs_feature_requests`, migraatio 0018): käyttäjä näkee vain omansa, ylläpito (`FEATURE_REQUEST_ADMIN_EMAILS`) käsittelee. Ks. kohta 2.1. |
+
+### 2.1 Ohjeet päivitetään samassa muutoksessa
+
+- **Kun toiminto muuttuu tai syntyy, päivitä sen ohje `src/lib/help/topics.ts`:ssä samassa muutoksessa.** Selkokieli: lyhyet lauseet, arkisanat, vaiheet numeroituina, ei teknisiä termejä. Painikkeiden nimet täsmälleen kuten sovelluksessa. Kerro, koskeeko ohje vuokranantajaa, vuokralaista vai molempia (`roles`). Kesken oleva toiminto merkitään `upcoming: true`.
+- **Uusi kirjautuneen käyttäjän sivu lisätään ohjekarttaan `src/lib/help/routes.ts`**, jolloin sivun Ohje- ja Kehitystoive-linkit osoittavat oikeaan toimintoon. Testi `tests/unit/help-routes.test.ts` käy läpi kaikki `page.tsx`-tiedostot ja kaatuu, jos ohje puuttuu. Julkiset sivut (`signedIn={false}`) luetellaan testissä erikseen.
+- Kehitystoiveen toiminnot ovat ohjeaiheet: uusi ohjeaihe näkyy automaattisesti toiveen valinnoissa.
 
 ---
 
