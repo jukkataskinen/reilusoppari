@@ -126,8 +126,10 @@ describe.skipIf(!RUN)("osapuolirajaus (integraatio, live Supabase)", () => {
       .select("id")
       .eq("id", property);
 
-    // RLS ei palauta virhetta vaan tyhjan tuloksen - juuri niin kuin pitaa.
-    expect(error).toBeNull();
-    expect(data).toEqual([]);
+    // Migraatio 0017 poisti anonilta oikeudet tauluun, joten kanta kieltää
+    // kyselyn kokonaan (42501) eikä rivi näy. Ennen 0017:ää RLS palautti
+    // tyhjän tuloksen; kumpikaan ei paljasta riviä.
+    expect(error?.code).toBe("42501");
+    expect(data).toBeNull();
   });
 });
