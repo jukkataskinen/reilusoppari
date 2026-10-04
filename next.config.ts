@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 /**
  * Turvaotsakkeet. CSP asetetaan `src/middleware.ts`:ssä, koska se vaatii
@@ -55,4 +56,34 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentryn käännösasetukset (DECISIONS.md 2026-10-04).
+ *
+ * Ilman muuttujia tämä ei tee käännöksessä mitään verkkoon: lähdekarttoja ei
+ * tehdä eikä lähetetä, eikä Sentryn käännöstyökalu lähetä käyttötilastoja.
+ * Lähdekartat Sentryyn vain, kun `SENTRY_AUTH_TOKEN` on asetettu, ja ne
+ * poistetaan heti lähetyksen jälkeen, jottei koodi ole selaimesta luettavissa.
+ *
+ * Automaattinen koodin kääriminen on pois: virheet tulevat Next.js:n omasta
+ * `onRequestError`-koukusta (`src/instrumentation.ts`). Middlewaren
+ * kääriminen voisi sotkea Auth0:n evästeiden kopioinnin (ks. middleware.ts).
+ */
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: sentryAuthToken,
+  telemetry: false,
+  silent: !sentryAuthToken,
+  sourcemaps: { disable: !sentryAuthToken, deleteSourcemapsAfterUpload: true },
+  release: { create: Boolean(sentryAuthToken) },
+  // Reittiluettelo selaimeen on tarpeen vain suorituskykyseurannalle, jota ei käytetä.
+  routeManifestInjection: false,
+  webpack: {
+    autoInstrumentServerFunctions: false,
+    autoInstrumentMiddleware: false,
+    autoInstrumentAppDirectory: false,
+    treeshake: { removeDebugLogging: true, removeTracing: true },
+  },
+});
