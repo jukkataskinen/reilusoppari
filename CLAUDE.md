@@ -2,6 +2,14 @@
 
 Tämä on repon `reilusoppari` `CLAUDE.md`. Reilusoppari on vuokranantajan ja vuokralaisen yhteinen sovellus koko vuokrasuhteen ajaksi. Se **ei toteuta tunnistusta, allekirjoitusta eikä sinetöintiä itse**, vaan käyttää eSinettiä API:n kautta (eSinetti-tenant `reilusoppari`). Työskentelyprotokolla, tietoturvakysymykset jokaiselle tehtävälle (kohta 0.1) ja `PLAN.md`/`DECISIONS.md`/`BLOCKERS.md`-käytäntö ovat **samat kuin `esinetti`-repossa** – lue sen `CLAUDE.md` kohdat 0 ja 0.1 ennen aloitusta ja noudata niitä sellaisenaan.
 
+**Työ PR:inä, ei koskaan suoraan mainiin** (Jukan päätös 4.10.2026; tämä kohta ohittaa eSinetin kohdan 0.8, jos ne joskus eroavat). Push mainiin julkaisee tuotantoon.
+
+- Tee työ omassa haarassa: `git switch -c claude/<aihe>` ennen ensimmäistä muutosta.
+- `git add -A && git commit -m "[kuvaus]"`, sitten `node scripts/pr.mjs --otsikko "[otsikko]" --kuvaus <tiedosto.md>`. Skripti pushaa haaran ja avaa PR:n. Automaattinen yhdistäminen kytketään vain, kun mainin haarasuojaus on päällä, jolloin PR yhdistyy vasta vihreällä CI:llä; muuten PR jää auki Jukalle.
+- PR:n kuvaus on Jukalle, joka lukee sen puhelimella eikä ole koodari. Kirjoita arkikielellä kolme kohtaa: **Mitä muuttui** (käyttäjän näkökulmasta), **Miten tarkistat** (mitä Vercelin esikatselussa kannattaa kokeilla), **Riskit** (koskeeko tietokantaa, allekirjoituksia tai henkilötietoja). Ei teknistä jargonia.
+- Muutokset kansioon `.github/` ja tietokantamigraatiot: lisää `--ei-automaattista`, jolloin Jukka hyväksyy ne itse.
+- Älä koskaan pushaa mainiin, älä yhdistä PR:iä itse äläkä muuta GitHubin asetuksia.
+
 ---
 
 ## 1. Tuote yhdellä kappaleella
@@ -314,6 +322,7 @@ koskee. Tämä on kirjattava myös käyttöehtoihin.
 
 ## 7. Testaus
 
+- **Testit eivät koskaan tuotantokantaan.** Testit lukevat Supabase-avaimet vain tiedostosta `.env.test.local` (`tests/setup-env.ts`), johon laitetaan erillisen kehitysprojektin avaimet, ei koskaan tuotannon. `.env.local` osoittaa toistaiseksi tuotantoon (BLOCKERS.md), joten älä aja `npm run dev`:iä, skriptejä (`testi:*`, `raportti:*`) tai e2e-testejä sitä vasten ilman Jukan lupaa. Playwright pysähtyy paikallisesti, jos `.env.local` on olemassa, koska sen käynnistämä Next.js-palvelin lukisi tiedoston.
 - Yksikkö: tilakoneet (tenancy, inspection, certificate-aikarajat), vuokrakausien generointi (eräpäivä 31. → kuun viimeinen), verolaskelman rivit (rahastoitu vastike ei summaudu vuosikuluihin, km-taksa), todistuksen `stats`.
 - E2E (Playwright, eSinetti-mock): koko kaari – asunto → vuokrasuhde → sopimus → vuokralainen liittyy → molemmat kuvaavat 3 kohtaa → lukitus → mock-allekirjoitus → kuittaus 3 kuukautta (kyllä/ei vielä/osittain + kommentti) → vika ja korjaus kuvineen → irtisanominen → loppukatselmus → mock-allekirjoitus → arviot ja vastine → todistukset → jakolinkki avautuu ilman kirjautumista → toisen vuokrasuhteen osapuoli ei näe mitään (403/404).
 - Kuvatesti: EXIF-GPS poistuu, pakkaus toimii 12 MP -kuvalla mobiiliemulaatiossa.
