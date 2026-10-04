@@ -13,8 +13,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.test.{ts,tsx}"],
-    // Lataa .env.local, jotta live-Supabasea vasten ajettavat
-    // integraatiotestit eivät ohitu turhaan (ks. tests/setup-env.ts).
+    // Lataa .env.test.local (kehitysprojektin avaimet, ei koskaan
+    // tuotannon), ks. tests/setup-env.ts.
     setupFiles: ["./tests/setup-env.ts"],
 
     /*

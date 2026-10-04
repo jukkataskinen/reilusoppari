@@ -1833,3 +1833,12 @@ kierroksen jo käsitellyksi.
 logiikkaansa.** Oma SQL olisi ollut nopeampi kirjoittaa, mutta silloin
 testattaisiin skriptiä eikä sovellusta — ja eräpäivien laskenta (31. päivä →
 kuukauden viimeinen) on juuri se, jonka halutaan toimivan oikein.
+
+## 2026-10-04 — Työ PR:inä, ei suoraan mainiin; testit eivät lue tuotannon avaimia
+
+**Päätös (Jukka):** Claude ei enää pushaa mainiin. Työ tehdään haarassa
+`claude/<aihe>` ja viedään PR:nä (`scripts/pr.mjs`, sama kuin eSinetissä).
+Testit lukevat Supabase-avaimet vain `.env.test.local`:ista.
+**Perustelu:** push mainiin julkaisee tuotantoon, ja Jukka tarkistaa PR:t
+puhelimella. `.env.local` osoittaa tuotantoon, ja 4.10.2026 testiajo ehti
+käynnistyä sitä vasten.

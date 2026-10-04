@@ -431,6 +431,17 @@ Kaksi päätettävää:
    rivejä ja siivoavat ne. Erillinen Supabase-projekti testeille (ilmainen
    taso riittää) poistaisi riskin, että testin siivous jää kesken
    tuotantokannassa.
+
+   **Päivitys 4.10.2026: testien osuus korjattu.** Testit lukevat avaimet
+   vain `.env.test.local`:ista eivätkä enää `.env.local`:ista, ja Playwright
+   pysähtyy paikallisesti, jos `.env.local` on olemassa. Taustalla: 4.10.2026
+   testiajo ehti käynnistyä tuotantokantaa vasten, ja se keskeytettiin.
+   **Tarkistettava:** tuotantokannasta `testi-`-alkuiset rivit (siivous on
+   voinut jäädä kesken).
+   **Auki, Jukan tehtävä:** luo Supabaseen ilmainen projekti
+   `reilusoppari-dev` (EU) ja laita sen avaimet `.env.test.local`:iin sekä
+   GitHubin salaisuuksiin `TEST_SUPABASE_*`. Siihen asti kantatestit
+   ohittuvat paikallisesti ja CI:ssä.
 2. **Selaintason e2e.** Playwright-kaari vaatisi kirjautumisen ilman
    Auth0:aa. Turvallinen tapa olisi testikirjautuminen, joka on käännetty
    pois tuotantobuildista kokonaan (ei pelkkä ympäristömuuttuja). Ei
