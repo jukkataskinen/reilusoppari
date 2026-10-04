@@ -7,7 +7,7 @@ Tämä on repon `reilusoppari` `CLAUDE.md`. Reilusoppari on vuokranantajan ja vu
 - Tee työ omassa haarassa: `git switch -c claude/<aihe>` ennen ensimmäistä muutosta.
 - `git add -A && git commit -m "[kuvaus]"`, sitten `node scripts/pr.mjs --otsikko "[otsikko]" --kuvaus <tiedosto.md>`. Skripti pushaa haaran ja avaa PR:n. Automaattinen yhdistäminen kytketään vain, kun mainin haarasuojaus on päällä, jolloin PR yhdistyy vasta vihreällä CI:llä; muuten PR jää auki Jukalle.
 - PR:n kuvaus on Jukalle, joka lukee sen puhelimella eikä ole koodari. Kirjoita arkikielellä kolme kohtaa: **Mitä muuttui** (käyttäjän näkökulmasta), **Miten tarkistat** (mitä Vercelin esikatselussa kannattaa kokeilla), **Riskit** (koskeeko tietokantaa, allekirjoituksia tai henkilötietoja). Ei teknistä jargonia.
-- Muutokset kansioon `.github/` ja tietokantamigraatiot: lisää `--ei-automaattista`, jolloin Jukka hyväksyy ne itse.
+- Muutokset kansioon `.github/`: lisää `--ei-automaattista`, jolloin Jukka hyväksyy ne itse. Migraatiot yhdistyvät automaattisesti kuten muukin työ (Jukka 4.10.2026), vaikka yhdistäminen ajaa ne tuotantokantaan: kirjoita PR:n Riskit-kohtaan selvästi, mitä migraatio muuttaa tuotannossa.
 - Älä koskaan pushaa mainiin, älä yhdistä PR:iä itse äläkä muuta GitHubin asetuksia.
 
 ---
