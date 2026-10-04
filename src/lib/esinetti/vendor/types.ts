@@ -53,8 +53,11 @@ export interface SealDocumentResult {
   downloadUrl: string;
 }
 
+/** Allekirjoittaja kierroksella: tavallinen tai eSinettiin tallennettu vakioallekirjoittaja. */
+export type RoundSigner = ExplicitRoundSigner | StandingRoundSigner;
+
 /** Allekirjoittaja kierroksella. Pöytäkirjassa puheenjohtaja ja pöytäkirjantarkastajat. */
-export interface RoundSigner {
+export interface ExplicitRoundSigner {
   name: string;
   email: string;
   phone?: string;
@@ -63,6 +66,26 @@ export interface RoundSigner {
   expectedBirthdate?: string;
   /** Pöytäkirjoissa aina `strong` (suunnitelma, osio 09). */
   authLevel?: "strong" | "light";
+}
+
+/**
+ * Viittaus eSinetin asetuksiin tallennettuun vakioallekirjoittajaan (esim.
+ * aina sama toimitusjohtaja). eSinetti täyttää nimen, sähköpostin, vahvan
+ * tunnistuksen ja henkilötunnuksen tiivisteen, joten saman henkilön kaikki
+ * kierrokset allekirjoitetaan yhdellä tunnistuksella — eikä kutsuva
+ * järjestelmä käsittele henkilötunnusta lainkaan.
+ */
+export interface StandingRoundSigner {
+  standingSignerId: string;
+  /** Ohittaa tallennetun roolitekstin tällä kierroksella. */
+  roleLabel?: string;
+}
+
+/** `GET /standing-signers`: ei henkilötunnusta eikä sen tiivistettä. */
+export interface StandingSigner {
+  id: string;
+  name: string;
+  roleLabel: string | null;
 }
 
 export interface RoundDocumentInput {
@@ -189,6 +212,8 @@ export interface EsinettiClient {
   findRoundByExternalRef(externalRef: string): Promise<Round | null>;
   /** Luo tai päivittää yhtiön eSinetissä. Tunnistus y-tunnuksesta, joten toisto on turvallista. */
   upsertCompany(input: EsinettiCompanyInput): Promise<EsinettiCompany>;
+  /** Organisaation vakioallekirjoittajat, jotta integraatio voi tarkistaa tunnisteensa. */
+  listStandingSigners(): Promise<StandingSigner[]>;
   /** Lataa kierroksen asiakirjan tavut (sinetöity, jos kierros on valmis). */
   downloadRoundDocument(roundId: string, documentId: string): Promise<Uint8Array>;
   verifyDocument(sha256: string): Promise<VerifyResult>;

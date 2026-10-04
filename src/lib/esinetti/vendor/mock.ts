@@ -38,6 +38,7 @@ import type {
   RoundSignerState,
   SealDocumentInput,
   SealDocumentResult,
+  StandingSigner,
   VerifyResult,
 } from "./types";
 
@@ -67,11 +68,24 @@ interface RoundRecord extends Round {
   bytesById: Map<string, { original: Uint8Array; sealed: Uint8Array | null }>;
 }
 
+/** Mockin vakioallekirjoittaja: nimi ja sähköposti kierrokselle, ei henkilötunnusta. */
+interface MockStandingSigner extends StandingSigner {
+  email: string;
+}
+
 const mockState = globalThis as unknown as {
-  __esinettiClientMock?: { rounds: Map<string, RoundRecord>; sealed: Map<string, SealedRecord>; companies: Map<string, EsinettiCompany> };
+  __esinettiClientMock?: {
+    rounds: Map<string, RoundRecord>;
+    sealed: Map<string, SealedRecord>;
+    companies: Map<string, EsinettiCompany>;
+    standingSigners: Map<string, MockStandingSigner>;
+  };
 };
-mockState.__esinettiClientMock ??= { rounds: new Map(), sealed: new Map(), companies: new Map() };
+mockState.__esinettiClientMock ??= { rounds: new Map(), sealed: new Map(), companies: new Map(), standingSigners: new Map() };
 mockState.__esinettiClientMock.companies ??= new Map();
+mockState.__esinettiClientMock.standingSigners ??= new Map();
+/** Avaimena uuid — kuten `standing_signer_id` eSinetissä. */
+const standingSigners = mockState.__esinettiClientMock.standingSigners;
 const rounds = mockState.__esinettiClientMock.rounds;
 /** Avaimena y-tunnus tai nimi — kuten eSinetin upsert. */
 const companies = mockState.__esinettiClientMock.companies;
@@ -83,6 +97,7 @@ export function resetMockEsinetti(): void {
   rounds.clear();
   sealed.clear();
   companies.clear();
+  standingSigners.clear();
 }
 
 function toPublicRound(record: RoundRecord): Round {
@@ -170,7 +185,25 @@ export class EsinettiMockClient implements EsinettiClient {
       };
     });
 
-    const signers: RoundSignerState[] = input.signers.map((signer, index) => ({
+    // Sama sääntö kuin eSinetissä: tuntematon vakioallekirjoittaja → 422.
+    const resolved = input.signers.map((signer) => {
+      if (!("standingSignerId" in signer)) return signer;
+      const standing = standingSigners.get(signer.standingSignerId);
+      if (!standing) {
+        throw new EsinettiError(
+          "unprocessable",
+          "standing_signer_id ei viittaa tämän organisaation vakioallekirjoittajaan.",
+        );
+      }
+      return {
+        name: standing.name,
+        email: standing.email,
+        roleLabel: signer.roleLabel ?? standing.roleLabel ?? undefined,
+        authLevel: "strong" as const,
+      };
+    });
+
+    const signers: RoundSignerState[] = resolved.map((signer, index) => ({
       id: randomUUID(),
       name: signer.name,
       email: signer.email,
@@ -211,6 +244,10 @@ export class EsinettiMockClient implements EsinettiClient {
     const company: EsinettiCompany = { id: existing?.id ?? randomUUID(), name: input.name, businessId: input.businessId ?? null };
     companies.set(key, company);
     return company;
+  }
+
+  async listStandingSigners(): Promise<StandingSigner[]> {
+    return [...standingSigners.values()].map((s) => ({ id: s.id, name: s.name, roleLabel: s.roleLabel }));
   }
 
   async findRoundByExternalRef(externalRef: string): Promise<Round | null> {
@@ -294,6 +331,26 @@ export class EsinettiMockClient implements EsinettiClient {
 // ---------------------------------------------------------------------------
 // Testiapurit. EIVÄT ole osa `EsinettiClient`-rajapintaa — ks. tiedoston
 // alun selitys siitä, miksi tämä ero on tärkeä.
+
+/**
+ * Lisää vakioallekirjoittajan mockiin. eSinetissä tämä tehdään organisaation
+ * asetuksissa (henkilötunnus annetaan siellä, ei koskaan clientin kautta).
+ */
+export function addMockStandingSigner(input: {
+  id?: string;
+  name: string;
+  email: string;
+  roleLabel?: string;
+}): StandingSigner {
+  const record: MockStandingSigner = {
+    id: input.id ?? randomUUID(),
+    name: input.name,
+    email: input.email,
+    roleLabel: input.roleLabel ?? null,
+  };
+  standingSigners.set(record.id, record);
+  return { id: record.id, name: record.name, roleLabel: record.roleLabel };
+}
 
 /** Merkitsee yhden allekirjoittajan avanneeksi ja tunnistautuneeksi. */
 export function markMockSignerIdentified(roundId: string, signerId: string): void {

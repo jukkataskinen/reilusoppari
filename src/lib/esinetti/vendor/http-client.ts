@@ -37,6 +37,7 @@ import type {
   Round,
   SealDocumentInput,
   SealDocumentResult,
+  StandingSigner,
   VerifyResult,
 } from "./types";
 
@@ -77,6 +78,7 @@ const KNOWN_CODES: readonly string[] = [
   "rate_limited",
   "conflict",
   "gone",
+  "unprocessable",
   "payload_too_large",
   "service_unavailable",
   "server_error",
@@ -89,6 +91,7 @@ function mapErrorCode(status: number, code: unknown): EsinettiErrorCode {
   }
   if (status === 401 || status === 403) return "unauthorized";
   if (status === 404) return "not_found";
+  if (status === 422) return "unprocessable";
   if (status === 429) return "rate_limited";
   if (status >= 500) return "server_error";
   return "validation_failed";
@@ -221,16 +224,22 @@ export class EsinettiHttpClient implements EsinettiClient {
           name: d.name,
           content_base64: toBase64(d.pdfBytes),
         })),
-        signers: input.signers.map((s) => ({
-          name: s.name,
-          email: s.email,
-          phone: s.phone,
-          role_label: s.roleLabel,
-          expected_birthdate: s.expectedBirthdate,
-          // Pöytäkirjojen arvo perustuu vahvaan tunnistukseen, joten oletus
-          // on `strong` eikä eSinetin oletus jää arvattavaksi.
-          auth_level: s.authLevel ?? "strong",
-        })),
+        signers: input.signers.map((s) =>
+          "standingSignerId" in s
+            ? // Nimi, sähköposti, vahva tunnistus ja hetun tiiviste tulevat
+              // eSinettiin tallennetulta vakioallekirjoittajalta.
+              { standing_signer_id: s.standingSignerId, role_label: s.roleLabel }
+            : {
+                name: s.name,
+                email: s.email,
+                phone: s.phone,
+                role_label: s.roleLabel,
+                expected_birthdate: s.expectedBirthdate,
+                // Pöytäkirjojen arvo perustuu vahvaan tunnistukseen, joten oletus
+                // on `strong` eikä eSinetin oletus jää arvattavaksi.
+                auth_level: s.authLevel ?? "strong",
+              },
+        ),
       },
     });
 
@@ -242,6 +251,13 @@ export class EsinettiHttpClient implements EsinettiClient {
       body: { name: input.name, business_id: input.businessId, external_ref: input.externalRef },
     });
     return { id: payload.id, name: payload.name, businessId: payload.business_id };
+  }
+
+  async listStandingSigners(): Promise<StandingSigner[]> {
+    const payload = await this.request<{
+      data?: { id: string; name: string; role_label: string | null }[];
+    }>("GET", "/standing-signers");
+    return (payload.data ?? []).map((s) => ({ id: s.id, name: s.name, roleLabel: s.role_label }));
   }
 
   async findRoundByExternalRef(externalRef: string): Promise<Round | null> {
