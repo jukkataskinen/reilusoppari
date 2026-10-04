@@ -20,6 +20,8 @@
  * ===========================================================================
  */
 
+import { sentryIngestOrigin } from "@/lib/sentry/options";
+
 /** Supabase Storagen alkuperä. Kuvat ja PDF:t haetaan sieltä allekirjoitetuilla linkeillä. */
 function supabaseOrigin(): string | null {
   const url = process.env.SUPABASE_URL?.trim();
@@ -39,6 +41,9 @@ function supabaseOrigin(): string | null {
  */
 export function buildContentSecurityPolicy(nonce: string, isDev: boolean): string {
   const storage = supabaseOrigin();
+  // Sentryn vastaanotto vain, kun virheseuranta on käytössä (DECISIONS.md
+  // 2026-10-04). Ilman DSN:ää policy on sama kuin ennen.
+  const sentry = sentryIngestOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
   const directives: Record<string, string[]> = {
     "default-src": ["'self'"],
@@ -54,7 +59,12 @@ export function buildContentSecurityPolicy(nonce: string, isDev: boolean): strin
     "font-src": ["'self'"],
     // Kuvien lataus menee suoraan Supabase Storageen allekirjoitetulla
     // URL:illa, joten selaimen on saatava ottaa yhteys sinne.
-    "connect-src": ["'self'", ...(storage ? [storage] : []), ...(isDev ? ["ws:"] : [])],
+    "connect-src": [
+      "'self'",
+      ...(storage ? [storage] : []),
+      ...(sentry ? [sentry] : []),
+      ...(isDev ? ["ws:"] : []),
+    ],
     // PDF-esikatselu omasta reitistä. Muualta ei upoteta mitään.
     "frame-src": ["'self'", "blob:"],
     "media-src": ["'self'", "blob:"],

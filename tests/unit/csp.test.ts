@@ -10,6 +10,7 @@ import { buildContentSecurityPolicy, createNonce } from "@/lib/security/csp";
  */
 
 const ORIGINAL_SUPABASE_URL = process.env.SUPABASE_URL;
+const ORIGINAL_SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 function parse(csp: string): Record<string, string[]> {
   const result: Record<string, string[]> = {};
@@ -24,6 +25,8 @@ function parse(csp: string): Record<string, string[]> {
 afterEach(() => {
   if (ORIGINAL_SUPABASE_URL === undefined) delete process.env.SUPABASE_URL;
   else process.env.SUPABASE_URL = ORIGINAL_SUPABASE_URL;
+  if (ORIGINAL_SENTRY_DSN === undefined) delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+  else process.env.NEXT_PUBLIC_SENTRY_DSN = ORIGINAL_SENTRY_DSN;
 });
 
 describe("CSP tuotannossa", () => {
@@ -85,6 +88,30 @@ describe("Supabase-alkuperä", () => {
 
     delete process.env.SUPABASE_URL;
     expect(parse(buildContentSecurityPolicy("N", false))["connect-src"]).toEqual(["'self'"]);
+  });
+});
+
+describe("Sentry", () => {
+  it("ilman DSN:ää policy on ennallaan", () => {
+    delete process.env.SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SENTRY_DSN;
+    expect(parse(buildContentSecurityPolicy("N", false))["connect-src"]).toEqual(["'self'"]);
+  });
+
+  it("DSN:n kanssa vain vastaanoton alkuperä yhteyksiin, ei avainta eikä skripteihin", () => {
+    delete process.env.SUPABASE_URL;
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://julkinenavain@o123.ingest.de.sentry.io/456";
+    const directives = parse(buildContentSecurityPolicy("N", false));
+    expect(directives["connect-src"]).toEqual(["'self'", "https://o123.ingest.de.sentry.io"]);
+    expect(directives["script-src"].join(" ")).not.toContain("sentry");
+  });
+
+  it("rikkinäinen tai salaamaton DSN ei kaada eikä avaa policya", () => {
+    delete process.env.SUPABASE_URL;
+    for (const dsn of ["ei-ole-url", "http://avain@sentry.example/1", "  "]) {
+      process.env.NEXT_PUBLIC_SENTRY_DSN = dsn;
+      expect(parse(buildContentSecurityPolicy("N", false))["connect-src"]).toEqual(["'self'"]);
+    }
   });
 });
 

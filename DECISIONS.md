@@ -5,6 +5,38 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Virheseuranta Sentryllä, päällä vasta DSN:llä (2026-10-04)
+
+Jukan hyväksymä. `@sentry/nextjs` on asennettu, mutta se käynnistyy vain, kun
+`SENTRY_DSN` (palvelin ja Edge, `src/instrumentation.ts`) tai
+`NEXT_PUBLIC_SENTRY_DSN` (selain, `src/instrumentation-client.ts`) on
+asetettu. Ilman niitä Sentryä ei ladata, verkkoon ei lähetetä mitään, eikä
+Sentryn koodia ole selaimen paketissa (ehto on käännöksessä aina epätosi).
+Ympäristö on `VERCEL_ENV`.
+
+**Henkilötiedot eivät mene Sentryyn.** `sendDefaultPii: false`, ei session
+replayta, `tracesSampleRate: 0`. `beforeSend` (`src/lib/sentry/scrub.ts`)
+poistaa käyttäjän, evästeet, otsikot, pyynnön rungon, hakuparametrit ja
+#-osan sekä konsolin murut, korvaa julkisten linkkien avaimet (`/kutsu/`,
+`/todistus/`, `/suosittelu/`) ja pitkät satunnaiset polun osat `[token]`:lla
+ja peittää sähköpostit ja henkilötunnukset virheviesteistä. Testi
+`tests/unit/sentry-scrub.test.ts`. Kohdan 0.1 kysymys 2 on tämän perusta.
+
+**Virheet tulevat Next.js:n `onRequestError`-koukusta**, ei Sentryn
+automaattisesta käärimisestä (`autoInstrument*` pois). Middlewaren
+kääriminen olisi voinut sotkea Auth0:n evästeiden kopioinnin. Selaimen
+kaatumiset raportoi uusi `src/app/global-error.tsx`, joka samalla korvaa
+Next.js:n englanninkielisen virhesivun suomenkielisellä.
+
+**CSP:** `connect-src` saa Sentryn vastaanoton alkuperän vain, kun DSN on
+asetettu ja se on https. Muuten policy on täsmälleen ennallaan.
+
+**Lähdekartat** vain `SENTRY_AUTH_TOKEN`illa, ja ne poistetaan lähetyksen
+jälkeen, jottei lähdekoodi ole selaimesta luettavissa. Sentryn
+käännöstyökalun käyttötilastot pois (`telemetry: false`).
+
+---
+
 ## Ohjekirja ja kehitystoiveet (2026-09-27)
 
 Sama malli kuin Mittarilukemassa ja Skogissa: julkinen ohjesivusto
