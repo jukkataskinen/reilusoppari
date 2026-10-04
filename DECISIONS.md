@@ -1844,3 +1844,12 @@ puhelimella. `.env.local` osoittaa tuotantoon, ja 4.10.2026 testiajo ehti
 käynnistyä sitä vasten.
 
 **Migraatiot yhdistyvät automaattisesti (Jukka 4.10.2026).** Linja on sama kaikissa repoissa kuin adeptassa: Jukka haluaa nähdä tuloksen ennen kuin hyväksyy mitään. Vain `.github/`-muutokset yhdistetään käsin. Riskit-kohta kertoo, mitä migraatio muuttaa tuotannossa.
+
+## 2026-10-04 — eSinetin client päivitetty, vakioallekirjoittajaa ei vielä käytetä
+
+**Päätös:** Kopio päivitettiin eSinetin mainin tasalle (vakioallekirjoittaja,
+virhekoodi `unprocessable`, `listStandingSigners`). Reilusoppari ei käytä
+vakioallekirjoittajaa, joten sovelluksen koodiin ei tarvittu muutoksia.
+**Perustelu:** allekirjoittajat annetaan edelleen nimellä ja sähköpostilla
+(`src/lib/tenancy/signing.ts`), ja uusi virhe syntyy vain vakioallekirjoittajaa
+käytettäessä.

@@ -18,6 +18,8 @@ export type EsinettiErrorCode =
   | "rate_limited"
   | "conflict"
   | "gone"
+  /** HTTP 422: viittaus, jota organisaatiolla ei ole (esim. `standingSignerId`). */
+  | "unprocessable"
   | "payload_too_large"
   | "service_unavailable"
   | "server_error"
