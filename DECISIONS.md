@@ -1842,3 +1842,5 @@ Testit lukevat Supabase-avaimet vain `.env.test.local`:ista.
 **Perustelu:** push mainiin julkaisee tuotantoon, ja Jukka tarkistaa PR:t
 puhelimella. `.env.local` osoittaa tuotantoon, ja 4.10.2026 testiajo ehti
 käynnistyä sitä vasten.
+
+**Migraatiot yhdistyvät automaattisesti (Jukka 4.10.2026).** Linja on sama kaikissa repoissa kuin adeptassa: Jukka haluaa nähdä tuloksen ennen kuin hyväksyy mitään. Vain `.github/`-muutokset yhdistetään käsin. Riskit-kohta kertoo, mitä migraatio muuttaa tuotannossa.
