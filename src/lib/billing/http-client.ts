@@ -82,7 +82,17 @@ export class StripeHttpClient implements BillingClient {
     for (const [key, value] of Object.entries(metadata)) {
       fields[`metadata[${key}]`] = value;
     }
-    if (!recurring) {
+    if (recurring) {
+      /*
+        Checkout-session ei kopioi omaa metadataansa luotavaan tilaukseen.
+        Ilman tätä webhookin `customer.subscription.updated` saapuisi tyhjällä
+        metadatalla, ja tilaus jäisi kirjautumatta kenellekään — tai, Plussan
+        tapauksessa, kirjautuisi ilman tietoa siitä, kumpaa asuntoa se koskee.
+      */
+      for (const [key, value] of Object.entries(metadata)) {
+        fields[`subscription_data[metadata][${key}]`] = value;
+      }
+    } else {
       for (const [key, value] of Object.entries(metadata)) {
         fields[`payment_intent_data[metadata][${key}]`] = value;
       }

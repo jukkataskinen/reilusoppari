@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getProperty } from "@/lib/db/properties";
 import { collectTaxReport, listStoredReports, taxYears } from "@/lib/db/tax-reports";
+import { isUsingMockBilling } from "@/lib/billing";
+import { quotePlus } from "@/lib/billing/plus";
 import { CATEGORY_GUIDANCE, CLOSING_NOTE, DISCLAIMER } from "@content/tax-guidance.fi";
 import { describeLine } from "@/documents/TaxReport";
 import { isKmRateConfirmed, kmRate } from "@/lib/expenses/categories";
@@ -58,9 +60,10 @@ export default async function TaxReportPage({
   const wanted = Number((await searchParams).vuosi);
   const year = years.includes(wanted) ? wanted : (years[0] ?? new Date().getFullYear());
 
-  const [report, stored] = await Promise.all([
+  const [report, stored, plusQuote] = await Promise.all([
     collectTaxReport(user.id, id, year),
     listStoredReports(user.id, id),
+    quotePlus(user.id, id),
   ]);
 
   const annual = report.lines.filter((line) => line.deductibleAnnually);
@@ -230,11 +233,19 @@ export default async function TaxReportPage({
 
       {/* --- Laskelman tulostus -------------------------------------------- */}
 
+      {plusQuote && plusQuote.amountCents > 0 && isUsingMockBilling() ? (
+        <p className="mt-6 rounded-[var(--radius-panel)] border border-coral bg-paper p-5 text-sm">
+          Stripe-yhteyttä ei ole määritetty, joten maksaminen on harjoittelutilassa. Mitään ei
+          veloiteta.
+        </p>
+      ) : null}
+
       <SealTaxReport
         propertyId={id}
         year={year}
         sealedAt={sealed?.generatedAt ?? null}
         hasContent={report.lines.length > 0 || report.rentalIncome > 0}
+        plusQuote={plusQuote}
       />
 
       <p className="mt-6 text-sm text-ink/70">{CLOSING_NOTE}</p>

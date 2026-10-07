@@ -244,4 +244,26 @@ describe("tilauksen määrä ja kausi", () => {
     expect(event?.quantity).toBeNull();
     expect(event?.currentPeriodEnd).toBeNull();
   });
+
+  it("Plus-tilauksen metadatassa kulkee asunnon id", () => {
+    /*
+      Plus on asunnon tilaus, ei käyttäjän (migraatio 0019): webhookin on
+      tiedettävä KUMPI asunto, eikä se tule tilausoliosta vaan metadatasta,
+      jonka `http-client.ts` kirjoittaa tilauksen omaan metadataan.
+    */
+    const tilaus = JSON.stringify({
+      id: "evt_9",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_5",
+          metadata: { userId: "u1", kind: "plus_yearly", propertyId: "asunto-1" },
+        },
+      },
+    });
+
+    const event = parseBillingEvent(tilaus);
+    expect(event?.metadata.kind).toBe("plus_yearly");
+    expect(event?.metadata.propertyId).toBe("asunto-1");
+  });
 });

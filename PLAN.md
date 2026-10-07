@@ -213,7 +213,10 @@ Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 - [x] Ohjetekstit luokan vieressä; jokaisessa "ei veroneuvontaa"
 - [ ] Kuitit liitteenä — **toteutettu toisin**: kuitit säilyvät sovelluksessa
       ja laskelmassa kerrotaan niiden määrä (DECISIONS.md 2026-09-12)
-- [ ] Ensimmäinen tulostus laukaisee Plus-maksun — odottaa vaihetta 5
+- [x] Ensimmäinen tulostus laukaisee Plus-maksun Stripe Checkoutissa
+      (mockia vasten; ks. DECISIONS.md 2026-10-07). Plus on asunnon tilaus,
+      ei käyttäjän (migraatio 0019) — toisen asunnon Plus ei saa näyttää
+      kattavan toista
 - [ ] Ohjetekstien tarkistus (Jukka, `content/tax-guidance.fi.ts`)
 
 ## Tietosuoja ja kuormituksen rajaus

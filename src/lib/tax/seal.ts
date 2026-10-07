@@ -40,6 +40,7 @@ import { requireExpenseAccess } from "../db/access";
 import { getProperty } from "../db/properties";
 import { collectTaxReport, saveSealedReport } from "../db/tax-reports";
 import { assertRealEsinetti, getEsinettiClient } from "../esinetti";
+import type { PlusPaidVia } from "../billing/pricing";
 import { isEmpty, type TaxReport as TaxReportNumbers } from "./report";
 
 export type TaxSealResult =
@@ -166,6 +167,8 @@ export async function sealTaxReport(
   userId: string,
   propertyId: string,
   year: number,
+  /** Mikä maksoi tämän sinetöinnin (`lib/billing/plus.ts` on jo tarkistanut tämän). */
+  paidVia: PlusPaidVia,
   now: Date = new Date(),
 ): Promise<TaxSealResult> {
   const numbers = await collectTaxReport(userId, propertyId, year);
@@ -227,6 +230,7 @@ export async function sealTaxReport(
     report: numbers,
     sealedPath: path,
     sealedSha256: sealed.sealedSha256,
+    paidVia,
     now,
   });
 

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { sealTaxReportAction, type TaxActionState } from "@/app/asunnot/tax-actions";
+import { formatPrice, requiresPlusPayment, type PlusPriceDecision } from "@/lib/billing/pricing";
 
 const initialState: TaxActionState = {};
 
@@ -34,11 +35,14 @@ export function SealTaxReport({
   year,
   sealedAt,
   hasContent,
+  plusQuote,
 }: {
   propertyId: string;
   year: number;
   sealedAt: string | null;
   hasContent: boolean;
+  /** Mitä sinetöinti maksaisi juuri nyt. `null`, jos sitä ei voitu laskea. */
+  plusQuote: PlusPriceDecision | null;
 }) {
   const [state, seal, pending] = useActionState(sealTaxReportAction, initialState);
 
@@ -84,6 +88,14 @@ export function SealTaxReport({
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="year" value={year} />
 
+          {plusQuote ? (
+            <p className="mb-2 text-sm text-ink/70">
+              {requiresPlusPayment(plusQuote)
+                ? `Tämä aloittaa Plus-tilauksen tälle asunnolle: ${formatPrice(plusQuote.amountCents)} / vuosi. Voit perua sen milloin vain asiakasportaalista.`
+                : plusQuote.reason}
+            </p>
+          ) : null}
+
           {state.message ? (
             <p role="alert" className="mb-2 text-sm text-coral">
               {state.message}
@@ -97,9 +109,11 @@ export function SealTaxReport({
           >
             {pending
               ? "Sinetöidään…"
-              : sealedAt
-                ? "Sinetöi uudelleen ja korvaa vanha"
-                : "Sinetöi laskelma"}
+              : plusQuote && requiresPlusPayment(plusQuote)
+                ? "Siirry maksamaan"
+                : sealedAt
+                  ? "Sinetöi uudelleen ja korvaa vanha"
+                  : "Sinetöi laskelma"}
           </button>
         </form>
       ) : (
