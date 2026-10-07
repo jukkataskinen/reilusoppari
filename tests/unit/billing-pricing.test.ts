@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   formatPrice,
+  PLUS_YEARLY_CENTS,
   PORTFOLIO_MIN_PROPERTIES,
   portfolioPriceCents,
   portfolioWorthIt,
+  priceForPlus,
   priceForTenancy,
   requiresPayment,
+  requiresPlusPayment,
   TENANCY_PRICE_CENTS,
   vatShareCents,
 } from "@/lib/billing/pricing";
@@ -76,6 +79,28 @@ describe("vuokrasuhteen hinta", () => {
 
   it("kertoo aina, ettei vuokralainen maksa", () => {
     expect(priceForTenancy(MAKSANUT).reason).toContain("Vuokralainen ei maksa");
+  });
+});
+
+describe("Plus-laskelman hinta", () => {
+  it("maksaa 12 € asunnolta, kun ei salkkua eikä omaa tilausta", () => {
+    const hinta = priceForPlus({ portfolioActive: false, propertySubscriptionActive: false });
+    expect(hinta.paidVia).toBe("plus_yearly");
+    expect(hinta.amountCents).toBe(PLUS_YEARLY_CENTS);
+    expect(requiresPlusPayment(hinta)).toBe(true);
+  });
+
+  it("on ilmainen, jos asunto on jo Plus-tilauksen piirissä", () => {
+    const hinta = priceForPlus({ portfolioActive: false, propertySubscriptionActive: true });
+    expect(hinta.paidVia).toBe("plus_yearly");
+    expect(requiresPlusPayment(hinta)).toBe(false);
+  });
+
+  it("salkku menee asuntokohtaisen tilauksen edelle", () => {
+    // Molemmat ovat voimassa: salkku on se, joka selittää hinnan käyttäjälle.
+    const hinta = priceForPlus({ portfolioActive: true, propertySubscriptionActive: true });
+    expect(hinta.paidVia).toBe("portfolio");
+    expect(requiresPlusPayment(hinta)).toBe(false);
   });
 });
 

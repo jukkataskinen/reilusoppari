@@ -229,6 +229,8 @@ export async function upsertSubscription(input: {
   quantity: number;
   status: "active" | "past_due" | "canceled";
   currentPeriodEnd: string | null;
+  /** Vain plus_yearly: mille asunnolle tilaus kuuluu. Salkulle aina null. */
+  propertyId?: string | null;
 }): Promise<void> {
   const { error } = await getServiceClient()
     .from("rs_subscriptions")
@@ -240,6 +242,7 @@ export async function upsertSubscription(input: {
         quantity: input.quantity,
         status: input.status,
         current_period_end: input.currentPeriodEnd,
+        property_id: input.propertyId ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "stripe_subscription_id" },
@@ -297,6 +300,42 @@ export async function getSubscription(
   return {
     stripeSubscriptionId: row.stripe_subscription_id,
     quantity: row.quantity,
+    status: row.status,
+    currentPeriodEnd: row.current_period_end,
+  };
+}
+
+/**
+ * Yhden asunnon Plus-tilaus, jos sellainen on.
+ *
+ * Plus on asuntokohtainen toisin kuin salkku (migraatio 0019): tätä kysytään
+ * `property_id`:llä, ei käyttäjällä, jottei toisen asunnon tilaus näytä
+ * kattavan kaikkia käyttäjän asuntoja.
+ */
+export async function getPropertySubscription(propertyId: string): Promise<{
+  stripeSubscriptionId: string;
+  status: "active" | "past_due" | "canceled";
+  currentPeriodEnd: string | null;
+} | null> {
+  const { data } = await getServiceClient()
+    .from("rs_subscriptions")
+    .select("stripe_subscription_id, status, current_period_end")
+    .eq("property_id", propertyId)
+    .eq("kind", "plus_yearly")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const row = data as {
+    stripe_subscription_id: string;
+    status: "active" | "past_due" | "canceled";
+    current_period_end: string | null;
+  } | null;
+
+  if (!row) return null;
+
+  return {
+    stripeSubscriptionId: row.stripe_subscription_id,
     status: row.status,
     currentPeriodEnd: row.current_period_end,
   };

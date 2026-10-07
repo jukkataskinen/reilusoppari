@@ -114,16 +114,20 @@ async function handle(event: BillingEvent): Promise<void> {
   }
 
   if (event.type === "subscription.updated") {
-    const { userId, kind } = event.metadata;
+    const { userId, kind, propertyId } = event.metadata;
     if (!userId || !event.subscriptionId) return;
+
+    const isPlus = kind === "plus_yearly";
 
     await upsertSubscription({
       userId,
-      kind: kind === "plus_yearly" ? "plus_yearly" : "portfolio_yearly",
+      kind: isPlus ? "plus_yearly" : "portfolio_yearly",
       stripeSubscriptionId: event.subscriptionId,
       quantity: event.quantity ?? 1,
       status: "active",
       currentPeriodEnd: event.currentPeriodEnd,
+      // Plus on asunnon tilaus (migraatio 0019), salkku käyttäjän.
+      propertyId: isPlus ? (propertyId ?? null) : null,
     });
     return;
   }

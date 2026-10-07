@@ -106,6 +106,60 @@ export function requiresPayment(decision: PriceDecision): boolean {
   return decision.amountCents > 0;
 }
 
+/** Mitä Plus-sinetöinti laukaisee. Sama arvojoukko kuin `rs_tax_reports.paid_via`. */
+export type PlusPaidVia = "plus_yearly" | "portfolio";
+
+export interface PlusPriceDecision {
+  paidVia: PlusPaidVia;
+  /** Sentteinä. Nolla, jos maksua ei tarvita. */
+  amountCents: number;
+  /** Miksi tämä hinta — näytetään käyttäjälle sellaisenaan. */
+  reason: string;
+}
+
+export interface PlusPricingContext {
+  /** Kattaako salkkutilaus tämän asunnon? */
+  portfolioActive: boolean;
+  /** Onko tällä asunnolla jo voimassa oleva Plus-tilaus? */
+  propertySubscriptionActive: boolean;
+}
+
+/**
+ * Mitä verolaskelman sinetöinti maksaisi tälle asunnolle juuri nyt.
+ *
+ * Puhdas funktio, sama periaate kuin `priceForTenancy`: ei kysele
+ * tietokannasta eikä Stripeltä, jotta sääntö on testattavissa ilman että
+ * mikään ulkoinen palvelu on pystyssä.
+ */
+export function priceForPlus(context: PlusPricingContext): PlusPriceDecision {
+  if (context.portfolioActive) {
+    return {
+      paidVia: "portfolio",
+      amountCents: 0,
+      reason: "Sisältyy salkkutilaukseesi.",
+    };
+  }
+
+  if (context.propertySubscriptionActive) {
+    return {
+      paidVia: "plus_yearly",
+      amountCents: 0,
+      reason: "Plus-tilauksesi kattaa tämän asunnon.",
+    };
+  }
+
+  return {
+    paidVia: "plus_yearly",
+    amountCents: PLUS_YEARLY_CENTS,
+    reason: "Plus-tilaus alkaa tästä sinetöinnistä: 12 €/asunto/v, kunnes irtisanot sen.",
+  };
+}
+
+/** Vaatiiko päätös Stripe-maksun? */
+export function requiresPlusPayment(decision: PlusPriceDecision): boolean {
+  return decision.amountCents > 0;
+}
+
 /** Salkkutilauksen vuosihinta annetulle asuntomäärälle, sentteinä. */
 export function portfolioPriceCents(properties: number): number {
   if (properties < PORTFOLIO_MIN_PROPERTIES) {

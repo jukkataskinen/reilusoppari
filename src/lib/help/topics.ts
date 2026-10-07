@@ -766,7 +766,12 @@ export const HELP_TOPICS: HelpTopic[] = [
     group: "Kulut ja verotus",
     title: "Verolaskelma",
     summary: "Vuoden vuokratulot ja kulut asunnoittain. Luvut on helppo siirtää OmaVeroon.",
-    highlights: ["Vuokratulo tulee kuittauksista", "Kulut luokittain", "Laskelman voi tallentaa ja sinetöidä"],
+    highlights: [
+      "Vuokratulo tulee kuittauksista",
+      "Kulut luokittain",
+      "Laskelman voi tallentaa ja sinetöidä",
+      "Sinetöinti maksaa, paitsi jos sinulla on salkkutilaus",
+    ],
     roles: "landlord",
     sections: [
       {
@@ -787,6 +792,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Siirrä luvut OmaVeroon.",
           "Valitse Tallenna PDF, jos haluat laskelman tiedostona.",
           "Valitse Sinetöi laskelma. Sinetöity laskelma ei voi muuttua jälkikäteen.",
+          "Jos sinulla ei ole salkkutilausta, sinut ohjataan ensin maksamaan Plus.",
         ],
       },
     ],
@@ -794,8 +800,9 @@ export const HELP_TOPICS: HelpTopic[] = [
       "Laskelma on yhteenveto omista kirjauksistasi, ei veroneuvontaa.",
       "Reilusoppari ei lähetä veroilmoitusta.",
       "Kuitit eivät ole PDF-tiedostossa. Ne säilyvät sovelluksessa.",
+      "Ensimmäinen sinetöinti tälle asunnolle aloittaa Plus-tilauksen, 12 euroa asunnolta vuodessa. Voit perua sen milloin vain. Jos sinulla on salkkutilaus, Plus sisältyy siihen.",
     ],
-    related: ["kulut", "vuokranmaksu"],
+    related: ["kulut", "vuokranmaksu", "laskutus"],
   },
 
   // --- Tili ja palvelu -------------------------------------------------------

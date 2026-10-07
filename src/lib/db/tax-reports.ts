@@ -24,6 +24,7 @@ import { getServiceClient } from "./supabase";
 import { requireExpenseAccess } from "./access";
 import { isExpenseCategory } from "../expenses/categories";
 import { recurringForProperty } from "./recurring-expenses";
+import type { PlusPaidVia } from "../billing/pricing";
 import {
   buildTaxReport,
   type ReportConfirmation,
@@ -37,6 +38,8 @@ export interface StoredTaxReport {
   sealedPath: string | null;
   sealedSha256: string | null;
   generatedAt: string | null;
+  /** Mikä maksoi tämän vuoden sinetöinnin. `null`, jos vielä sinetöimättä. */
+  paidVia: PlusPaidVia | null;
 }
 
 /**
@@ -229,7 +232,7 @@ export async function listStoredReports(
 
   const { data, error } = await getServiceClient()
     .from("rs_tax_reports")
-    .select("id, year, sealed_path, sealed_sha256, generated_at")
+    .select("id, year, sealed_path, sealed_sha256, generated_at, paid_via")
     .eq("property_id", propertyId)
     .order("year", { ascending: false });
 
@@ -245,6 +248,7 @@ export async function listStoredReports(
       sealed_path: string | null;
       sealed_sha256: string | null;
       generated_at: string | null;
+      paid_via: PlusPaidVia | null;
     }>
   ).map((row) => ({
     id: row.id,
@@ -252,6 +256,7 @@ export async function listStoredReports(
     sealedPath: row.sealed_path,
     sealedSha256: row.sealed_sha256,
     generatedAt: row.generated_at,
+    paidVia: row.paid_via,
   }));
 }
 
@@ -272,6 +277,8 @@ export async function saveSealedReport(input: {
   report: TaxReport;
   sealedPath: string;
   sealedSha256: string;
+  /** Mikä maksoi tämän sinetöinnin: salkku tai Plus-tilaus (CLAUDE.md 5.7). */
+  paidVia: PlusPaidVia;
   now: Date;
 }): Promise<void> {
   const timestamp = input.now.toISOString();
@@ -288,6 +295,7 @@ export async function saveSealedReport(input: {
         sealed_path: input.sealedPath,
         sealed_sha256: input.sealedSha256,
         generated_at: timestamp,
+        paid_via: input.paidVia,
         updated_at: timestamp,
       },
       { onConflict: "property_id,year" },

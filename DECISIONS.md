@@ -5,6 +5,31 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Plus-tilaus on asunnon, ei käyttäjän (2026-10-07, yötyö)
+
+PLAN.md:n rivi "Ensimmäinen tulostus laukaisee Plus-maksun" toteutettu.
+`rs_tax_reports.paid_via` oli valmiina migraatiosta 0001, mutta
+`rs_subscriptions` (migraatio 0012) oli käyttäjäkohtainen — riitti salkulle,
+ei Plussalle, joka on "12 €/**asunto**/v" (CLAUDE.md kohta 2). Käyttäjän
+yhden asunnon Plus-tilaus olisi näyttänyt kattavan kaikki hänen asuntonsa.
+
+Migraatio 0019 lisää `rs_subscriptions.property_id`:n (pakollinen
+`plus_yearly`:lle, tyhjä `portfolio_yearly`:lle). `lib/billing/plus.ts`
+tarkistaa salkun, sitten asunnon oman tilauksen, ja luo Stripe Checkout
+-session vasta jos kumpikaan ei kata — samalla "käyttöoikeus vasta
+webhookista" -säännöllä kuin `tenancy_29`:ssä. Sinetöinti tarkistaa
+tyhjän vuoden ENNEN maksua: tyhjästä laskelmasta ei saa veloittaa.
+
+**Sivuhavainto, korjattu samalla:** `http-client.ts` ei kirjoittanut
+Checkout-session metadataa Stripen tilausobjektiin
+(`subscription_data[metadata]`), vain itse sessioon. Webhookin
+`customer.subscription.updated` lukee metadatan tilausoliosta (tarkoituksella,
+ks. 2026-09-26), joten se olisi tullut tyhjänä — myös salkkutilaukselle.
+Stripe-avainten puute ei ole paljastanut tätä (BLOCKERS.md: "Testaus Stripe
+test modessa — odottaa avaimia"), koska mock ei ikinä ohita http-clientiä.
+
+---
+
 ## Virheseuranta Sentryllä, päällä vasta DSN:llä (2026-10-04)
 
 Jukan hyväksymä. `@sentry/nextjs` on asennettu, mutta se käynnistyy vain, kun

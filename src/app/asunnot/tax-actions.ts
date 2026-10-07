@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
+import { ensurePlusAccess } from "@/lib/billing/plus";
+import { collectTaxReport } from "@/lib/db/tax-reports";
+import { isEmpty } from "@/lib/tax/report";
 import { sealTaxReport } from "@/lib/tax/seal";
 
 /**
@@ -18,9 +21,15 @@ import { sealTaxReport } from "@/lib/tax/seal";
  * 3. Syöte: asunnon id ja vuosi. Vuosi tarkistetaan luvuksi järkevältä
  *    väliltä, jottei sillä voi rakentaa outoja kyselyjä.
  * 4. IDOR: asunnon id lomakkeesta, omistajatarkistus datakerroksessa.
- * 5. Salaisuuksia ei käsitellä.
+ * 5. Salaisuus: `STRIPE_SECRET_KEY` luetaan vain palvelimella
+ *    (`ensurePlusAccess`), ei tässä.
  * 6. Epäonnistuminen: neutraali viesti.
  * 7. Lokitus: ei summia eikä osoitteita.
+ *
+ * TYHJÄÄ VUOTTA EI VELOITETA
+ *
+ * Sisältö tarkistetaan ENNEN maksua. Jos vuodelle ei ole kirjattu mitään,
+ * käyttäjää ei ohjata maksamaan laskelmasta, jota ei voi sinetöidä.
  * ===========================================================================
  */
 
@@ -49,8 +58,30 @@ export async function sealTaxReportAction(
 
   if (!propertyId || year === null) return { message: "Vuosi puuttuu tai on virheellinen." };
 
+  let numbers;
   try {
-    const result = await sealTaxReport(user.id, propertyId, year);
+    numbers = await collectTaxReport(user.id, propertyId, year);
+  } catch {
+    return { message: "Laskelman tietoja ei voitu hakea." };
+  }
+
+  if (isEmpty(numbers)) {
+    return { message: "Vuodelle ei ole kirjattu tuloja eikä kuluja. Laskelmassa ei olisi mitään." };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.reilusoppari.fi";
+
+  const access = await ensurePlusAccess({ userId: user.id, propertyId, appUrl });
+  if (!access.ok) {
+    // Ei maksua vielä: käyttäjä ohjataan Stripen sivulle. `redirect` heittää,
+    // joten mitään ei tule tämän jälkeen — ja se ei saa jäädä try/catchiin,
+    // joka söisi uudelleenohjauksen virheenä.
+    if ("redirectUrl" in access) redirect(access.redirectUrl);
+    return { message: access.message };
+  }
+
+  try {
+    const result = await sealTaxReport(user.id, propertyId, year, access.paidVia);
     if (!result.ok) return { message: result.message };
   } catch (err) {
     // `assertRealEsinetti` heittää, jos eSinetti on vielä mock. Se on
