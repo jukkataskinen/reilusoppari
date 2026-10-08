@@ -1910,3 +1910,34 @@ vakioallekirjoittajaa, joten sovelluksen koodiin ei tarvittu muutoksia.
 **Perustelu:** allekirjoittajat annetaan edelleen nimellä ja sähköpostilla
 (`src/lib/tenancy/signing.ts`), ja uusi virhe syntyy vain vakioallekirjoittajaa
 käytettäessä.
+
+## 2026-10-08 — Tilausvahvistus sähköpostiin (yöajo)
+
+PLAN.md:n vaihe 5 -tehtävä oli merkitty "odottaa `RESEND_API_KEY`:tä", mutta
+sähköpostin lähetysrajapinta (`lib/notifications/email.ts`) on ollut valmis
+siitä asti kun muistutusketju tehtiin (vaihe 2) — ja se toimii juuri tällä
+samalla säännöllä kuin eSinetti ja Stripe: avain puuttuu → ei lähetystä, ei
+virhettä. Tehtävä ei siis odottanut avainta, vaan koodia.
+
+**Toteutus:** `src/lib/billing/confirmation.ts` on puhdas funktio, joka
+muotoilee kuitin tekstin tuotteen (`tenancy_29`, `plus_yearly`,
+`portfolio_yearly`) ja summan perusteella. Stripen webhook
+(`api/stripe/webhook/route.ts`) kutsuu sitä `checkout.completed`-tapahtumassa
+ja lähettää viestin `sendEmail`illä käyttäjän omaan sähköpostiin
+(`rs_users.email`, luettuna `getBillingProfile`illa — ei Stripen
+tapahtumasta, joka ei aina tunne asiakasta ensimmäisellä maksulla).
+
+**Miksi juuri `checkout.completed` eikä `subscription.updated`:** Stripe
+lähettää `checkout.session.completed`-tapahtuman kertaalleen ostohetkellä,
+myös tilaustuotteille (sen `amount_total` on ensimmäisen laskun summa).
+Vuosittaiset uusiutumiset kulkevat muita tapahtumia, joita sovellus ei
+kuuntele — kuitti ei siis toistu joka vuosi, vain ensimmäisellä kerralla.
+Se on oikea rajaus: "tilausvahvistus" tarkoittaa oston kuittausta, ei
+laskutusmuistutusta.
+
+**Epäonnistunut lähetys ei kaada webhookia.** Kuitti on täydennys
+käyttöoikeuden myöntämiseen, ei ehto sille — samalla periaatteella kuin
+muutkin ilmoitukset tässä sovelluksessa.
+
+`RESEND_API_KEY` on yhä BLOCKERS.md:ssä: koodi on valmis, mutta tuotannossa
+viesti lähtee vasta kun Jukka lisää avaimen Verceliin.

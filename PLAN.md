@@ -263,7 +263,10 @@ kuuluvat valmiiseen tuotteeseen.
 - [x] Webhook allekirjoitustarkistuksella ja toiston estolla
 - [x] Salkkutilaus: `/laskutus`, rehellinen vertailu toteutuneella käytöllä,
       asuntomäärän päivitys napin takana, Customer Portal laskuille
-- [ ] Tilausvahvistus sähköpostiin — odottaa `RESEND_API_KEY`:tä
+- [x] Tilausvahvistus sähköpostiin (`src/lib/billing/confirmation.ts`,
+      `checkout.completed`-webhookista). Samalla säännöllä kuin muu
+      sähköposti: ilman `RESEND_API_KEY`:tä lähetys jää tekemättä mutta
+      maksun käsittely ei kaadu — avain on yhä BLOCKERS.md:ssä Jukalle
 - [ ] Testaus Stripe test modessa — odottaa avaimia (Jukka)
 
 ## Vaihe 6 — Yhteydenottolupa (lisäominaisuus)
