@@ -300,6 +300,10 @@ Sama malli kuin Mittarilukemassa. DECISIONS.md 2026-09-27.
 - [ ] Kirjautuneen näkymän selaintesti (ohjelinkit, toiveen lähetys):
       vaatii testikannan ja kirjautumisen, ks. BLOCKERS.md e2e
 
+## Kehitysehdotukset (Jukan päätös 8.10.2026)
+
+- [ ] Kehitysehdotukset yhteisen käytännön mukaan (`docs/kehitysehdotukset.md`): laajenna nykyiset kehitystoiveet (`rs_feature_requests`). Tilat uusi → hyväksytty → työn alla → testattavana → valmis, sivupolkuna hylätty ja paluu testauksesta työn alle. Lomakkeeseen tarkka kuvaus ja valinnainen kuvakaappaus (yksityiseen tiedostovarastoon, ei gittiin eikä GitHubiin). Koodaajalle sähköposti uudesta ehdotuksesta, käsittelysivu (hyväksy, muokkaa ja hyväksy, hylkää vastauksella), hyväksynnästä GitHub-issue tunnisteella `kehitysehdotus` ilman henkilötietoja, webhook `/api/github/webhook` (PR avattu/yhdistetty, issue suljettu/avattu), testauspyyntö koodaajalle ja lopuksi viesti käyttäjälle. Tilasiirtymät puhtaana funktiona testeineen. Token `GITHUB_ISSUES_TOKEN`, webhookin salaisuus ja `KEHITYS_KOODAAJA_EMAIL` BLOCKERSiin Jukalle. Ohje selkokielisenä.
+
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
 **Muutettu 2026-09-11:** Jukan korjaus — vaatimus ei ole sovelluskauppa vaan
