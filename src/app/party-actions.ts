@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { fieldErrors } from "@/lib/property/schema";
+import { fieldErrors } from "@/lib/forms/schema";
 import { hasEncryptionKey } from "@/lib/identity/crypto";
 import {
   applyOwnDefaults,

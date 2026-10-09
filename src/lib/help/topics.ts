@@ -100,6 +100,15 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Valikko on puhelimessa alareunassa: Asunnot, Vuokrasuhteet ja Omat tiedot.",
         ],
       },
+      {
+        title: "Lomakkeiden täyttäminen",
+        bullets: [
+          "Jos jokin tieto puuttuu, lomake ei tyhjene. Kaikki kirjoittamasi tiedot jäävät paikalleen.",
+          "Puuttuva tai väärä kohta näkyy punaisella, ja sen alla lukee, mitä pitää korjata.",
+          "Sivu siirtyy itse ensimmäiseen korjattavaan kohtaan.",
+          "Harmaa kursiivi teksti, joka alkaa sanalla esim., on vain esimerkki. Se ei ole täytetty tieto.",
+        ],
+      },
     ],
     tips: [
       "Jokaisen sivun yläreunassa on Ohje. Se avaa juuri sen sivun ohjeen.",

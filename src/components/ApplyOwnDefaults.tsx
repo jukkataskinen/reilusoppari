@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { applyOwnDefaultsAction, type PartyFormState } from "@/app/party-actions";
+import { Form } from "@/components/Form";
 
 const initialState: PartyFormState = { errors: {} };
 
@@ -25,7 +26,7 @@ export function ApplyOwnDefaults({
   const [state, formAction, pending] = useActionState(applyOwnDefaultsAction, initialState);
 
   return (
-    <form action={formAction} className="mt-4">
+    <Form action={formAction} className="mt-4">
       <input type="hidden" name="tenancyId" value={tenancyId} />
       <input type="hidden" name="partyId" value={partyId} />
 
@@ -42,6 +43,6 @@ export function ApplyOwnDefaults({
       >
         {pending ? "Kopioidaan…" : "Täytä omista tiedoistani"}
       </button>
-    </form>
+    </Form>
   );
 }

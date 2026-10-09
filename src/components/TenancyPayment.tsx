@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { payTenancyAction, type BillingActionState } from "@/app/vuokrasuhteet/billing-actions";
 import { CONSENT_TEXT } from "@/lib/billing/withdrawal";
+import { Form } from "@/components/Form";
 
 const initialState: BillingActionState = {};
 
@@ -59,7 +60,7 @@ export function TenancyPayment({
         </p>
       ) : null}
 
-      <form action={pay} className="mt-4">
+      <Form action={pay} className="mt-4">
         <input type="hidden" name="tenancyId" value={tenancyId} />
 
         {price ? (
@@ -88,7 +89,7 @@ export function TenancyPayment({
         >
           {pending ? "Avataan…" : price ? `Maksa ${price}` : "Ota käyttöön"}
         </button>
-      </form>
+      </Form>
 
       {price ? (
         <p className="mt-3 text-sm text-ink/60">

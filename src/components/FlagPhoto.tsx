@@ -6,6 +6,7 @@ import {
   flagPhotoAction,
   type InspectionActionState,
 } from "@/app/vuokrasuhteet/inspection-actions";
+import { Form } from "@/components/Form";
 
 const initialState: InspectionActionState = {};
 
@@ -55,7 +56,7 @@ export function FlagPhoto({
   }
 
   return (
-    <form action={formAction} className="mt-3 rounded-[10px] border border-line p-3">
+    <Form action={formAction} clearOn={state.done ? state : null} className="mt-3 rounded-[10px] border border-line p-3">
       <input type="hidden" name="tenancyId" value={tenancyId} />
       <input type="hidden" name="photoId" value={photoId} />
 
@@ -71,7 +72,7 @@ export function FlagPhoto({
         id={`syy-${photoId}`}
         name="reason"
         maxLength={200}
-        placeholder="Esimerkiksi: väärä huone"
+        placeholder="esim. väärä huone"
         className="mt-2 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
       />
 
@@ -97,6 +98,6 @@ export function FlagPhoto({
           Peruuta
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

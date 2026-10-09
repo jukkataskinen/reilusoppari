@@ -10,6 +10,7 @@ import {
   type FeatureRequestFormState,
 } from "./actions";
 import type { RequestStatus } from "@/lib/feature-requests";
+import { Form } from "@/components/Form";
 
 /**
  * Kehitystoiveen lomakkeet. Sama rakenne kuin muissa lomakkeissa: yksi
@@ -58,7 +59,7 @@ export function NewFeatureRequestForm({
   const describedBy = (name: string) => (state.errors[name] ? `${p}-${name}-virhe` : undefined);
 
   return (
-    <form action={formAction} className="mt-6 flex flex-col gap-5" noValidate>
+    <Form action={formAction} className="mt-6 flex flex-col gap-5">
       <Message text={state.message} />
       <input type="hidden" name="pagePath" value={pagePath} />
 
@@ -105,7 +106,7 @@ export function NewFeatureRequestForm({
           name="title"
           maxLength={200}
           required
-          placeholder="Esimerkiksi: Muistutus vuokran eräpäivästä"
+          placeholder="esim. Muistutus vuokran eräpäivästä"
           aria-invalid={state.errors.title ? true : undefined}
           aria-describedby={describedBy("title")}
           className={control(state.errors.title)}
@@ -156,7 +157,7 @@ export function NewFeatureRequestForm({
           {pending ? "Lähetetään…" : "Lähetä toive"}
         </button>
       </div>
-    </form>
+    </Form>
   );
 }
 
@@ -179,7 +180,7 @@ function ApproveForm({ requestId, description }: { requestId: string; descriptio
   const [state, formAction, pending] = useActionState(approveFeatureRequestAction, initialState);
   const p = useId();
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <Form action={formAction} className="flex flex-col gap-4">
       <Message text={state.message} />
       <input type="hidden" name="requestId" value={requestId} />
       <div>
@@ -199,7 +200,7 @@ function ApproveForm({ requestId, description }: { requestId: string; descriptio
       <div>
         <SubmitButton pending={pending} label="Hyväksy" pendingLabel="Hyväksytään…" />
       </div>
-    </form>
+    </Form>
   );
 }
 
@@ -207,7 +208,7 @@ function RejectForm({ requestId }: { requestId: string }) {
   const [state, formAction, pending] = useActionState(rejectFeatureRequestAction, initialState);
   const p = useId();
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <Form action={formAction} className="flex flex-col gap-4">
       <Message text={state.message} />
       <input type="hidden" name="requestId" value={requestId} />
       <div>
@@ -228,18 +229,18 @@ function RejectForm({ requestId }: { requestId: string }) {
       <div>
         <SubmitButton pending={pending} label="Hylkää" pendingLabel="Tallennetaan…" variant="secondary" />
       </div>
-    </form>
+    </Form>
   );
 }
 
 function ConfirmWorksForm({ requestId }: { requestId: string }) {
   const [state, formAction, pending] = useActionState(confirmWorksAction, initialState);
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <Form action={formAction} className="flex flex-col gap-3">
       <Message text={state.message} />
       <input type="hidden" name="requestId" value={requestId} />
       <SubmitButton pending={pending} label="Toimii — ilmoita jättäjälle" pendingLabel="Tallennetaan…" />
-    </form>
+    </Form>
   );
 }
 
@@ -247,7 +248,7 @@ function RequestChangesForm({ requestId }: { requestId: string }) {
   const [state, formAction, pending] = useActionState(requestChangesAction, initialState);
   const p = useId();
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <Form action={formAction} className="flex flex-col gap-4">
       <Message text={state.message} />
       <input type="hidden" name="requestId" value={requestId} />
       <div>
@@ -268,7 +269,7 @@ function RequestChangesForm({ requestId }: { requestId: string }) {
       <div>
         <SubmitButton pending={pending} label="Tarvitsee muutoksen" pendingLabel="Tallennetaan…" variant="secondary" />
       </div>
-    </form>
+    </Form>
   );
 }
 

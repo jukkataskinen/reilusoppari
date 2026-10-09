@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { addContractCommentAction, type CommentActionState } from "@/app/vuokrasuhteet/contract-actions";
 import type { ContractComment } from "@/lib/db/contracts";
+import { Form } from "@/components/Form";
 
 const initialState: CommentActionState = {};
 
@@ -68,7 +69,7 @@ export function ContractComments({
         <p className="mt-5 text-sm text-ink/60">Ei vielä kommentteja.</p>
       )}
 
-      <form action={formAction} className="mt-6">
+      <Form action={formAction} clearOn={state.sent ? state : null} className="mt-6">
         <input type="hidden" name="tenancyId" value={tenancyId} />
 
         <label htmlFor="sopimuskommentti" className="sr-only">
@@ -77,10 +78,11 @@ export function ContractComments({
         <textarea
           id="sopimuskommentti"
           name="body"
+          required
           rows={3}
           maxLength={300}
           placeholder={
-            isLandlord ? "Vastaa vuokralaiselle" : "Esimerkiksi: voisiko lemmikit sallia?"
+            isLandlord ? "Vastaa vuokralaiselle" : "esim. voisiko lemmikit sallia?"
           }
           className="w-full rounded-[10px] border border-line bg-paper p-3 text-base"
         />
@@ -99,7 +101,7 @@ export function ContractComments({
         >
           {pending ? "Lähetetään…" : "Lähetä kommentti"}
         </button>
-      </form>
+      </Form>
     </section>
   );
 }

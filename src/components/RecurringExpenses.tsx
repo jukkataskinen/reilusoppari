@@ -10,6 +10,7 @@ import {
 import { EXPENSE_CATEGORIES } from "@/lib/expenses/categories";
 import { formatMonth, type RecurringPeriod } from "@/lib/expenses/recurring";
 import type { RecurringSeries } from "@/lib/db/recurring-expenses";
+import { Form } from "@/components/Form";
 
 const initialState: RecurringActionState = {};
 
@@ -135,7 +136,7 @@ function SeriesCard({
       ) : null}
 
       {open === "change" ? (
-        <form action={change} className="mt-4 rounded-[10px] border border-line p-4">
+        <Form action={change} clearOn={changeState.done ? changeState : null} className="mt-4 rounded-[10px] border border-line p-4">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="seriesId" value={series.seriesId} />
 
@@ -179,11 +180,11 @@ function SeriesCard({
           >
             {changePending ? "Tallennetaan…" : "Tallenna muutos"}
           </button>
-        </form>
+        </Form>
       ) : null}
 
       {open === "end" ? (
-        <form action={end} className="mt-4 rounded-[10px] border border-line p-4">
+        <Form action={end} clearOn={endState.done ? endState : null} className="mt-4 rounded-[10px] border border-line p-4">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="seriesId" value={series.seriesId} />
 
@@ -216,7 +217,7 @@ function SeriesCard({
           >
             {endPending ? "Tallennetaan…" : "Merkitse päättyneeksi"}
           </button>
-        </form>
+        </Form>
       ) : null}
     </section>
   );
@@ -239,9 +240,9 @@ function NewSeries({ propertyId, now }: { propertyId: string; now: string }) {
   }
 
   return (
-    <form
+    <Form
       action={start}
-      key={state.done ? "tallennettu" : "luonnos"}
+      clearOn={state.done ? state : null}
       className="rounded-[var(--radius-panel)] border border-line bg-paper p-5"
     >
       <input type="hidden" name="propertyId" value={propertyId} />
@@ -252,7 +253,7 @@ function NewSeries({ propertyId, now }: { propertyId: string; now: string }) {
         <span className="block text-sm font-medium">Mikä kulu</span>
         <input
           name="description"
-          placeholder="Esimerkiksi: hoitovastike"
+          placeholder="esim. hoitovastike"
           className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
         />
       </label>
@@ -316,6 +317,6 @@ function NewSeries({ propertyId, now }: { propertyId: string; now: string }) {
           Peruuta
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

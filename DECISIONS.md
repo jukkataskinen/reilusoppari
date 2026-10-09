@@ -5,6 +5,32 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Lomakkeet eivät tyhjene virheen jälkeen (2026-10-09)
+
+Jukan havainto: vuokrasuhteen luonnissa yksi puuttuva kenttä tyhjensi koko
+lomakkeen. Syy oli React 19: `<form action={...}>` tyhjentää lomakkeen aina
+toiminnon valmistuttua, myös virheen jälkeen.
+
+**Ratkaisu: yhteinen `<Form>`-komponentti (`src/components/Form.tsx`)
+kaikissa lomakkeissa.** Se lähettää lomakkeen itse (`onSubmit` +
+`startTransition`), jolloin React ei tyhjennä mitään ja kentät pysyvät
+selaimessa sellaisinaan (myös valinnat, rastit ja tiedostot). Vaihtoehto
+"palvelin palauttaa arvot ja kentät saavat ne `defaultValue`:na" hylättiin:
+henkilötunnus ja muut arat tiedot kulkisivat turhaan edestakaisin, eikä
+`select`-kentän oletusarvo päivity Reactissa luotettavasti.
+
+Onnistumisen jälkeen lomake tyhjenee vain, kun sille annetaan `clearOn`
+(kommentit, viestit, uudet merkinnät) — sama kuin ennen. Virheen jälkeen
+kohdistus siirtyy ensimmäiseen virheelliseen kenttään. Selaimen oma
+tarkistus (`required`, `min`, `max`) on päällä ja sen viestit suomeksi;
+palvelin tarkistaa silti kaiken. Zodin oletusviestit ovat suomeksi
+(`src/lib/forms/schema.ts`), ja pakollinen luku erottaa tyhjän kentän
+väärin kirjoitetusta ("Vuokra puuttuu" eikä "Vuokran on oltava suurempi kuin
+nolla"). Esimerkit (placeholder) alkavat "esim." ja ovat vaaleampia ja
+kursiivilla, jotteivät ne näytä täytetyiltä tiedoilta.
+
+---
+
 ## Kehitysehdotukset: tilakone ja GitHub-seuranta (2026-10-09, yötyö)
 
 PLAN.md:n rivi "Kehitysehdotukset yhteisen käytännön mukaan" (Jukan päätös

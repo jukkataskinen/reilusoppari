@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 import { createTenancyAction, type TenancyFormState } from "@/app/vuokrasuhteet/actions";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
+import { Form } from "@/components/Form";
 import { fi } from "@/i18n/fi";
 
 const initialState: TenancyFormState = { errors: {} };
@@ -53,7 +54,7 @@ export function TenancyForm({ propertyId }: { propertyId: string }) {
   }
 
   return (
-    <form action={formAction} className="mt-8 flex flex-col gap-6" noValidate>
+    <Form action={formAction} className="mt-8 flex flex-col gap-6">
       <input type="hidden" name="propertyId" value={propertyId} />
 
       {state.message ? (
@@ -127,7 +128,7 @@ export function TenancyForm({ propertyId }: { propertyId: string }) {
           <label htmlFor={`${prefix}-rentAmount`} className="text-sm font-medium">
             {fi.tenancy.rent} (€/kk)
           </label>
-          <input {...field("rentAmount")} inputMode="decimal" placeholder="850" required />
+          <input {...field("rentAmount")} inputMode="decimal" placeholder="esim. 850" required />
           <FieldError name="rentAmount" />
         </div>
       </div>
@@ -137,7 +138,15 @@ export function TenancyForm({ propertyId }: { propertyId: string }) {
           <label htmlFor={`${prefix}-rentDueDay`} className="text-sm font-medium">
             {fi.tenancy.dueDay}
           </label>
-          <input {...field("rentDueDay")} inputMode="numeric" placeholder="5" required />
+          <input
+            {...field("rentDueDay")}
+            type="number"
+            min={1}
+            max={31}
+            step={1}
+            placeholder="esim. 5"
+            required
+          />
           {/* Eräpäivä 31 taipuu lyhyemmissä kuukausissa (rent-periods.ts). */}
           <p className="mt-1.5 text-sm text-ink/60">Kuukauden päivä</p>
           <FieldError name="rentDueDay" />
@@ -146,7 +155,7 @@ export function TenancyForm({ propertyId }: { propertyId: string }) {
           <label htmlFor={`${prefix}-depositAmount`} className="text-sm font-medium">
             {fi.tenancy.deposit} (€)
           </label>
-          <input {...field("depositAmount")} inputMode="decimal" placeholder="1700" required />
+          <input {...field("depositAmount")} inputMode="decimal" placeholder="esim. 1700" required />
           <FieldError name="depositAmount" />
         </div>
       </div>
@@ -167,7 +176,8 @@ export function TenancyForm({ propertyId }: { propertyId: string }) {
             <label htmlFor={`${prefix}-endDate`} className="text-sm font-medium">
               {fi.tenancy.endDate}
             </label>
-            <input {...field("endDate")} type="date" />
+            {/* Määräaikaisella sopimuksella on aina päättymispäivä. */}
+            <input {...field("endDate")} type="date" required />
             <FieldError name="endDate" />
           </div>
         ) : (
@@ -186,7 +196,7 @@ export function TenancyForm({ propertyId }: { propertyId: string }) {
       >
         {pending ? "Luodaan…" : "Luo vuokrasuhde"}
       </button>
-    </form>
+    </Form>
   );
 }
 

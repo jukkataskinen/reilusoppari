@@ -10,6 +10,7 @@ import {
   type CertificateActionState,
 } from "@/app/vuokrasuhteet/certificate-actions";
 import type { CertificateRow, ShareRow } from "@/lib/db/certificates";
+import { Form } from "@/components/Form";
 
 const initialState: CertificateActionState = {};
 
@@ -77,7 +78,7 @@ export function CertificatePanel({
       {/* --- Arvio: näkyy sille, joka arvioi toista ------------------------ */}
 
       {certificate.canRate ? (
-        <form action={rate} className="mt-5">
+        <Form action={rate} clearOn={ratingState.done ? ratingState : null} className="mt-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
 
           <p className="text-sm text-ink/70">
@@ -121,7 +122,7 @@ export function CertificatePanel({
             rows={3}
             maxLength={300}
             defaultValue={certificate.comment ?? ""}
-            placeholder="Esimerkiksi: asioista sovittiin aina hyvässä hengessä"
+            placeholder="esim. asioista sovittiin aina hyvässä hengessä"
             className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
           />
           <p className="mt-1.5 text-sm text-ink/60">
@@ -142,7 +143,7 @@ export function CertificatePanel({
           >
             {ratePending ? "Tallennetaan…" : certificate.commentAt ? "Muuta arviota" : "Tallenna arvio"}
           </button>
-        </form>
+        </Form>
       ) : null}
 
       {/* --- Annettu arvio ja vastine -------------------------------------- */}
@@ -167,7 +168,7 @@ export function CertificatePanel({
       ) : null}
 
       {certificate.canReply ? (
-        <form action={reply} className="mt-5">
+        <Form action={reply} clearOn={replyState.done ? replyState : null} className="mt-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
 
           <label htmlFor={`vastine-${certificate.id}`} className="text-sm font-medium">
@@ -176,6 +177,7 @@ export function CertificatePanel({
           <textarea
             id={`vastine-${certificate.id}`}
             name="reply"
+            required
             rows={3}
             maxLength={300}
             className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
@@ -198,13 +200,13 @@ export function CertificatePanel({
           >
             {replyPending ? "Lähetetään…" : "Lähetä vastine"}
           </button>
-        </form>
+        </Form>
       ) : null}
 
       {/* --- Sinetöinti ---------------------------------------------------- */}
 
       {certificate.stage === "sealable" ? (
-        <form action={seal} className="mt-5">
+        <Form action={seal} className="mt-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
           <input type="hidden" name="forRole" value={certificate.forRole} />
 
@@ -226,7 +228,7 @@ export function CertificatePanel({
           >
             {sealPending ? "Sinetöidään…" : "Sinetöi todistus"}
           </button>
-        </form>
+        </Form>
       ) : null}
 
       {certificate.stage === "awaiting_reply" && !certificate.canReply ? (
@@ -248,7 +250,7 @@ export function CertificatePanel({
             Tallenna todistus
           </a>
 
-          <form action={share} className="mt-5">
+          <Form action={share} className="mt-5">
             <input type="hidden" name="tenancyId" value={tenancyId} />
             <p className="text-sm text-ink/70">
               Jakolinkki näyttää vain tämän todistuksen — ei asuntoa, kuvia eikä muita tietoja.
@@ -278,7 +280,7 @@ export function CertificatePanel({
             >
               {sharePending ? "Luodaan…" : "Luo jakolinkki"}
             </button>
-          </form>
+          </Form>
 
           {shares.length > 0 ? (
             <ul className="mt-5 flex flex-col gap-2">
@@ -294,7 +296,7 @@ export function CertificatePanel({
                   {row.revokedAt ? (
                     <span className="text-ink/50">Mitätöity</span>
                   ) : (
-                    <form action={revoke}>
+                    <Form action={revoke}>
                       <input type="hidden" name="tenancyId" value={tenancyId} />
                       <input type="hidden" name="shareId" value={row.id} />
                       <button
@@ -304,7 +306,7 @@ export function CertificatePanel({
                       >
                         {revokePending ? "Mitätöidään…" : "Mitätöi"}
                       </button>
-                    </form>
+                    </Form>
                   )}
                 </li>
               ))}

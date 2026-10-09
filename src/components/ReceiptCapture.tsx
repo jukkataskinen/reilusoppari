@@ -373,7 +373,7 @@ export function ReceiptCapture({ properties }: { properties: PropertyChoice[] })
           value={kuvaus}
           onChange={(event) => setKuvaus(event.target.value)}
           maxLength={300}
-          placeholder="Esimerkiksi: hanan vaihto keittiöön"
+          placeholder="esim. hanan vaihto keittiöön"
           className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
         />
       </label>

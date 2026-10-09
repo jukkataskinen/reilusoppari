@@ -15,6 +15,7 @@ import {
   type ConfirmationStatus,
 } from "@/lib/rent/confirmation";
 import type { RentPeriodRow } from "@/lib/db/rent";
+import { Form } from "@/components/Form";
 
 const initialState: RentActionState = {};
 
@@ -99,7 +100,7 @@ export function RentPeriodCard({
       )}
 
       {canConfirm ? (
-        <form action={confirmAction} className="mt-4">
+        <Form action={confirmAction} clearOn={confirmState.done ? confirmState : null} className="mt-4">
           <input type="hidden" name="tenancyId" value={tenancyId} />
           <input type="hidden" name="periodId" value={period.id} />
 
@@ -119,6 +120,7 @@ export function RentPeriodCard({
                   <input
                     type="radio"
                     name="status"
+                    required
                     value={value}
                     defaultChecked={confirmation?.status === value}
                     onChange={() => setStatus(value)}
@@ -144,7 +146,7 @@ export function RentPeriodCard({
                     ? String(confirmation.amountPaid)
                     : ""
                 }
-                placeholder="400"
+                placeholder="esim. 400"
                 className="mt-1.5 min-h-[var(--size-touch)] w-[10rem] rounded-[10px] border border-line bg-paper px-3 text-base"
               />
             </div>
@@ -170,7 +172,7 @@ export function RentPeriodCard({
               asti.
             </p>
           ) : null}
-        </form>
+        </Form>
       ) : null}
 
       {isLandlord && confirmation && !period.editable ? (
@@ -187,7 +189,7 @@ export function RentPeriodCard({
       ) : null}
 
       {!isLandlord && confirmation && !period.tenantComment ? (
-        <form action={commentAction} className="mt-4">
+        <Form action={commentAction} clearOn={commentState.done ? commentState : null} className="mt-4">
           <input type="hidden" name="tenancyId" value={tenancyId} />
           <input type="hidden" name="periodId" value={period.id} />
 
@@ -197,9 +199,10 @@ export function RentPeriodCard({
           <textarea
             id={`kommentti-${period.id}`}
             name="comment"
+            required
             rows={2}
             maxLength={300}
-            placeholder="Esimerkiksi: maksoin 4. päivä, viite saattoi puuttua"
+            placeholder="esim. maksoin 4. päivä, viite saattoi puuttua"
             className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
           />
 
@@ -216,7 +219,7 @@ export function RentPeriodCard({
           >
             {commentPending ? "Lähetetään…" : "Lähetä kommentti"}
           </button>
-        </form>
+        </Form>
       ) : null}
     </li>
   );

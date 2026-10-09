@@ -7,6 +7,7 @@ import {
   markReadyAction,
   type InspectionActionState,
 } from "@/app/vuokrasuhteet/inspection-actions";
+import { Form } from "@/components/Form";
 
 const initialState: InspectionActionState = {};
 
@@ -52,7 +53,7 @@ export function InspectionControls({
 
   return (
     <div className="mt-8 flex flex-col gap-6">
-      <form action={roomAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+      <Form action={roomAction} clearOn={roomState.done ? roomState : null} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <label htmlFor="uusi-huone" className="text-sm font-medium">
           Puuttuuko listalta huone tai tila?
         </label>
@@ -62,7 +63,7 @@ export function InspectionControls({
           id="uusi-huone"
           name="room"
           maxLength={60}
-          placeholder="Esimerkiksi vaatehuone tai autotalli"
+          placeholder="esim. vaatehuone tai autotalli"
           className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
         />
         <p className="mt-1.5 text-sm text-ink/60">
@@ -81,10 +82,10 @@ export function InspectionControls({
         >
           {roomPending ? "Lisätään…" : "Kuvaa tämä tila"}
         </button>
-      </form>
+      </Form>
 
       {isLandlord ? (
-        <form action={lockAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+        <Form action={lockAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
           <input type="hidden" name="kind" value={kind} />
           <p className="font-medium">Lukitse katselmus</p>
@@ -126,9 +127,9 @@ export function InspectionControls({
           >
             {lockPending ? "Lukitaan…" : "Lukitse katselmus"}
           </button>
-        </form>
+        </Form>
       ) : (
-        <form action={readyAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+        <Form action={readyAction} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <input type="hidden" name="tenancyId" value={tenancyId} />
           <input type="hidden" name="kind" value={kind} />
           <p className="font-medium">Oletko valmis?</p>
@@ -156,7 +157,7 @@ export function InspectionControls({
               {readyState.message}
             </p>
           ) : null}
-        </form>
+        </Form>
       )}
     </div>
   );

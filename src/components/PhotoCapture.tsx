@@ -95,7 +95,7 @@ export function PhotoCapture({
         value={note}
         onChange={(event) => setNote(event.target.value)}
         maxLength={300}
-        placeholder="Esimerkiksi: naarmu uunin luukussa"
+        placeholder="esim. naarmu uunin luukussa"
         className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
       />
       <p className="mt-1.5 text-sm text-ink/60">{NOTE_GUIDANCE}</p>

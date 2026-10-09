@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { reissueInviteAction, type ReissueState } from "../actions";
+import { Form } from "@/components/Form";
 
 const initialState: ReissueState = {};
 
@@ -33,7 +34,7 @@ export function InviteRow({
       </p>
 
       {joined ? null : (
-        <form action={formAction} className="mt-3">
+        <Form action={formAction} className="mt-3">
           <input type="hidden" name="tenancyId" value={tenancyId} />
           <input type="hidden" name="partyId" value={partyId} />
           <button
@@ -46,7 +47,7 @@ export function InviteRow({
           <p className="mt-2 text-sm text-ink/60">
             Uusi linkki mitätöi aiemman. Jos olet jo lähettänyt vanhan, se lakkaa toimimasta.
           </p>
-        </form>
+        </Form>
       )}
 
       {state.url ? (

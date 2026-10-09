@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { verifyAction, type VerifyState } from "@/app/todistus/verify-actions";
+import { Form } from "@/components/Form";
 
 const initialState: VerifyState = {};
 
@@ -16,7 +17,7 @@ export function VerifyForm() {
   const [state, formAction, pending] = useActionState(verifyAction, initialState);
 
   return (
-    <form action={formAction} className="mt-6">
+    <Form action={formAction} className="mt-6">
       <label htmlFor="tiiviste" className="text-sm font-medium">
         Asiakirjan tiiviste (SHA-256)
       </label>
@@ -64,6 +65,6 @@ export function VerifyForm() {
       >
         {pending ? "Tarkistetaan…" : "Tarkista"}
       </button>
-    </form>
+    </Form>
   );
 }

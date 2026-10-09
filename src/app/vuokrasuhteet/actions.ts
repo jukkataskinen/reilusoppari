@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createTenancy, reissueInvite } from "@/lib/db/tenancies";
-import { fieldErrors } from "@/lib/property/schema";
-import { tenancyFormToInput, tenancySchema } from "@/lib/tenancy/schema";
+import { fieldErrors } from "@/lib/forms/schema";
+import { tenancyFieldName, tenancyFormToInput, tenancySchema } from "@/lib/tenancy/schema";
 import { inviteUrl } from "@/lib/tenancy/invite";
 
 /**
@@ -65,7 +65,7 @@ export async function createTenancyAction(
 
   const parsed = tenancySchema.safeParse(tenancyFormToInput(formData));
   if (!parsed.success) {
-    return { errors: fieldErrors(parsed.error) };
+    return { errors: fieldErrors(parsed.error, tenancyFieldName) };
   }
 
   try {

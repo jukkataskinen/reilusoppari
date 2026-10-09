@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { sealTaxReportAction, type TaxActionState } from "@/app/asunnot/tax-actions";
 import { formatPrice, requiresPlusPayment, type PlusPriceDecision } from "@/lib/billing/pricing";
+import { Form } from "@/components/Form";
 
 const initialState: TaxActionState = {};
 
@@ -84,7 +85,7 @@ export function SealTaxReport({
       )}
 
       {hasContent ? (
-        <form action={seal} className="mt-4">
+        <Form action={seal} className="mt-4">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="year" value={year} />
 
@@ -115,7 +116,7 @@ export function SealTaxReport({
                   ? "Sinetöi uudelleen ja korvaa vanha"
                   : "Sinetöi laskelma"}
           </button>
-        </form>
+        </Form>
       ) : (
         <p className="mt-4 text-sm text-ink/60">
           Vuodelle ei ole vielä kirjattu tuloja eikä kuluja, joten sinetöitävää ei ole.

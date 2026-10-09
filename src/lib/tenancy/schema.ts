@@ -8,6 +8,7 @@
  */
 
 import { z } from "zod";
+import { requiredDate, requiredNumber } from "@/lib/forms/schema";
 
 /** Suomalainen päivämäärä ISO-muodossa. */
 const isoDate = z
@@ -40,25 +41,29 @@ export const tenancySchema = z
       .min(1, "Lisää ainakin yksi vuokralainen")
       .max(2, "Enintään kaksi vuokralaista"),
 
-    startDate: isoDate,
+    startDate: requiredDate("Alkupäivä puuttuu"),
     /** Tyhjä = toistaiseksi voimassa oleva. */
     endDate: isoDate.nullable().optional(),
 
-    rentAmount: z.coerce
-      .number()
-      .positive("Vuokran on oltava suurempi kuin nolla")
-      .max(100_000, "Tarkista vuokra"),
+    rentAmount: requiredNumber(
+      "Vuokra puuttuu",
+      z.number().positive("Vuokran on oltava suurempi kuin nolla").max(100_000, "Tarkista vuokra"),
+    ),
 
-    rentDueDay: z.coerce
-      .number()
-      .int("Eräpäivä on kokonaisluku")
-      .min(1, "Eräpäivä on 1–31")
-      .max(31, "Eräpäivä on 1–31"),
+    rentDueDay: requiredNumber(
+      "Eräpäivä puuttuu",
+      z
+        .number()
+        .int("Eräpäivä on kokonaisluku")
+        .min(1, "Eräpäivä on 1–31")
+        .max(31, "Eräpäivä on 1–31"),
+    ),
 
-    depositAmount: z.coerce
-      .number()
-      .min(0, "Vakuus ei voi olla negatiivinen")
-      .max(100_000, "Tarkista vakuus"),
+    /** Tyhjä vakuus on nolla: vakuudetonkin vuokrasuhde on mahdollinen. */
+    depositAmount: requiredNumber(
+      "Vakuus puuttuu",
+      z.number().min(0, "Vakuus ei voi olla negatiivinen").max(100_000, "Tarkista vakuus"),
+    ),
   })
   .refine((data) => !data.endDate || data.endDate > data.startDate, {
     message: "Päättymispäivä on ennen alkupäivää",
@@ -83,17 +88,17 @@ export function tenancyFormToInput(form: FormData): Record<string, unknown> {
     return typeof value === "string" ? value.trim() : "";
   };
   const blankToNull = (key: string) => (text(key) === "" ? null : text(key));
-  const decimal = (key: string) => {
-    const value = text(key);
-    // Suomeksi desimaalierotin on pilkku (ks. property/schema.ts).
-    return value === "" ? null : value.replace(",", ".");
-  };
+  // Luvut menevät zodille sellaisinaan: `requiredNumber` ymmärtää
+  // desimaalipilkun ja erottaa tyhjän kentän väärin kirjoitetusta.
 
+  // Ensimmäinen vuokralainen on aina mukana, myös tyhjänä: silloin virhe
+  // tulee nimi- ja sähköpostikentän viereen ("Vuokralaisen nimi puuttuu")
+  // eikä yleisenä "Lisää ainakin yksi vuokralainen" -viestinä.
   const tenants: { name: string; email: string }[] = [];
   for (let index = 0; index < 2; index += 1) {
     const name = text(`tenantName${index}`);
     const email = text(`tenantEmail${index}`);
-    if (name || email) tenants.push({ name, email });
+    if (index === 0 || name || email) tenants.push({ name, email });
   }
 
   return {
@@ -101,8 +106,19 @@ export function tenancyFormToInput(form: FormData): Record<string, unknown> {
     tenants,
     startDate: text("startDate"),
     endDate: blankToNull("endDate"),
-    rentAmount: decimal("rentAmount"),
-    rentDueDay: blankToNull("rentDueDay"),
-    depositAmount: decimal("depositAmount") ?? "0",
+    rentAmount: text("rentAmount"),
+    rentDueDay: text("rentDueDay"),
+    depositAmount: text("depositAmount") || "0",
   };
+}
+
+/**
+ * Zodin polku lomakkeen kentän nimeksi: `tenants.1.email` → `tenantEmail1`.
+ * Muut kentät ovat suoraan polun ensimmäinen osa.
+ */
+export function tenancyFieldName(path: PropertyKey[]): string | undefined {
+  if (path[0] === "tenants" && typeof path[1] === "number" && typeof path[2] === "string") {
+    return `tenant${path[2].charAt(0).toUpperCase()}${path[2].slice(1)}${path[1]}`;
+  }
+  return typeof path[0] === "string" ? path[0] : undefined;
 }
