@@ -2,10 +2,14 @@
 
 import { useActionState, useId } from "react";
 import {
+  approveFeatureRequestAction,
+  confirmWorksAction,
   createFeatureRequestAction,
-  updateFeatureRequestAction,
+  rejectFeatureRequestAction,
+  requestChangesAction,
   type FeatureRequestFormState,
 } from "./actions";
+import type { RequestStatus } from "@/lib/feature-requests";
 
 /**
  * Kehitystoiveen lomakkeet. Sama rakenne kuin muissa lomakkeissa: yksi
@@ -156,60 +160,160 @@ export function NewFeatureRequestForm({
   );
 }
 
-export function HandleFeatureRequestForm({
-  requestId,
-  statuses,
-  status,
-  response,
-}: {
-  requestId: string;
-  statuses: { value: string; label: string }[];
-  status: string;
-  response: string;
-}) {
-  const [state, formAction, pending] = useActionState(updateFeatureRequestAction, initialState);
-  const p = useId();
+function SubmitButton({ pending, label, pendingLabel, variant = "primary" }: { pending: boolean; label: string; pendingLabel: string; variant?: "primary" | "secondary" }) {
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className={
+        "min-h-[var(--size-touch)] rounded-full px-6 font-medium disabled:opacity-60 " +
+        (variant === "primary" ? "bg-ink text-paper" : "border border-line bg-paper")
+      }
+    >
+      {pending ? pendingLabel : label}
+    </button>
+  );
+}
 
+function ApproveForm({ requestId, description }: { requestId: string; description: string }) {
+  const [state, formAction, pending] = useActionState(approveFeatureRequestAction, initialState);
+  const p = useId();
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <Message text={state.message} />
       <input type="hidden" name="requestId" value={requestId} />
       <div>
-        <label htmlFor={`${p}-status`} className="text-sm font-medium">
-          Tila
-        </label>
-        <select id={`${p}-status`} name="status" defaultValue={status} className={control(state.errors.status)}>
-          {statuses.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <FieldError id={`${p}-status-virhe`} text={state.errors.status} />
-      </div>
-      <div>
-        <label htmlFor={`${p}-response`} className="text-sm font-medium">
-          Vastaus jättäjälle
+        <label htmlFor={`${p}-kuvaus`} className="text-sm font-medium">
+          Kuvaus työjonoon (muokkaa, jos tekstissä on henkilötietoja)
         </label>
         <textarea
-          id={`${p}-response`}
-          name="response"
-          rows={4}
+          id={`${p}-kuvaus`}
+          name="approvedDescription"
+          rows={5}
           maxLength={5000}
-          defaultValue={response}
-          className={control(state.errors.response) + " py-2"}
+          defaultValue={description}
+          className={control(state.errors.approvedDescription) + " py-2"}
         />
-        <FieldError id={`${p}-response-virhe`} text={state.errors.response} />
+        <FieldError id={`${p}-kuvaus-virhe`} text={state.errors.approvedDescription} />
       </div>
       <div>
-        <button
-          type="submit"
-          disabled={pending}
-          className="min-h-[var(--size-touch)] rounded-full border border-line bg-paper px-6 font-medium disabled:opacity-60"
-        >
-          {pending ? "Tallennetaan…" : "Tallenna"}
-        </button>
+        <SubmitButton pending={pending} label="Hyväksy" pendingLabel="Hyväksytään…" />
       </div>
     </form>
   );
+}
+
+function RejectForm({ requestId }: { requestId: string }) {
+  const [state, formAction, pending] = useActionState(rejectFeatureRequestAction, initialState);
+  const p = useId();
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <Message text={state.message} />
+      <input type="hidden" name="requestId" value={requestId} />
+      <div>
+        <label htmlFor={`${p}-vastaus`} className="text-sm font-medium">
+          Miksi ehdotusta ei toteuteta?
+        </label>
+        <textarea
+          id={`${p}-vastaus`}
+          name="response"
+          rows={3}
+          maxLength={5000}
+          required
+          aria-describedby={state.errors.response ? `${p}-vastaus-virhe` : undefined}
+          className={control(state.errors.response) + " py-2"}
+        />
+        <FieldError id={`${p}-vastaus-virhe`} text={state.errors.response} />
+      </div>
+      <div>
+        <SubmitButton pending={pending} label="Hylkää" pendingLabel="Tallennetaan…" variant="secondary" />
+      </div>
+    </form>
+  );
+}
+
+function ConfirmWorksForm({ requestId }: { requestId: string }) {
+  const [state, formAction, pending] = useActionState(confirmWorksAction, initialState);
+  return (
+    <form action={formAction} className="flex flex-col gap-3">
+      <Message text={state.message} />
+      <input type="hidden" name="requestId" value={requestId} />
+      <SubmitButton pending={pending} label="Toimii — ilmoita jättäjälle" pendingLabel="Tallennetaan…" />
+    </form>
+  );
+}
+
+function RequestChangesForm({ requestId }: { requestId: string }) {
+  const [state, formAction, pending] = useActionState(requestChangesAction, initialState);
+  const p = useId();
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <Message text={state.message} />
+      <input type="hidden" name="requestId" value={requestId} />
+      <div>
+        <label htmlFor={`${p}-muutos`} className="text-sm font-medium">
+          Mitä pitää korjata?
+        </label>
+        <textarea
+          id={`${p}-muutos`}
+          name="response"
+          rows={3}
+          maxLength={5000}
+          required
+          aria-describedby={state.errors.response ? `${p}-muutos-virhe` : undefined}
+          className={control(state.errors.response) + " py-2"}
+        />
+        <FieldError id={`${p}-muutos-virhe`} text={state.errors.response} />
+      </div>
+      <div>
+        <SubmitButton pending={pending} label="Tarvitsee muutoksen" pendingLabel="Tallennetaan…" variant="secondary" />
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Käsittelijän näkymä yhdelle ehdotukselle. Näytettävät toiminnot riippuvat
+ * tilasta — ei yleistä tilavalitsinta, koska sallitut siirtymät tulevat
+ * tilakoneelta (`lib/dev-suggestions/state-machine.ts`), ei käsittelijän
+ * valinnasta.
+ */
+export function DevSuggestionAdminPanel({ requestId, status, description }: { requestId: string; status: RequestStatus; description: string }) {
+  if (status === "uusi") {
+    return (
+      <div className="grid gap-6">
+        <ApproveForm requestId={requestId} description={description} />
+        <div className="border-t border-line pt-5">
+          <RejectForm requestId={requestId} />
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "testattavana") {
+    return (
+      <div className="grid gap-6">
+        <ConfirmWorksForm requestId={requestId} />
+        <div className="border-t border-line pt-5">
+          <RequestChangesForm requestId={requestId} />
+        </div>
+        <div className="border-t border-line pt-5">
+          <RejectForm requestId={requestId} />
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "hyvaksytty" || status === "tyon_alla") {
+    return (
+      <div className="grid gap-4">
+        <p className="text-sm text-ink/60">
+          {status === "hyvaksytty" ? "Odottaa, että työ alkaa GitHubissa." : "Työn alla GitHubissa. Odottaa yhdistämistä."}
+        </p>
+        <RejectForm requestId={requestId} />
+      </div>
+    );
+  }
+
+  return null;
 }

@@ -932,9 +932,10 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: "Toiveen tila",
         bullets: [
           "Vastaanotettu: toive on tullut perille.",
-          "Suunnitteilla: toive on otettu suunnitelmaan.",
+          "Hyväksytty: toive on otettu työjonoon.",
           "Työn alla: toivetta tehdään.",
-          "Tehty: toive on sovelluksessa.",
+          "Testattavana: korjaus on tehty ja sitä testataan.",
+          "Tehty: toive on sovelluksessa. Saat tästä myös viestin.",
           "Ei toteuteta: toive ei sovi sovellukseen. Vastauksessa kerrotaan syy.",
         ],
       },

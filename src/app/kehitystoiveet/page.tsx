@@ -17,8 +17,8 @@ import {
 export const metadata: Metadata = { title: "Kehitystoiveet" };
 
 const VIEWS: Record<string, { label: string; statuses: RequestStatus[] }> = {
-  avoimet: { label: "Avoimet", statuses: ["new", "planned", "in_progress"] },
-  valmiit: { label: "Tehdyt ja hylätyt", statuses: ["done", "declined"] },
+  avoimet: { label: "Avoimet", statuses: ["uusi", "hyvaksytty", "tyon_alla", "testattavana"] },
+  valmiit: { label: "Tehdyt ja hylätyt", statuses: ["valmis", "hylatty"] },
 };
 
 const TONE = { sky: "text-sky", moss: "text-moss", ink: "text-ink/60" } as const;

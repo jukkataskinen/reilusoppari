@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  approveFeatureRequestSchema,
   featureLabel,
   featureOptions,
   featureRequestSchema,
-  featureRequestUpdateSchema,
   isFeature,
   isFeatureRequestAdmin,
   OTHER_FEATURE,
+  rejectFeatureRequestSchema,
+  requestChangesSchema,
   safePagePath,
 } from "@/lib/feature-requests";
 import { HELP_TOPICS } from "@/lib/help/topics";
@@ -71,9 +73,16 @@ describe("lomake", () => {
     expect(featureRequestSchema.safeParse({ ...valid, importance: "kiire" }).success).toBe(false);
   });
 
-  it("tyhjä vastaus tallentuu tyhjänä", () => {
-    expect(featureRequestUpdateSchema.parse({ status: "done", response: "  " }).response).toBeNull();
-    expect(featureRequestUpdateSchema.safeParse({ status: "valmis", response: "" }).success).toBe(false);
+  it("hyväksynnän kuvaus on vapaaehtoinen ja tyhjä tallentuu tyhjänä", () => {
+    expect(approveFeatureRequestSchema.parse({ approvedDescription: "  " }).approvedDescription).toBeNull();
+    expect(approveFeatureRequestSchema.parse({ approvedDescription: "Muokattu" }).approvedDescription).toBe("Muokattu");
+  });
+
+  it("hylkäys ja muutospyyntö vaativat tekstin", () => {
+    expect(rejectFeatureRequestSchema.safeParse({ response: "" }).success).toBe(false);
+    expect(rejectFeatureRequestSchema.parse({ response: "Ei sovi palveluun." }).response).toBe("Ei sovi palveluun.");
+    expect(requestChangesSchema.safeParse({ response: "  " }).success).toBe(false);
+    expect(requestChangesSchema.parse({ response: "Korjaa X." }).response).toBe("Korjaa X.");
   });
 });
 

@@ -4,16 +4,9 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getFeatureRequest } from "@/lib/db/feature-requests";
-import {
-  featureLabel,
-  formatRequestDate,
-  IMPORTANCE_LABEL,
-  isFeatureRequestAdmin,
-  REQUEST_STATUS,
-  STATUSES,
-} from "@/lib/feature-requests";
+import { featureLabel, formatRequestDate, IMPORTANCE_LABEL, isFeatureRequestAdmin, REQUEST_STATUS } from "@/lib/feature-requests";
 import { helpTopic } from "@/lib/help/topics";
-import { HandleFeatureRequestForm } from "../FeatureRequestForms";
+import { DevSuggestionAdminPanel } from "../FeatureRequestForms";
 
 export const metadata: Metadata = { title: "Kehitystoive" };
 
@@ -102,16 +95,17 @@ export default async function FeatureRequestPage({
         </div>
       </section>
 
-      {asAdmin ? (
+      {asAdmin && r.status !== "valmis" && r.status !== "hylatty" ? (
         <section className="mt-8">
           <h2 className="text-lg">Käsittely</h2>
+          {r.githubIssueNumber ? (
+            <p className="mt-2 text-sm text-ink/60">
+              GitHub-issue #{r.githubIssueNumber}
+              {r.approvedDescription ? " · kuvaus muokattu hyväksynnässä" : ""}
+            </p>
+          ) : null}
           <div className="mt-3 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-            <HandleFeatureRequestForm
-              requestId={r.id}
-              statuses={STATUSES.map((value) => ({ value, label: REQUEST_STATUS[value].label }))}
-              status={r.status}
-              response={r.response ?? ""}
-            />
+            <DevSuggestionAdminPanel requestId={r.id} status={r.status} description={r.description} />
           </div>
         </section>
       ) : null}
