@@ -859,6 +859,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Seuraavat maksavat 29 euroa kerran. Hinnassa on arvonlisävero.",
           "Maksat vasta, kun lähetät sopimuksen allekirjoitettavaksi.",
           "Laskutus-sivulla näet, mitä seuraava vuokrasuhde maksaa.",
+          "Saat maksusta vahvistuksen sähköpostiin.",
         ],
       },
       {

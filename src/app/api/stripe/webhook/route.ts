@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { parseBillingEvent, verifyWebhookSignature } from "@/lib/billing";
+import { orderConfirmationEmail, parseBillingEvent, verifyWebhookSignature } from "@/lib/billing";
+import type { BillingProduct } from "@/lib/billing";
 import {
   cancelSubscription,
+  getBillingProfile,
   markTenancyPaid,
   recordEvent,
   saveCustomerId,
   upsertSubscription,
 } from "@/lib/db/billing";
+import { sendEmail } from "@/lib/notifications/email";
 
 /**
  * Stripen webhook (CLAUDE.md kohta 2 ja 6).
@@ -90,7 +93,7 @@ async function handle(event: BillingEvent): Promise<void> {
   const now = new Date();
 
   if (event.type === "checkout.completed") {
-    const { tenancyId, userId } = event.metadata;
+    const { tenancyId, userId, kind, propertyId } = event.metadata;
 
     // Asiakastunniste talteen, jotta portaali ja tilaukset toimivat myöhemmin.
     if (userId && event.customerId) await saveCustomerId(userId, event.customerId);
@@ -110,6 +113,17 @@ async function handle(event: BillingEvent): Promise<void> {
       -tapahtumana, jossa on määrä ja kausi. Sitä ei yritetä päätellä tästä:
       checkout kertoo vain, että jotain ostettiin.
     */
+
+    if (userId && event.amountCents) {
+      await sendOrderConfirmation({
+        userId,
+        amountCents: event.amountCents,
+        product: tenancyId ? "tenancy_29" : kind === "plus_yearly" || kind === "portfolio_yearly" ? kind : null,
+        tenancyId: tenancyId ?? null,
+        propertyId: propertyId ?? null,
+      });
+    }
+
     return;
   }
 
@@ -144,4 +158,38 @@ async function handle(event: BillingEvent): Promise<void> {
     täältä, Stripessä tehty osittainen hyvitys sulkisi vuokrasuhteen, joka
     on jo allekirjoitettu.
   */
+}
+
+/**
+ * Lähettää kuluttajakaupan kuitin sähköpostiin (CLAUDE.md kohta 2).
+ *
+ * Osoite luetaan omasta kannasta eikä Stripen tapahtumasta: Stripe ei
+ * välttämättä tunne asiakasta vielä ensimmäisellä maksulla, mutta
+ * `rs_users.email` on aina se, jolla käyttäjä kirjautui. Epäonnistunut
+ * lähetys ei kaada webhookin käsittelyä — kuitti on täydennys, ei ehto
+ * käyttöoikeuden myöntämiselle.
+ */
+async function sendOrderConfirmation(input: {
+  userId: string;
+  amountCents: number;
+  product: BillingProduct | null;
+  tenancyId: string | null;
+  propertyId: string | null;
+}): Promise<void> {
+  if (!input.product) return;
+
+  const path =
+    input.product === "tenancy_29" && input.tenancyId
+      ? `/vuokrasuhteet/${input.tenancyId}`
+      : input.product === "plus_yearly" && input.propertyId
+        ? `/asunnot/${input.propertyId}/verolaskelma`
+        : "/laskutus";
+
+  try {
+    const profile = await getBillingProfile(input.userId);
+    const message = orderConfirmationEmail({ product: input.product, amountCents: input.amountCents, path });
+    await sendEmail({ to: profile.email, title: message.title, body: message.body, path: message.path });
+  } catch (err) {
+    console.error("[laskutus] tilausvahvistuksen lähetys epäonnistui:", err instanceof Error ? err.message : err);
+  }
 }

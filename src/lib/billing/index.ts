@@ -64,6 +64,8 @@ export function resetBillingClientForTests(): void {
 }
 
 export { BillingMockClient } from "./mock";
+export { orderConfirmationEmail } from "./confirmation";
+export type { OrderConfirmationInput, OrderConfirmationMessage } from "./confirmation";
 export {
   parseBillingEvent,
   TOLERANCE_SECONDS,
