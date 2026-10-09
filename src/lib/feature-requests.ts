@@ -7,6 +7,10 @@ import { HELP_TOPICS } from "@/lib/help/topics";
  * Toive kohdistetaan toimintoon, joka on sama kuin ohjesivuston aihe. Näin
  * toiveet ryhmittyvät samoin kuin ohjeet, eikä toimintojen listaa tarvitse
  * ylläpitää kahdessa paikassa.
+ *
+ * Tilat ja niiden siirtymät ovat Jukan 8.10.2026 päättämä yhteinen käytäntö
+ * (docs/kehitysehdotukset.md, migraatio 0020) — ks. `lib/dev-suggestions/
+ * state-machine.ts`, joka on ainoa paikka, josta tilan saa vaihtaa.
  */
 
 export const OTHER_FEATURE = "muu";
@@ -37,15 +41,17 @@ export const IMPORTANCE_LABEL: Record<Importance, string> = {
 };
 
 export const REQUEST_STATUS: Record<RequestStatus, { label: string; tone: "sky" | "moss" | "ink" }> = {
-  new: { label: "Vastaanotettu", tone: "sky" },
-  planned: { label: "Suunnitteilla", tone: "sky" },
-  in_progress: { label: "Työn alla", tone: "sky" },
-  done: { label: "Tehty", tone: "moss" },
-  declined: { label: "Ei toteuteta", tone: "ink" },
+  uusi: { label: "Vastaanotettu", tone: "sky" },
+  hyvaksytty: { label: "Hyväksytty", tone: "sky" },
+  tyon_alla: { label: "Työn alla", tone: "sky" },
+  testattavana: { label: "Testattavana", tone: "sky" },
+  valmis: { label: "Tehty", tone: "moss" },
+  hylatty: { label: "Ei toteuteta", tone: "ink" },
 };
 
 export const IMPORTANCES = ["nice", "important", "blocking"] as const;
-export const STATUSES = ["new", "planned", "in_progress", "done", "declined"] as const;
+/** Sama tilakone kuin `lib/dev-suggestions/state-machine.ts` (DEV_SUGGESTION_STATUSES). */
+export const STATUSES = ["uusi", "hyvaksytty", "tyon_alla", "testattavana", "valmis", "hylatty"] as const;
 export type Importance = (typeof IMPORTANCES)[number];
 export type RequestStatus = (typeof STATUSES)[number];
 
@@ -73,13 +79,27 @@ export const featureRequestSchema = z.object({
   importance: z.enum(IMPORTANCES, "Valitse, kuinka tärkeä asia on."),
 });
 
-export const featureRequestUpdateSchema = z.object({
-  status: z.enum(STATUSES, "Valitse tila."),
-  response: z
+/**
+ * Käsittelijän toiminnot. Yksi lomake per tapahtuma (ei yleinen
+ * tila+vastaus-lomake), koska sallitut siirtymät riippuvat tilakoneesta
+ * (`lib/dev-suggestions/state-machine.ts`) eikä käsittelijä saa valita
+ * tilaa suoraan.
+ */
+export const approveFeatureRequestSchema = z.object({
+  // Tyhjä = issueen menee alkuperäinen kuvaus sellaisenaan.
+  approvedDescription: z
     .string()
     .trim()
-    .max(5000, "Vastaus on liian pitkä.")
+    .max(5000, "Kuvaus on liian pitkä.")
     .transform((v) => (v === "" ? null : v)),
+});
+
+export const rejectFeatureRequestSchema = z.object({
+  response: z.string().trim().min(1, "Kerro, miksi ehdotusta ei toteuteta.").max(5000, "Vastaus on liian pitkä."),
+});
+
+export const requestChangesSchema = z.object({
+  response: z.string().trim().min(1, "Kirjoita, mitä pitää korjata.").max(5000, "Teksti on liian pitkä."),
 });
 
 /**

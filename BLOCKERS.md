@@ -17,6 +17,7 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 | Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
 | Tietosuojaseloste, käyttöehdot ja käsittelysopimus: luonnokset `docs/` | Jukka | kohta 4 |
 | E2e-alkukaari: tarvitsee erillisen testikannan ja kirjautumisen ohituksen | Jukka | luku lopussa |
+| Kehitysehdotukset: `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL` ja webhook GitHubin repoasetuksiin | Jukka | luku lopussa |
 
 `CLAUDE.md` kopioitiin Downloads-kansiosta 2026-09-10. ~~Hakemisto ei ole
 git-repo~~ — vanhentunut: repo luotiin 2026-09-11.
@@ -339,11 +340,50 @@ Päivitetty 2026-09-26.
 | 7 | Kuluttajakäyttöehdot ja tietosuojaseloste | pohjat `reilusoppari-web`-repossa; **lisäysluonnokset** `docs/luonnos-tietosuoja-ja-kayttoehdot.md` (2026-09-26) |
 | 8 | Käsittelysopimus Adepta Tilat Oy ↔ Adepta Oy (eSinetti) | **luonnos** `docs/luonnos-kasittelysopimus-esinetti.md` (2026-09-26) |
 | 9 | Migraatiot `0016` ja `0017` live-Supabaseen | tekemättä |
+| 10 | Migraatio `0020` live-Supabaseen; `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL` Verceliin ja webhook GitHubin repoasetuksiin | tekemättä, ks. luku lopussa |
 
 Huom kohta 7: `reilusoppari-web/src/app/{tietosuoja,kayttoehdot}` sisältää jo
 pohjat, joissa on käsitelty kuvat kodista, molempien oikeus samaan aineistoon ja
 todistuksen omistajuus. Ne on kirjoitettu sivustoa varten, mutta ovat suoraan
 käyttökelpoinen lähtökohta myös sovellukselle.
+
+---
+
+## Kehitysehdotukset: GitHub-seuranta puuttuu (2026-10-09, yötyö)
+
+**Estää:** ehdotusten etenemisen GitHub-issueihin ja takaisin — tila jää
+"Hyväksytty"-tilaan, kunnes seuraavat on tehty.
+
+Toteutus on valmis (`docs/kehitysehdotukset.md`, Jukan päätös 8.10.2026):
+tilakone (`lib/dev-suggestions/state-machine.ts`, testattu kattavasti),
+migraatio `0020` (vanhat tilat siirtyvät automaattisesti uusiin, ei
+tietohäviötä), GitHub-issuen luonti hyväksynnässä, webhook
+`/api/github/webhook` ja sähköpostit (uusi ehdotus koodaajalle, testauspyyntö
+koodaajalle, "korjattu"-viesti jättäjälle). Ilman alla olevia tunnuksia
+hyväksyntä tallentuu normaalisti, GitHub-issueta ei vain luoda — käsittelysivu
+näyttää sen, eikä käyttäjä näe virhettä.
+
+**Mitä tarvitaan (kolme asiaa Verceliin, yksi GitHubin asetuksiin):**
+
+1. **`GITHUB_ISSUES_TOKEN`** — hienojakoinen (fine-grained) GitHub-token,
+   oikeus vain tämän yhden repon (`jukkataskinen/reilusoppari`) Issues:iin,
+   "Read and write". GitHub → Settings → Developer settings → Fine-grained
+   tokens.
+2. **`GITHUB_WEBHOOK_SECRET`** — keksitty satunnainen salaisuus (esim.
+   `openssl rand -hex 32`). Laitetaan SAMA arvo Verceliin ja GitHubin
+   webhook-asetuksiin (kohta 4).
+3. **`KEHITYS_KOODAAJA_EMAIL`** — osoite, johon uuden ehdotuksen ilmoitus ja
+   testauspyyntö lähtevät. Nyt Jukka. Sähköpostin lähetys vaatii lisäksi
+   `RESEND_API_KEY`:n (kohta 2) — ilman sitä ilmoitukset vain jäävät
+   lähtemättä, ei virhettä.
+4. **Webhook GitHubin repoasetuksiin**: Settings → Webhooks → Add webhook.
+   Payload URL `https://app.reilusoppari.fi/api/github/webhook`, Content
+   type `application/json`, Secret = sama kuin `GITHUB_WEBHOOK_SECRET`,
+   tapahtumat: vain "Issues" ja "Pull requests".
+
+Migraatio `0020` yhdistyy automaattisesti PR:n mukana (Jukan 4.10.2026-päätös
+koskee migraatioita) — se ei tarvitse erillistä ajoa, mutta tallenna rivi
+tähän, kun PR on yhdistetty ja migraatio on ajossa.
 
 ---
 

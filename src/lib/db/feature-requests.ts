@@ -1,5 +1,6 @@
 /**
- * Kehitystoiveiden tallennus (migraatio 0018).
+ * Kehitystoiveiden tallennus (migraatio 0018, laajennettu migraatiolla 0020
+ * kehitysehdotusten tilakoneella, docs/kehitysehdotukset.md).
  *
  * Sovellus ajaa kyselyt service_role-avaimella, joka ohittaa RLS:n (ks.
  * `supabase.ts`). Rajaus on siksi tässä: tavallinen käyttäjä saa vain omat
@@ -9,9 +10,15 @@
  *
  * Virheissä ei palauteta tietokannan viestiä eikä toiveen tekstiä: toiveessa
  * voi olla omaa vuokrasuhdetta koskevia tietoja.
+ *
+ * Tilaa ei KOSKAAN kirjoiteta suoraan `.update({ status: ... })`:lla tämän
+ * tiedoston ulkopuolelta — `transitionFeatureRequest` on ainoa reitti, ja se
+ * kysyy sallitun seuraavan tilan `lib/dev-suggestions/state-machine.ts`:stä.
  */
 
 import { getServiceClient } from "./supabase";
+import { sendEmail } from "@/lib/notifications/email";
+import { nextStatus, type DevSuggestionEvent, type DevSuggestionStatus } from "@/lib/dev-suggestions/state-machine";
 import type { Importance, RequestStatus } from "@/lib/feature-requests";
 
 export interface FeatureRequest {
@@ -25,6 +32,8 @@ export interface FeatureRequest {
   importance: Importance;
   status: RequestStatus;
   response: string | null;
+  approvedDescription: string | null;
+  githubIssueNumber: number | null;
   handledAt: string | null;
   createdAt: string;
 }
@@ -39,12 +48,15 @@ interface Row {
   importance: Importance;
   status: RequestStatus;
   response: string | null;
+  approved_description: string | null;
+  github_issue_number: number | null;
   handled_at: string | null;
   created_at: string;
   author?: { email: string } | null;
 }
 
-const COLUMNS = "id, user_id, feature, page_path, title, description, importance, status, response, handled_at, created_at";
+const COLUMNS =
+  "id, user_id, feature, page_path, title, description, importance, status, response, approved_description, github_issue_number, handled_at, created_at";
 
 function toRequest(row: Row): FeatureRequest {
   return {
@@ -58,6 +70,8 @@ function toRequest(row: Row): FeatureRequest {
     importance: row.importance,
     status: row.status,
     response: row.response,
+    approvedDescription: row.approved_description,
+    githubIssueNumber: row.github_issue_number,
     handledAt: row.handled_at,
     createdAt: row.created_at,
   };
@@ -100,6 +114,19 @@ export async function createFeatureRequest(
     target_id: data.id,
     details: { feature: input.feature },
   });
+
+  // Ilmoitus koodaajalle (docs/kehitysehdotukset.md kohta 2). Viestissä ei
+  // ole ehdotuksen sisältöä eikä jättäjän nimeä, vain linkki — sama syy kuin
+  // muissakin sähköposteissa (lib/notifications/email.ts).
+  const coderEmail = process.env.KEHITYS_KOODAAJA_EMAIL?.trim();
+  if (coderEmail) {
+    await sendEmail({
+      to: coderEmail,
+      title: "Uusi kehitysehdotus",
+      body: "Reilusopparissa on uusi kehitysehdotus käsiteltäväksi.",
+      path: `/kehitystoiveet/${data.id}`,
+    });
+  }
 
   return data.id as string;
 }
@@ -147,37 +174,161 @@ export async function getFeatureRequest(viewer: Viewer, id: string): Promise<Fea
   return data ? toRequest(data as unknown as Row) : null;
 }
 
-/** Tilan ja vastauksen muutos. Vain käsittelijä: kutsuja tarkistaa oikeuden ennen tätä. */
-export async function updateFeatureRequest(
-  adminUserId: string,
-  id: string,
-  input: { status: RequestStatus; response: string | null },
-): Promise<boolean> {
-  const supabase = getServiceClient();
-  const { data, error } = await supabase
-    .from("rs_feature_requests")
-    .update({
-      status: input.status,
-      response: input.response,
-      handled_by: adminUserId,
-      handled_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select("id")
-    .maybeSingle();
+export type TransitionOutcome =
+  | { ok: true; status: DevSuggestionStatus }
+  | { ok: false; reason: "not_found" | "invalid_transition" };
 
-  if (error) {
-    console.error("[kehitystoiveet] päivitys epäonnistui:", error.message);
+/**
+ * Ainoa reitti tilan vaihtoon. Lukee nykyisen tilan, kysyy sallitun
+ * seuraavan tilan tilakoneelta ja kirjoittaa sen — tai palauttaa
+ * `invalid_transition`, jos tapahtuma ei sovi nykyiseen tilaan. Käsittelijän
+ * tunnus on `null` järjestelmän omille siirtymille (webhook).
+ */
+async function transitionFeatureRequest(
+  id: string,
+  event: DevSuggestionEvent,
+  actorUserId: string | null,
+  patch: Partial<{ response: string | null; approvedDescription: string | null; githubIssueNumber: number | null }> = {},
+): Promise<TransitionOutcome> {
+  const supabase = getServiceClient();
+  const { data: current, error: readError } = await supabase
+    .from("rs_feature_requests")
+    .select("status")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) {
+    console.error("[kehitysehdotukset] tilan luku epäonnistui:", readError.message);
     throw new Error("Toiveen päivitys epäonnistui.");
   }
-  if (!data) return false;
+  if (!current) return { ok: false, reason: "not_found" };
 
+  const to = nextStatus(current.status as DevSuggestionStatus, event);
+  if (!to) return { ok: false, reason: "invalid_transition" };
+
+  const update: Record<string, unknown> = { status: to, handled_at: new Date().toISOString() };
+  if (actorUserId) update.handled_by = actorUserId;
+  if ("response" in patch) update.response = patch.response;
+  if ("approvedDescription" in patch) update.approved_description = patch.approvedDescription;
+  if ("githubIssueNumber" in patch) update.github_issue_number = patch.githubIssueNumber;
+
+  const { error } = await supabase.from("rs_feature_requests").update(update).eq("id", id);
+  if (error) {
+    console.error("[kehitysehdotukset] päivitys epäonnistui:", error.message);
+    throw new Error("Toiveen päivitys epäonnistui.");
+  }
+
+  // Lokiin tila ja tapahtuma, ei vastauksen tekstiä.
   await supabase.from("rs_audit_log").insert({
-    actor_user_id: adminUserId,
-    action: "feature_request.update",
+    actor_user_id: actorUserId,
+    action: "feature_request.transition",
     target_type: "feature_request",
     target_id: id,
-    details: { status: input.status },
+    details: { event, from: current.status, to },
   });
-  return true;
+
+  return { ok: true, status: to };
+}
+
+/**
+ * Käsittelijä hyväksyy ehdotuksen: tila siirtyy, ja kutsuja (`actions.ts`)
+ * vastaa GitHub-issuen luonnista ennen tätä kutsua, koska issue-numero
+ * kirjataan samalla.
+ */
+export async function approveFeatureRequest(
+  adminUserId: string,
+  id: string,
+  input: { approvedDescription: string | null; githubIssueNumber: number | null },
+): Promise<TransitionOutcome> {
+  return transitionFeatureRequest(id, "hyvaksy", adminUserId, {
+    approvedDescription: input.approvedDescription,
+    githubIssueNumber: input.githubIssueNumber,
+  });
+}
+
+/** Hylkäys vastauksella, joka näkyy jättäjälle. */
+export async function rejectFeatureRequest(adminUserId: string, id: string, response: string): Promise<TransitionOutcome> {
+  return transitionFeatureRequest(id, "hylkaa", adminUserId, { response });
+}
+
+/**
+ * Käsittelijä vahvistaa testauksen jälkeen, että korjaus toimii. Jättäjälle
+ * lähtee viesti (docs/kehitysehdotukset.md kohta 6) — sähköposti on tässä
+ * ainoa kanava, koska kehitysehdotus ei ole web push -ilmoitusten piirissä.
+ */
+export async function confirmSuggestionWorks(adminUserId: string, id: string): Promise<TransitionOutcome> {
+  const outcome = await transitionFeatureRequest(id, "toimii", adminUserId);
+  if (outcome.ok) {
+    const { data } = await getServiceClient()
+      .from("rs_feature_requests")
+      .select("title, author:rs_users!rs_feature_requests_user_id_fkey(email)")
+      .eq("id", id)
+      .maybeSingle();
+    const email = (data as { title: string; author: { email: string } | null } | null)?.author?.email;
+    if (email) {
+      await sendEmail({
+        to: email,
+        title: "Ehdottamasi kohta on korjattu",
+        body: `${data!.title}. Voit kokeilla sitä nyt. Jos jokin ei vieläkään toimi, lähetä uusi ehdotus.`,
+        path: `/kehitystoiveet/${id}`,
+      });
+    }
+  }
+  return outcome;
+}
+
+/** Käsittelijä pyytää korjauksen vielä kuntoon. */
+export async function requestSuggestionChanges(adminUserId: string, id: string, response: string): Promise<TransitionOutcome> {
+  return transitionFeatureRequest(id, "tarvitsee_muutoksen", adminUserId, { response });
+}
+
+/** Webhook: PR avattu issueen, joka viittaa ehdotukseen. */
+export async function markSuggestionInProgress(id: string): Promise<TransitionOutcome> {
+  return transitionFeatureRequest(id, "pr_avattu", null);
+}
+
+/**
+ * Webhook: issue sulkeutui (PR yhdistetty). Koodaajalle viesti
+ * testauspyynnöstä (docs/kehitysehdotukset.md kohta 5).
+ */
+export async function markSuggestionTestable(id: string): Promise<TransitionOutcome> {
+  const outcome = await transitionFeatureRequest(id, "pr_yhdistetty", null);
+  const coderEmail = process.env.KEHITYS_KOODAAJA_EMAIL?.trim();
+  if (outcome.ok && coderEmail) {
+    const { data } = await getServiceClient().from("rs_feature_requests").select("title").eq("id", id).maybeSingle();
+    await sendEmail({
+      to: coderEmail,
+      title: `Testaa: ${data?.title ?? "kehitysehdotus"}`,
+      body: "Korjaus on yhdistetty ja odottaa testausta.",
+      path: `/kehitystoiveet/${id}`,
+    });
+  }
+  return outcome;
+}
+
+/** Webhookin käyttöön: ehdotus, jonka GitHub-issue on annettu numero. `null`, jos ei löydy. */
+export async function getFeatureRequestByIssueNumber(issueNumber: number): Promise<FeatureRequest | null> {
+  const { data, error } = await getServiceClient()
+    .from("rs_feature_requests")
+    .select(`${COLUMNS}, author:rs_users!rs_feature_requests_user_id_fkey(email)`)
+    .eq("github_issue_number", issueNumber)
+    .maybeSingle();
+  if (error) {
+    console.error("[kehitysehdotukset] haku issue-numerolla epäonnistui:", error.message);
+    throw new Error("Toiveen haku epäonnistui.");
+  }
+  return data ? toRequest(data as unknown as Row) : null;
+}
+
+/** Webhookin käyttöön: ehdotukset, joiden issue-numero on jokin annetuista (PR:n rungon viitteet). */
+export async function getFeatureRequestsByIssueNumbers(issueNumbers: number[]): Promise<FeatureRequest[]> {
+  if (issueNumbers.length === 0) return [];
+  const { data, error } = await getServiceClient()
+    .from("rs_feature_requests")
+    .select(`${COLUMNS}, author:rs_users!rs_feature_requests_user_id_fkey(email)`)
+    .in("github_issue_number", issueNumbers);
+  if (error) {
+    console.error("[kehitysehdotukset] haku issue-numeroilla epäonnistui:", error.message);
+    throw new Error("Toiveen haku epäonnistui.");
+  }
+  return ((data ?? []) as unknown as Row[]).map(toRequest);
 }

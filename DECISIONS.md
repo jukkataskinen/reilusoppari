@@ -5,6 +5,52 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Kehitysehdotukset: tilakone ja GitHub-seuranta (2026-10-09, yötyö)
+
+PLAN.md:n rivi "Kehitysehdotukset yhteisen käytännön mukaan" (Jukan päätös
+8.10.2026, `docs/kehitysehdotukset.md`) toteutettu laajentamalla migraation
+0018 `rs_feature_requests`-taulua (migraatio 0020) sen asemesta että
+tehtäisiin uusi taulu — spekin oma ohje.
+
+**Vanhojen tilojen siirto oli yksiselitteinen.** Vanhoja tiloja oli viisi
+(new/planned/in_progress/done/declined), uusia kuusi
+(uusi/hyväksytty/työn_alla/testattavana/valmis/hylätty). `testattavana` on
+kokonaan uusi väliaskel eikä sillä ollut vanhaa vastinetta, joten mitään ei
+tarvinnut siirtää siihen. Muut neljä siirtyivät suoraan: new→uusi,
+planned→hyväksytty, in_progress→työn_alla, done→valmis, declined→hylätty.
+
+**Tilakone on oma tiedostonsa** (`lib/dev-suggestions/state-machine.ts`),
+puhdas funktio ja testattu kaikki 36 tila×tapahtuma-yhdistelmää (spekin
+vaatimus: "sovellus ei saa ohittaa niitä"). `lib/db/feature-requests.ts`:n
+ainoa kirjoitusreitti tilaan on `transitionFeatureRequest`, joka kysyy
+seuraavan tilan tilakoneelta — käsittelijän admin-lomakkeella ei ole yleistä
+tilavalitsinta, vaan yksi lomake per sallittu tapahtuma (hyväksy, hylkää,
+toimii, tarvitsee muutoksen).
+
+**GitHub-integraatio samalla mallilla kuin Stripe ja eSinetti**
+(`lib/dev-suggestions/github-issues.ts`): `GITHUB_ISSUES_TOKEN` puuttuu →
+mock, joka ei koske verkkoon, issuen luonti palauttaa `null`, hyväksyntä
+tallentuu normaalisti. Webhook (`/api/github/webhook`,
+`lib/dev-suggestions/webhook.ts`) tarkistaa GitHubin oikean allekirjoitusmuodon
+(`X-Hub-Signature-256: sha256=<hex>`), eri muoto kuin eSinetin ja Stripen
+`t=…,v1=…` — GitHub ei sisällytä aikaleimaa otsakkeeseen, joten
+toistosuojaa ei ole; tätä ei pidetty ongelmana, koska käsittely kulkee
+tilakoneen läpi ja on siis idempotenttia (sama tapahtuma kahdesti ei löydä
+siirtymää toisella kerralla).
+
+**Ei toteutettu tänä yönä: valinnainen kuvakaappaus lomakkeelle.** Spekissä
+se on valinnainen kenttä, ei estä muuta kulkua. Kuvan lataus yksityiseen
+tiedostovarastoon (koon ja tyypin rajaus, oma reitti) on oma kokonaisuutensa,
+ja sen teki järkevämmäksi tehdä omana, pienempänä muutoksena kuin ahtaa tämän
+muutoksen sisään. PLAN.md:ssä omana rivinään.
+
+**Jukalta tarvitaan käyttöön asti:** `GITHUB_ISSUES_TOKEN`,
+`GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL` ja webhook GitHubin
+repoasetuksiin — ks. BLOCKERS.md. Siihen asti hyväksynnät tallentuvat
+normaalisti, mutta eivät etene GitHub-issueiksi eikä testauspyyntöjä lähde.
+
+---
+
 ## Plus-tilaus on asunnon, ei käyttäjän (2026-10-07, yötyö)
 
 PLAN.md:n rivi "Ensimmäinen tulostus laukaisee Plus-maksun" toteutettu.

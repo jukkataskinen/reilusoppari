@@ -306,7 +306,37 @@ Sama malli kuin Mittarilukemassa. DECISIONS.md 2026-09-27.
 
 ## Kehitysehdotukset (Jukan päätös 8.10.2026)
 
-- [ ] Kehitysehdotukset yhteisen käytännön mukaan (`docs/kehitysehdotukset.md`): laajenna nykyiset kehitystoiveet (`rs_feature_requests`). Tilat uusi → hyväksytty → työn alla → testattavana → valmis, sivupolkuna hylätty ja paluu testauksesta työn alle. Lomakkeeseen tarkka kuvaus ja valinnainen kuvakaappaus (yksityiseen tiedostovarastoon, ei gittiin eikä GitHubiin). Koodaajalle sähköposti uudesta ehdotuksesta, käsittelysivu (hyväksy, muokkaa ja hyväksy, hylkää vastauksella), hyväksynnästä GitHub-issue tunnisteella `kehitysehdotus` ilman henkilötietoja, webhook `/api/github/webhook` (PR avattu/yhdistetty, issue suljettu/avattu), testauspyyntö koodaajalle ja lopuksi viesti käyttäjälle. Tilasiirtymät puhtaana funktiona testeineen. Token `GITHUB_ISSUES_TOKEN`, webhookin salaisuus ja `KEHITYS_KOODAAJA_EMAIL` BLOCKERSiin Jukalle. Ohje selkokielisenä.
+DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
+(`rs_feature_requests`, migraatio 0020) yhteisen käytännön mukaiseksi
+(`docs/kehitysehdotukset.md`).
+
+- [x] Tilakone puhtaana funktiona testeineen: uusi → hyväksytty → työn alla →
+      testattavana → valmis, sivupolkuna hylätty ja paluu testauksesta työn
+      alle (`lib/dev-suggestions/state-machine.ts`)
+- [x] Migraatio `0020`: vanhat tilat siirtyvät uusiin ilman tietohäviötä,
+      `github_issue_number` ja `approved_description`
+- [x] Käsittelysivu tilakoneen mukaisilla toiminnoilla: hyväksy (muokattava
+      kuvaus), hylkää vastauksella, testattavana-tilassa toimii / tarvitsee
+      muutoksen — ei yleistä tilavalitsinta
+- [x] Koodaajalle sähköposti uudesta ehdotuksesta ja testauspyynnöstä;
+      jättäjälle viesti, kun korjaus on valmis. Ilman `RESEND_API_KEY`:tä ei
+      lähetystä, ei virhettä (sama sääntö kuin muualla)
+- [x] GitHub-issue hyväksynnässä (`lib/dev-suggestions/github-issues.ts`,
+      tunniste `kehitysehdotus`, ei henkilötietoja) ja webhook
+      `/api/github/webhook` (issue suljettu/avattu, PR avattu) tilakoneen
+      läpi. Ilman `GITHUB_ISSUES_TOKEN`:ia hyväksyntä tallentuu, issue jää
+      luomatta
+- [x] Ohje selkokielisenä (`src/lib/help/topics.ts`, aihe "kehitystoiveet")
+- [ ] Valinnainen kuvakaappaus lomakkeelle — **ei toteutettu tänä yönä**:
+      vaatii oman tiedostovaraston reitin (lataus, koon ja tyypin rajaus,
+      yksityinen bucket) samalla tavalla kuin kuittikuville. Ei estä muuta
+      kulkua, koska kuvakaappaus on spekissä valinnainen
+- [ ] `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL`
+      Verceliin ja webhook GitHubin repoasetuksiin (Jukka, BLOCKERS.md) —
+      siihen asti hyväksynnät tallentuvat, mutta eivät etene GitHubiin
+- [ ] Migraatio `0020` live-Supabaseen (Jukka, yhdistyy automaattisesti PR:n
+      mukana — ei erillistä ajoa, mutta rivi BLOCKERS.md:ssä kertoo onko se
+      jo ajossa)
 
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
