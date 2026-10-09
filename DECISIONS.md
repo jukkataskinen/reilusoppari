@@ -1941,3 +1941,11 @@ muutkin ilmoitukset tässä sovelluksessa.
 
 `RESEND_API_KEY` on yhä BLOCKERS.md:ssä: koodi on valmis, mutta tuotannossa
 viesti lähtee vasta kun Jukka lisää avaimen Verceliin.
+
+**Korjaus 2026-10-09:** avain oli jo Vercelissä (Production ja Preview,
+lisätty 11.9.) — BLOCKERS.md oli tältä osin vanhentunut, ei todellinen este.
+Jukka huomasi tämän PR:n katselmoinnin yhteydessä Vercelin asetuksista.
+BLOCKERS.md ja PLAN.md korjattu vastaamaan todellisuutta. Opetus: kun
+tehtävä merkitään "odottaa avainta", kannattaisi tarkistaa Vercelistä eikä
+vain BLOCKERS.md:stä, ennen kuin vetää saman johtopäätöksen seuraavalla
+kerralla.

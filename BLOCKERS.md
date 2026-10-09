@@ -13,7 +13,7 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 | eSinetin migraatio `0009` live-kantaan (`/documents/seal`) | Jukka | kohta 1 |
 | Migraatiot `0016` (linkkien kutsuraja) ja `0017` (anon-oikeudet pois) live-Supabaseen. `0018` ja `FEATURE_REQUEST_ADMIN_EMAILS` tehty 27.9.2026 | Jukka | PLAN.md |
 | Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
-| Stripe test -avaimet, `RESEND_API_KEY` sovellukselle, VAPID Verceliin | Jukka | kohta 4 |
+| Stripe test -avaimet, VAPID Verceliin | Jukka | kohta 4 |
 | Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
 | Tietosuojaseloste, käyttöehdot ja käsittelysopimus: luonnokset `docs/` | Jukka | kohta 4 |
 | E2e-alkukaari: tarvitsee erillisen testikannan ja kirjautumisen ohituksen | Jukka | luku lopussa |
@@ -331,7 +331,7 @@ Päivitetty 2026-09-26.
 | # | Tehtävä | Tila |
 |---|---|---|
 | 1 | Repo `reilusoppari` GitHubiin | **valmis** 2026-09-11 |
-| 2 | Supabase (EU), Auth0 passwordless, Vercel `app.reilusoppari.fi`, Resend, VAPID, Stripe test | Supabase, Auth0 (oma EU-tenant), Vercel ja domain **valmiit**; Resend Auth0:n postille valmis. Auki: `RESEND_API_KEY` sovellukselle (tilausvahvistus), VAPID-avaimet Verceliin (tarkista), Stripe test -avaimet |
+| 2 | Supabase (EU), Auth0 passwordless, Vercel `app.reilusoppari.fi`, Resend, VAPID, Stripe test | Supabase, Auth0 (oma EU-tenant), Vercel ja domain **valmiit**; Resend Auth0:n postille valmis. `RESEND_API_KEY` sovellukselle **valmis** — oli jo Vercelissä (Production ja Preview, lisätty 11.9.), tämä rivi vain unohtui päivittää (2026-10-09). Auki: VAPID-avaimet Verceliin (tarkista), Stripe test -avaimet |
 | 3 | eSinetti-tenant `reilusoppari` + API-avain | tekemättä; `/documents/seal` valmis eSinetissä, sen migraatio 0009 ajamatta. `/documents/render` ei enää tarpeen |
 | 4 | Vuokrasopimuspohjan juridinen sisältö (AHVL 481/1995) | tekemättä, harkitse juristia |
 | 5 | Verolaskelman ohjetekstit ja km-taksa | tekemättä (`content/tax-guidance.fi.ts`) |

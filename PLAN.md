@@ -264,9 +264,10 @@ kuuluvat valmiiseen tuotteeseen.
 - [x] Salkkutilaus: `/laskutus`, rehellinen vertailu toteutuneella käytöllä,
       asuntomäärän päivitys napin takana, Customer Portal laskuille
 - [x] Tilausvahvistus sähköpostiin (`src/lib/billing/confirmation.ts`,
-      `checkout.completed`-webhookista). Samalla säännöllä kuin muu
-      sähköposti: ilman `RESEND_API_KEY`:tä lähetys jää tekemättä mutta
-      maksun käsittely ei kaadu — avain on yhä BLOCKERS.md:ssä Jukalle
+      `checkout.completed`-webhookista). `RESEND_API_KEY` on Vercelissä
+      (Production ja Preview) jo 11.9. lähtien, joten vahvistus lähtee
+      oikeasti heti kun PR on mainissa — BLOCKERS.md oli tältä osin
+      vanhentunut, korjattu 2026-10-09
 - [ ] Testaus Stripe test modessa — odottaa avaimia (Jukka)
 
 ## Vaihe 6 — Yhteydenottolupa (lisäominaisuus)
