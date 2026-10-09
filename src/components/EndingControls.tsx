@@ -6,6 +6,7 @@ import {
   recordNoticeAction,
   type EndingActionState,
 } from "@/app/vuokrasuhteet/ending-actions";
+import { Form } from "@/components/Form";
 
 const initialState: EndingActionState = {};
 
@@ -84,7 +85,7 @@ export function EndingControls({
           ) : null}
 
           {confirmOpen ? (
-            <form action={noticeAction} className="mt-4">
+            <Form action={noticeAction} clearOn={noticeState.done ? noticeState : null} className="mt-4">
               <input type="hidden" name="tenancyId" value={tenancyId} />
               <p className="text-sm">
                 Kirjataanko irtisanominen? Toinen osapuoli saa siitä heti tiedon, eikä merkintää
@@ -106,7 +107,7 @@ export function EndingControls({
                   Peruuta
                 </button>
               </div>
-            </form>
+            </Form>
           ) : (
             <button
               type="button"
@@ -125,8 +126,9 @@ export function EndingControls({
       ) : null}
 
       {isLandlord && !depositReturnedAt && depositAmount ? (
-        <form
+        <Form
           action={depositAction}
+          clearOn={depositState.done ? depositState : null}
           className="rounded-[var(--radius-panel)] border border-line bg-paper p-5"
         >
           <input type="hidden" name="tenancyId" value={tenancyId} />
@@ -145,6 +147,7 @@ export function EndingControls({
               <input
                 id="vakuus-paiva"
                 name="date"
+                required
                 type="date"
                 defaultValue={today}
                 className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
@@ -157,6 +160,7 @@ export function EndingControls({
               <input
                 id="vakuus-summa"
                 name="amount"
+                required
                 inputMode="decimal"
                 defaultValue={String(depositAmount)}
                 className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
@@ -182,7 +186,7 @@ export function EndingControls({
           >
             {depositPending ? "Kirjataan…" : "Kirjaa palautus"}
           </button>
-        </form>
+        </Form>
       ) : null}
     </div>
   );

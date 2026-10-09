@@ -6,6 +6,7 @@ import {
   type MaintenanceActionState,
 } from "@/app/vuokrasuhteet/maintenance-actions";
 import type { MaintenanceKind } from "@/lib/db/maintenance";
+import { Form } from "@/components/Form";
 
 const initialState: MaintenanceActionState = {};
 
@@ -36,8 +37,9 @@ export function MaintenanceForm({ tenancyId }: { tenancyId: string }) {
   const [kind, setKind] = useState<MaintenanceKind>("defect");
 
   return (
-    <form
+    <Form
       action={formAction}
+      clearOn={state.done ? state : null}
       className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5"
     >
       <input type="hidden" name="tenancyId" value={tenancyId} />
@@ -81,7 +83,7 @@ export function MaintenanceForm({ tenancyId }: { tenancyId: string }) {
           name="title"
           maxLength={120}
           required
-          placeholder="Esimerkiksi: keittiön hana vuotaa"
+          placeholder="esim. keittiön hana vuotaa"
           className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
         />
       </div>
@@ -116,6 +118,6 @@ export function MaintenanceForm({ tenancyId }: { tenancyId: string }) {
       >
         {pending ? "Tallennetaan…" : "Tallenna merkintä"}
       </button>
-    </form>
+    </Form>
   );
 }

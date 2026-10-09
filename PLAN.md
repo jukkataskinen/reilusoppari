@@ -338,6 +338,23 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
       mukana — ei erillistä ajoa, mutta rivi BLOCKERS.md:ssä kertoo onko se
       jo ajossa)
 
+## Lomakkeet säilyttävät tiedot — Jukan havainto 2026-10-09
+
+- [x] Lomake ei tyhjene virheen jälkeen: yhteinen `<Form>` kaikissa
+      lomakkeissa (25 tiedostoa), ks. DECISIONS.md 2026-10-09
+- [x] Virhe näkyy kentän vieressä ja sivu siirtyy ensimmäiseen
+      korjattavaan kohtaan; vuokrasuhteen lomakkeella myös vuokralaisen
+      nimi ja sähköposti saavat omat viestinsä
+- [x] Pakolliset kentät merkitty (`required`), selaimen viestit suomeksi
+- [x] Esimerkit muotoon "esim. 850", vaaleampina ja kursiivilla
+- [ ] Pienten lomakkeiden (kommentit, kuittaus, huoltokirjan merkinnät,
+      kulut) palvelinvirheet ovat yhä yksi yleinen viesti eivätkä
+      kenttäkohtaisia. Tieto säilyy ja sivu siirtyy viestiin, joten tämä on
+      parannus eikä virhe
+- [ ] Sopimuksen irtisanomisaika: tyhjä kenttä tallentuu yhä nollana, jos
+      selaimen tarkistus ohitetaan. Harkitse palvelimelle oma "puuttuu"-viesti
+      (vaatii testin `contract.test.ts` päivityksen)
+
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
 **Muutettu 2026-09-11:** Jukan korjaus — vaatimus ei ole sovelluskauppa vaan

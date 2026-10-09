@@ -3,6 +3,7 @@
 import { useActionState, useId } from "react";
 import { createPropertyAction, type PropertyFormState } from "../actions";
 import { fi } from "@/i18n/fi";
+import { Form } from "@/components/Form";
 
 /**
  * Asunnon lomake.
@@ -60,7 +61,7 @@ export function PropertyForm() {
   };
 
   return (
-    <form action={formAction} className="mt-8 flex flex-col gap-5" noValidate>
+    <Form action={formAction} className="mt-8 flex flex-col gap-5">
       {state.message ? (
         <p role="alert" className="rounded-[10px] border border-coral bg-paper p-3 text-sm">
           {state.message}
@@ -85,6 +86,8 @@ export function PropertyForm() {
             inputMode="numeric"
             autoComplete="postal-code"
             maxLength={5}
+            pattern="[0-9]{5}"
+            data-virhe="Postinumero on viisi numeroa."
             required
           />
           <FieldError name="postalCode" />
@@ -117,7 +120,7 @@ export function PropertyForm() {
           <label htmlFor={prefix + "-rooms"} className="text-sm font-medium">
             Huoneita
           </label>
-          <input {...field("rooms")} inputMode="numeric" placeholder="2" />
+          <input {...field("rooms")} inputMode="numeric" placeholder="esim. 2" />
           {/* Suomalainen huoneluku: keittiötä ei lasketa, 2h+k on kaksi. */}
           <p className="mt-1.5 text-sm text-ink/60">Keittiötä ei lasketa. 2h+k on kaksi.</p>
           <FieldError name="rooms" />
@@ -126,7 +129,7 @@ export function PropertyForm() {
           <label htmlFor={prefix + "-areaM2"} className="text-sm font-medium">
             Pinta-ala (m²)
           </label>
-          <input {...field("areaM2")} inputMode="decimal" placeholder="54,5" />
+          <input {...field("areaM2")} inputMode="decimal" placeholder="esim. 54,5" />
           <FieldError name="areaM2" />
         </div>
       </div>
@@ -139,7 +142,7 @@ export function PropertyForm() {
             <label htmlFor={prefix + "-name"} className="text-sm font-medium">
               Nimi listassa
             </label>
-            <input {...field("name")} placeholder="Esim. Testikadun kaksio" />
+            <input {...field("name")} placeholder="esim. Testikadun kaksio" />
             <p className="mt-1.5 text-sm text-ink/60">
               Vapaaehtoinen. Auttaa erottamaan asunnot, jos niitä on useita.
             </p>
@@ -177,6 +180,6 @@ export function PropertyForm() {
       >
         {pending ? "Tallennetaan…" : fi.common.save}
       </button>
-    </form>
+    </Form>
   );
 }

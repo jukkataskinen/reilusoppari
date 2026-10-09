@@ -10,6 +10,8 @@
  */
 
 import { z } from "zod";
+// Tuonti ottaa käyttöön suomenkieliset oletusvirheet (z.config).
+import "@/lib/forms/schema";
 
 export const PROPERTY_TYPES = ["kerrostalo", "rivitalo", "omakotitalo", "muu"] as const;
 export const TENURES = ["osake", "kiinteisto", "muu"] as const;
@@ -106,17 +108,11 @@ export function propertyFormToInput(form: FormData): Record<string, unknown> {
   };
 }
 
-/** Kenttäkohtaiset virheet lomakkeelle: `{ postalCode: "Postinumero on viisi numeroa" }`. */
-export function fieldErrors(error: z.ZodError): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const field = issue.path[0];
-    if (typeof field === "string" && !result[field]) {
-      result[field] = issue.message;
-    }
-  }
-  return result;
-}
+/**
+ * Kenttäkohtaiset virheet. Siirretty yhteiseen paikkaan (`lib/forms/schema.ts`);
+ * vienti säilyy tässä, jotta vanhat tuonnit toimivat.
+ */
+export { fieldErrors } from "@/lib/forms/schema";
 
 /** Osoite yhtenä rivinä listaan ja otsikoihin. */
 export function formatAddress(property: {

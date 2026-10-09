@@ -6,6 +6,7 @@ import {
   type ContactActionState,
 } from "@/app/vuokrasuhteet/contact-actions";
 import { MESSAGE_MAX_LENGTH } from "@/lib/certificates/contact";
+import { Form } from "@/components/Form";
 
 const initialState: ContactActionState = {};
 
@@ -20,7 +21,7 @@ export function ConversationForm({ conversationId }: { conversationId: string })
   const [state, send, pending] = useActionState(sendConversationMessageAction, initialState);
 
   return (
-    <form action={send} className="mt-6">
+    <Form action={send} clearOn={state.done ? state : null} className="mt-6">
       <input type="hidden" name="conversationId" value={conversationId} />
 
       <label htmlFor="viesti" className="block text-sm font-medium">
@@ -29,9 +30,9 @@ export function ConversationForm({ conversationId }: { conversationId: string })
       <textarea
         id="viesti"
         name="body"
+        required
         rows={4}
         maxLength={MESSAGE_MAX_LENGTH}
-        key={state.done ? "lahetetty" : "luonnos"}
         className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
       />
       <p className="mt-1.5 text-sm text-ink/60">
@@ -51,6 +52,6 @@ export function ConversationForm({ conversationId }: { conversationId: string })
       >
         {pending ? "Lähetetään…" : "Lähetä"}
       </button>
-    </form>
+    </Form>
   );
 }

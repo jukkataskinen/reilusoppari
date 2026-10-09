@@ -55,6 +55,20 @@ h3 {
   letter-spacing: -0.015em;
 }
 
+/*
+ * ESIMERKKI EI SAA NÄYTTÄÄ TÄYTETYLTÄ (Jukan havainto 2026-10-09)
+ *
+ * Kentän esimerkkiteksti (placeholder) oli selaimen oletusharmaa, ja "850"
+ * vuokrakentässä näytti jo kirjoitetulta vuokralta. Silloin oli outoa, että
+ * lomake valitti kentän puuttuvan. Esimerkit alkavat sanalla "esim." ja ovat
+ * selvästi vaaleampia ja kursiivilla, jotta ne erottuvat oikeasta arvosta.
+ */
+::placeholder {
+  color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  font-style: italic;
+  opacity: 1;
+}
+
 :focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;

@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createProperty } from "@/lib/db/properties";
-import { fieldErrors, propertyFormToInput, propertySchema } from "@/lib/property/schema";
+import { fieldErrors } from "@/lib/forms/schema";
+import { propertyFormToInput, propertySchema } from "@/lib/property/schema";
 
 /**
  * Asunnon luonti (CLAUDE.md 5.1).

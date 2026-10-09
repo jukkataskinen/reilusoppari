@@ -5,6 +5,7 @@ import {
   sendFinalForSigningAction,
   type SigningActionState,
 } from "@/app/vuokrasuhteet/signing-actions";
+import { Form } from "@/components/Form";
 
 const initialState: SigningActionState = {};
 
@@ -77,7 +78,7 @@ export function FinalSigning({
   }
 
   return (
-    <form action={formAction} className="mt-4">
+    <Form action={formAction} className="mt-4">
       <input type="hidden" name="tenancyId" value={tenancyId} />
 
       <p className="text-sm text-ink/70">
@@ -98,6 +99,6 @@ export function FinalSigning({
       >
         {pending ? "Lähetetään…" : "Lähetä pöytäkirja allekirjoitettavaksi"}
       </button>
-    </form>
+    </Form>
   );
 }

@@ -5,6 +5,7 @@ import {
   setContactPermissionAction,
   type ContactActionState,
 } from "@/app/vuokrasuhteet/contact-actions";
+import { Form } from "@/components/Form";
 
 const initialState: ContactActionState = {};
 
@@ -65,7 +66,7 @@ export function ContactPermission({
   }
 
   return (
-    <form action={save} className="mt-5 rounded-[10px] border border-line p-4">
+    <Form action={save} clearOn={state.done ? state : null} className="mt-5 rounded-[10px] border border-line p-4">
       <input type="hidden" name="tenancyId" value={tenancyId} />
       <input type="hidden" name="certificateId" value={certificateId} />
 
@@ -111,6 +112,6 @@ export function ContactPermission({
       >
         {pending ? "Tallennetaan…" : checked ? "Salli yhteydenotto" : "Peru lupa"}
       </button>
-    </form>
+    </Form>
   );
 }

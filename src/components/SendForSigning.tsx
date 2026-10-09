@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { sendForSigningAction, type SigningActionState } from "@/app/vuokrasuhteet/signing-actions";
+import { Form } from "@/components/Form";
 
 const initialState: SigningActionState = {};
 
@@ -26,7 +27,7 @@ export function SendForSigning({
   const [state, formAction, pending] = useActionState(sendForSigningAction, initialState);
 
   return (
-    <form action={formAction} className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+    <Form action={formAction} className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
       <input type="hidden" name="tenancyId" value={tenancyId} />
 
       <p className="font-medium">Lähetä allekirjoitettavaksi</p>
@@ -61,6 +62,6 @@ export function SendForSigning({
       >
         {pending ? "Lähetetään…" : "Lähetä allekirjoitettavaksi"}
       </button>
-    </form>
+    </Form>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Form } from "./Form";
 import { PartyDetailsFields } from "./PartyDetailsFields";
 import {
   savePartyDetailsAction,
@@ -57,7 +58,10 @@ export function PartyDetailsForm({
   }
 
   return (
-    <form action={formAction} className="mt-4" noValidate>
+    // Onnistuneen tallennuksen jälkeen lomake palautuu tallennettuihin
+    // tietoihin. Tärkein syy: kirjoitettu henkilötunnus ei jää näkyviin
+    // kenttään, vaan tilalle tulee peitetty "Tallennettu: 131052-***T".
+    <Form action={formAction} className="mt-4" clearOn={state.saved ? state : null}>
       {tenancyId ? (
         <>
           <input type="hidden" name="tenancyId" value={tenancyId} />
@@ -84,7 +88,7 @@ export function PartyDetailsForm({
       >
         {pending ? "Tallennetaan…" : "Tallenna tiedot"}
       </button>
-    </form>
+    </Form>
   );
 }
 

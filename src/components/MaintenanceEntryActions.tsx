@@ -7,6 +7,7 @@ import {
   resolveAction,
   type MaintenanceActionState,
 } from "@/app/vuokrasuhteet/maintenance-actions";
+import { Form } from "@/components/Form";
 
 const initialState: MaintenanceActionState = {};
 
@@ -51,7 +52,7 @@ export function MaintenanceEntryActions({
 
   return (
     <div className="mt-8 flex flex-col gap-6">
-      <form action={comment} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+      <Form action={comment} clearOn={commentState.done ? commentState : null} className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <input type="hidden" name="tenancyId" value={tenancyId} />
         <input type="hidden" name="entryId" value={entryId} />
 
@@ -61,9 +62,10 @@ export function MaintenanceEntryActions({
         <textarea
           id="huolto-kommentti"
           name="body"
+          required
           rows={3}
           maxLength={300}
-          placeholder="Esimerkiksi: huoltomies käy torstaina"
+          placeholder="esim. huoltomies käy torstaina"
           className="mt-2 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
         />
         <p className="mt-1.5 text-sm text-ink/60">
@@ -83,11 +85,12 @@ export function MaintenanceEntryActions({
         >
           {commentPending ? "Lähetetään…" : "Lähetä kommentti"}
         </button>
-      </form>
+      </Form>
 
       {isLandlord && !resolved ? (
-        <form
+        <Form
           action={resolve}
+          clearOn={resolveState.done ? resolveState : null}
           className="rounded-[var(--radius-panel)] border border-line bg-paper p-5"
         >
           <input type="hidden" name="tenancyId" value={tenancyId} />
@@ -112,13 +115,13 @@ export function MaintenanceEntryActions({
           >
             {resolvePending ? "Merkitään…" : "Merkitse korjatuksi"}
           </button>
-        </form>
+        </Form>
       ) : null}
 
       {isAuthor ? (
         <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           {cancelOpen ? (
-            <form action={cancel}>
+            <Form action={cancel} clearOn={cancelState.done ? cancelState : null}>
               <input type="hidden" name="tenancyId" value={tenancyId} />
               <input type="hidden" name="entryId" value={entryId} />
 
@@ -135,7 +138,7 @@ export function MaintenanceEntryActions({
                 id="perumisen-syy"
                 name="reason"
                 maxLength={300}
-                placeholder="Esimerkiksi: kirjasin vahingossa väärään vuokrasuhteeseen"
+                placeholder="esim. kirjasin vahingossa väärään vuokrasuhteeseen"
                 className="mt-3 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
               />
 
@@ -161,7 +164,7 @@ export function MaintenanceEntryActions({
                   Älä peru
                 </button>
               </div>
-            </form>
+            </Form>
           ) : (
             <button
               type="button"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useId, useState } from "react";
 import { saveContractAction, type ContractFormState } from "@/app/vuokrasuhteet/contract-actions";
 import type { ContractTerms } from "@/lib/tenancy/contract-schema";
+import { Form } from "@/components/Form";
 
 const initialState: ContractFormState = { errors: {} };
 
@@ -43,28 +44,8 @@ export function ContractForm({
     return error ? <p className="mt-1.5 text-sm text-coral">{error}</p> : null;
   };
 
-  const Toggle = ({
-    name,
-    label,
-    hint,
-    defaultChecked,
-  }: {
-    name: string;
-    label: string;
-    hint?: string;
-    defaultChecked: boolean;
-  }) => (
-    <div>
-      <label className="flex min-h-[var(--size-touch)] items-center gap-3">
-        <input type="checkbox" name={name} defaultChecked={defaultChecked} className="size-5" />
-        <span className="text-sm">{label}</span>
-      </label>
-      {hint ? <p className="ml-8 text-sm text-ink/60">{hint}</p> : null}
-    </div>
-  );
-
   return (
-    <form action={formAction} className="mt-8 flex flex-col gap-6" noValidate>
+    <Form action={formAction} className="mt-8 flex flex-col gap-6">
       <input type="hidden" name="tenancyId" value={tenancyId} />
 
       {state.message ? (
@@ -102,7 +83,11 @@ export function ContractForm({
           </label>
           <input
             {...field("noticePeriodMonths")}
-            inputMode="numeric"
+            type="number"
+            min={0}
+            max={12}
+            step={1}
+            required
             defaultValue={String(terms.noticePeriodMonths)}
           />
           <p className="mt-1.5 text-sm text-ink/60">kuukautta</p>
@@ -128,9 +113,12 @@ export function ContractForm({
           </label>
           <input
             {...field("keysCount")}
-            inputMode="numeric"
+            type="number"
+            min={0}
+            max={50}
+            step={1}
             defaultValue={terms.keysCount === null ? "" : String(terms.keysCount)}
-            placeholder="3"
+            placeholder="esim. 3"
           />
           <FieldError name="keysCount" />
         </div>
@@ -160,7 +148,11 @@ export function ContractForm({
             </label>
             <input
               {...field("minimumTermMonths")}
-              inputMode="numeric"
+              type="number"
+              min={1}
+              max={60}
+              step={1}
+              required
               defaultValue={String(terms.minimumTermMonths ?? 12)}
             />
             <FieldError name="minimumTermMonths" />
@@ -180,7 +172,7 @@ export function ContractForm({
         <input
           {...field("rentIncreaseTerm")}
           defaultValue={terms.rentIncreaseTerm ?? ""}
-          placeholder="elinkustannusindeksin mukaan kerran vuodessa"
+          placeholder="esim. elinkustannusindeksin mukaan kerran vuodessa"
         />
         <p className="mt-1.5 text-sm text-ink/60">
           Jätä tyhjäksi, jos vuokrankorotuksesta ei sovita erikseen.
@@ -218,7 +210,7 @@ export function ContractForm({
                 {...field("waterChargeEur")}
                 inputMode="decimal"
                 defaultValue={terms.waterChargeEur === null ? "" : String(terms.waterChargeEur)}
-                placeholder="25"
+                placeholder="esim. 25"
               />
               <p className="mt-1.5 text-sm text-ink/60">
                 Tyhjänä: vesi maksetaan käytön mukaan.
@@ -284,6 +276,36 @@ export function ContractForm({
       >
         {pending ? "Tallennetaan…" : "Tallenna ehdot"}
       </button>
-    </form>
+    </Form>
+  );
+}
+
+/**
+ * Valintaruutu selitteineen.
+ *
+ * Komponentti on tiedoston tasolla eikä `ContractForm`-funktion sisällä:
+ * sisällä määriteltynä se olisi jokaisella piirrolla uusi komponentti, ja
+ * React loisi ruudut uudelleen — käyttäjän tekemät rastit palautuisivat
+ * oletuksiin heti, kun lomake näyttää virheen.
+ */
+function Toggle({
+  name,
+  label,
+  hint,
+  defaultChecked,
+}: {
+  name: string;
+  label: string;
+  hint?: string;
+  defaultChecked: boolean;
+}) {
+  return (
+    <div>
+      <label className="flex min-h-[var(--size-touch)] items-center gap-3">
+        <input type="checkbox" name={name} defaultChecked={defaultChecked} className="size-5" />
+        <span className="text-sm">{label}</span>
+      </label>
+      {hint ? <p className="ml-8 text-sm text-ink/60">{hint}</p> : null}
+    </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   travelCost,
   type ExpenseCategory,
 } from "@/lib/expenses/categories";
+import { Form } from "@/components/Form";
 
 const initialState: ExpenseActionState = {};
 
@@ -116,7 +117,7 @@ export function ExpenseForm({
   }
 
   return (
-    <form
+    <Form
       action={formAction}
       className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5"
     >
@@ -182,7 +183,7 @@ export function ExpenseForm({
               inputMode="decimal"
               value={km}
               onChange={(event) => setKm(event.target.value)}
-              placeholder="24"
+              placeholder="esim. 24"
               className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
             />
           </div>
@@ -196,7 +197,7 @@ export function ExpenseForm({
             id="kulu-summa"
             name="amount"
             inputMode="decimal"
-            placeholder={isTravel ? "lasketaan" : "129,90"}
+            placeholder={isTravel ? "lasketaan" : "esim. 129,90"}
             className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
           />
         </div>
@@ -223,7 +224,7 @@ export function ExpenseForm({
           id="kulu-kuvaus"
           name="description"
           maxLength={300}
-          placeholder="Esimerkiksi: hanan vaihto, LVI-liike"
+          placeholder="esim. hanan vaihto, LVI-liike"
           className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
         />
       </div>
@@ -255,6 +256,6 @@ export function ExpenseForm({
           Ei kuluja
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

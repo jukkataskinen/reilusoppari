@@ -107,7 +107,7 @@ export function PartyDetailsFields({
             <input
               {...field("businessId")}
               defaultValue={details.businessId ?? ""}
-              placeholder="1234567-8"
+              placeholder="esim. 1234567-8"
               autoComplete="off"
               spellCheck={false}
             />
@@ -133,7 +133,7 @@ export function PartyDetailsFields({
           <input
             {...field("personalId")}
             defaultValue=""
-            placeholder={details.identifierMasked ? "Tallennettu" : "010190-123A"}
+            placeholder={details.identifierMasked ? "Tallennettu" : "esim. 010190-123A"}
             autoComplete="off"
             spellCheck={false}
           />
@@ -176,7 +176,7 @@ export function PartyDetailsFields({
             defaultValue={details.phone ?? ""}
             type="tel"
             autoComplete="tel"
-            placeholder="040 123 4567"
+            placeholder="esim. 040 123 4567"
           />
           <FieldError name="phone" />
         </div>
@@ -207,7 +207,7 @@ export function PartyDetailsFields({
           <input
             {...field("bankAccount")}
             defaultValue={details.bankAccount ?? ""}
-            placeholder="FI21 1234 5600 0007 85"
+            placeholder="esim. FI21 1234 5600 0007 85"
             spellCheck={false}
           />
           <p className="mt-1.5 text-sm text-ink/60">
