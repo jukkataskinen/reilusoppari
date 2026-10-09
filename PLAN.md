@@ -327,10 +327,11 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
       läpi. Ilman `GITHUB_ISSUES_TOKEN`:ia hyväksyntä tallentuu, issue jää
       luomatta
 - [x] Ohje selkokielisenä (`src/lib/help/topics.ts`, aihe "kehitystoiveet")
-- [ ] Valinnainen kuvakaappaus lomakkeelle — **ei toteutettu tänä yönä**:
-      vaatii oman tiedostovaraston reitin (lataus, koon ja tyypin rajaus,
-      yksityinen bucket) samalla tavalla kuin kuittikuville. Ei estä muuta
-      kulkua, koska kuvakaappaus on spekissä valinnainen
+- [x] Valinnainen kuvakaappaus lomakkeelle (migraatio 0021). Liitetään
+      samassa lähetyksessä kuin muu lomake, ei erillisenä pikalatauksena —
+      EXIF pois, koko ja tyyppi rajattuina, yksityinen `photos`-bucket, sama
+      kuvien kutsuraja kuin kuittikuvilla. Epäonnistunut kuva ei estä toiveen
+      syntymistä, ks. DECISIONS.md 2026-10-09
 - [ ] `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL`
       Verceliin ja webhook GitHubin repoasetuksiin (Jukka, BLOCKERS.md) —
       siihen asti hyväksynnät tallentuvat, mutta eivät etene GitHubiin

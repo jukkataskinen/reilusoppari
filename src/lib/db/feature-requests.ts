@@ -36,6 +36,8 @@ export interface FeatureRequest {
   githubIssueNumber: number | null;
   handledAt: string | null;
   createdAt: string;
+  /** Valinnainen kuvakaappaus (migraatio 0021). `null`, jos ei lisätty tai liittäminen epäonnistui. */
+  screenshotStoragePath: string | null;
 }
 
 interface Row {
@@ -52,11 +54,12 @@ interface Row {
   github_issue_number: number | null;
   handled_at: string | null;
   created_at: string;
+  screenshot_storage_path: string | null;
   author?: { email: string } | null;
 }
 
 const COLUMNS =
-  "id, user_id, feature, page_path, title, description, importance, status, response, approved_description, github_issue_number, handled_at, created_at";
+  "id, user_id, feature, page_path, title, description, importance, status, response, approved_description, github_issue_number, handled_at, created_at, screenshot_storage_path";
 
 function toRequest(row: Row): FeatureRequest {
   return {
@@ -74,6 +77,7 @@ function toRequest(row: Row): FeatureRequest {
     githubIssueNumber: row.github_issue_number,
     handledAt: row.handled_at,
     createdAt: row.created_at,
+    screenshotStoragePath: row.screenshot_storage_path,
   };
 }
 
@@ -129,6 +133,38 @@ export async function createFeatureRequest(
   }
 
   return data.id as string;
+}
+
+/**
+ * Liittää valinnaisen kuvakaappauksen toiveeseen sen jälkeen, kun tiedosto on
+ * jo Storagessa (migraatio 0021). Kutsujan (`actions.ts`) vastuulla on poistaa
+ * tiedosto Storagesta, jos tämä palauttaa `false` — rivin kirjaus ja
+ * Storage-lataus eivät ole yhdessä transaktiossa.
+ *
+ * Epäonnistuminen ei saa näkyä käyttäjälle virheenä: toive on tässä
+ * vaiheessa jo tallessa, ja kuvakaappaus on spekissä valinnainen
+ * (docs/kehitysehdotukset.md).
+ */
+export async function attachFeatureRequestScreenshot(
+  requestId: string,
+  photo: { storagePath: string; sha256: string; bytes: number; width: number | null; height: number | null },
+): Promise<boolean> {
+  const { error } = await getServiceClient()
+    .from("rs_feature_requests")
+    .update({
+      screenshot_storage_path: photo.storagePath,
+      screenshot_sha256: photo.sha256,
+      screenshot_bytes: photo.bytes,
+      screenshot_width: photo.width,
+      screenshot_height: photo.height,
+    })
+    .eq("id", requestId);
+
+  if (error) {
+    console.error("[kehitystoiveet] kuvakaappauksen liittäminen epäonnistui:", error.message);
+    return false;
+  }
+  return true;
 }
 
 export async function listFeatureRequests(

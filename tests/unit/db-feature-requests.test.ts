@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { getServiceClient, hasSupabaseCredentials } from "@/lib/db/supabase";
 import {
   approveFeatureRequest,
+  attachFeatureRequestScreenshot,
   confirmSuggestionWorks,
   createFeatureRequest,
   getFeatureRequest,
@@ -121,5 +122,31 @@ describe.skipIf(!RUN)("kehitystoiveet (integraatio, live Supabase)", () => {
 
     const done = await getFeatureRequest({ userId: dave, asAdmin: false }, id);
     expect(done?.status).toBe("valmis");
+  });
+
+  it("kuvakaappaus liittyy toiveeseen ja näkyy haussa (migraatio 0021)", async () => {
+    const erkki = await createUser("erkki");
+    const id = await createFeatureRequest(erkki, {
+      feature: "muu",
+      pagePath: null,
+      title: "Neljäs",
+      description: "Testi",
+      importance: "nice",
+    });
+
+    const before = await getFeatureRequest({ userId: erkki, asAdmin: false }, id);
+    expect(before?.screenshotStoragePath).toBeNull();
+
+    const ok = await attachFeatureRequestScreenshot(id, {
+      storagePath: `${PREFIX}/${id}.jpg`,
+      sha256: "a".repeat(64),
+      bytes: 1234,
+      width: 390,
+      height: 844,
+    });
+    expect(ok).toBe(true);
+
+    const after = await getFeatureRequest({ userId: erkki, asAdmin: false }, id);
+    expect(after?.screenshotStoragePath).toBe(`${PREFIX}/${id}.jpg`);
   });
 });

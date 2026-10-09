@@ -5,6 +5,48 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Kehitystoiveen kuvakaappaus (2026-10-09, yötyö)
+
+PLAN.md:n rivi "Valinnainen kuvakaappaus lomakkeelle" (ei toteutettu
+8.10.2026-yötyössä, ks. edellinen merkintä) toteutettu. Spekki
+(`docs/kehitysehdotukset.md` kohta 1) kuvaa kuvakaappauksen omana
+tiedostolatauksena; toteutus seuraa kuittikuvien mallia (EXIF pois, koko ja
+tyyppi rajattuina, yksityinen `photos`-bucket) mutta **liittää kuvan osaksi
+samaa lomakkeen lähetystä** eikä erillisenä pikalatauksena heti kuvan
+valinnan jälkeen, toisin kuin katselmuksen ja huoltokirjan kuvat. Syy: toive
+lähetetään kerralla eikä asunnossa seisten, joten kahden vaiheen lataus
+(valitse kuva → lataa erikseen → täytä loput → lähetä) olisi monimutkaisempi
+kuin yksi lomake.
+
+**Rivi tallennetaan ensin tekstikenttineen, kuva liitetään vasta sen
+jälkeen.** `createFeatureRequestAction` (`src/app/kehitystoiveet/actions.ts`)
+kutsuu `createFeatureRequest`:ä ja saa id:n, lataa kuvan Storageen ja
+kirjoittaa polun vasta sitten `attachFeatureRequestScreenshot`:lla. Jos kuvan
+Storage-lataus tai rivin päivitys epäonnistuu, virhe lokitetaan mutta
+**toive syntyy silti** — sama periaate kuin GitHub-issuen luonnin
+epäonnistumisessa (DECISIONS.md "Kehitysehdotukset: tilakone ja
+GitHub-seuranta"). Kuvakaappaus on spekissä valinnainen, eikä sen
+tekninen epäonnistuminen saa näkyä käyttäjälle kadonneena toiveena.
+
+**Koko ja tyyppi validoidaan ENNEN tallennusta**, toisin kuin
+Storage-virheen käsittelyssä: liian suuri tai tuntematon tiedostomuoto
+palauttaa kenttäkohtaisen virheen eikä tallenna mitään, koska käyttäjä voi
+silloin korjata kuvan ja lähettää uudelleen — tekstikentät säilyvät
+lomakkeella (`components/Form.tsx`). Raja on sama 4 Mt kuin muussa kuvien
+latauksessa (Vercelin funktion 4,5 Mt:n katto), ei spekin tekstissä
+mainittu 5 Mt.
+
+**Kuva kuluttaa kuvien yhteistä kutsurajaa (CLAUDE.md kohta 6) vain, kun
+toiveessa on kuva** — tekstitoive ei kuluta kiintiötä, koska enemmistö
+toiveista ei sisällä kuvaa.
+
+**Sarakkeet suoraan `rs_feature_requests`-tauluun (migraatio 0021) eikä
+`rs_photos`-rivinä.** `rs_photos.tenancy_id` on pakollinen (migraatio 0001),
+ja kuvakaappaus ei liity mihinkään vuokrasuhteeseen — se on kuva
+käyttöliittymästä, ei kodista.
+
+---
+
 ## Lomakkeet eivät tyhjene virheen jälkeen (2026-10-09)
 
 Jukan havainto: vuokrasuhteen luonnissa yksi puuttuva kenttä tyhjensi koko
