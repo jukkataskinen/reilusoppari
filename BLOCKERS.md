@@ -9,8 +9,6 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 
 | Este | Kuka | Ks. |
 |---|---|---|
-| eSinetti-tenant `reilusoppari` ja API-avain | Jukka | kohta 4 |
-| eSinetin migraatio `0009` live-kantaan (`/documents/seal`) | Jukka | kohta 1 |
 | Migraatiot `0016` (linkkien kutsuraja) ja `0017` (anon-oikeudet pois) live-Supabaseen. `0018` ja `FEATURE_REQUEST_ADMIN_EMAILS` tehty 27.9.2026 | Jukka | PLAN.md |
 | Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
 | Stripe test -avaimet, VAPID Verceliin | Jukka | kohta 4 |
@@ -54,9 +52,8 @@ Reilusopparin kannalta olennaista:
 
 Kaksi asiaa on vielä Jukan tehtävälistalla eSinetin puolella:
 
-1. **Migraatio `0009_standalone_documents.sql` on ajettava live-Supabasea
-   vasten.** Ennen sitä `/documents/seal` palauttaa 500:n. Ks. eSinetin
-   `BLOCKERS.md` #12.
+1. ~~Migraatio `0009_standalone_documents.sql` live-Supabaseen~~ — ajettu
+   eSinetissä 11.9.2026 (eSinetin `BLOCKERS.md` #12).
 2. **WeasyPrint on uusi riippuvuus docservicessä.** CI todentaa sen; imagen
    koko kasvaa.
 
@@ -333,7 +330,7 @@ Päivitetty 2026-09-26.
 |---|---|---|
 | 1 | Repo `reilusoppari` GitHubiin | **valmis** 2026-09-11 |
 | 2 | Supabase (EU), Auth0 passwordless, Vercel `app.reilusoppari.fi`, Resend, VAPID, Stripe test | Supabase, Auth0 (oma EU-tenant), Vercel ja domain **valmiit**; Resend Auth0:n postille valmis. `RESEND_API_KEY` sovellukselle **valmis** — oli jo Vercelissä (Production ja Preview, lisätty 11.9.), tämä rivi vain unohtui päivittää (2026-10-09). Auki: VAPID-avaimet Verceliin (tarkista), Stripe test -avaimet |
-| 3 | eSinetti-tenant `reilusoppari` + API-avain | tekemättä; `/documents/seal` valmis eSinetissä, sen migraatio 0009 ajamatta. `/documents/render` ei enää tarpeen |
+| 3 | eSinetti-tenant `reilusoppari` + API-avain | **valmis** 9.10.2026: organisaatio Reilusoppari eSinetissä, `ESINETTI_API_URL` (`https://app.esinetti.fi/api/v1`), `ESINETTI_API_KEY` ja `ESINETTI_WEBHOOK_SECRET` Vercelin tuotannossa. eSinetin migraatio 0009 oli ajettu jo 11.9.2026. Ensimmäinen oikea sinetöinti odottaa Jukan kokeilua. |
 | 4 | Vuokrasopimuspohjan juridinen sisältö (AHVL 481/1995) | tekemättä, harkitse juristia |
 | 5 | Verolaskelman ohjetekstit ja km-taksa | tekemättä (`content/tax-guidance.fi.ts`) |
 | 6 | Todistuspohjien tekstit ja sanasto | tekemättä; linjaus lukittu, ks. DECISIONS.md |
