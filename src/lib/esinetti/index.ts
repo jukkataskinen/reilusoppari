@@ -29,7 +29,7 @@ let cachedIsMock = false;
 function readConfig(): { apiUrl: string; apiKey: string } | null {
   const apiKey = process.env.ESINETTI_API_KEY?.trim();
   if (!apiKey) return null;
-  const apiUrl = process.env.ESINETTI_API_URL?.trim() || "https://esinetti.fi/api/v1";
+  const apiUrl = process.env.ESINETTI_API_URL?.trim() || "https://app.esinetti.fi/api/v1";
   return { apiUrl, apiKey };
 }
 
