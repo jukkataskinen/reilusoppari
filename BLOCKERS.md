@@ -9,7 +9,7 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 
 | Este | Kuka | Ks. |
 |---|---|---|
-| Migraatiot `0016` (linkkien kutsuraja) ja `0017` (anon-oikeudet pois) live-Supabaseen. `0018` ja `FEATURE_REQUEST_ADMIN_EMAILS` tehty 27.9.2026 | Jukka | PLAN.md |
+| Migraatiot `0016` (linkkien kutsuraja), `0017` (anon-oikeudet pois), `0020` (kehitysehdotusten tilat) ja `0021` (kehitystoiveen kuvakaappaus) live-Supabaseen. `0018` ja `FEATURE_REQUEST_ADMIN_EMAILS` tehty 27.9.2026 | Jukka | PLAN.md |
 | Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
 | Stripe test -avaimet, VAPID Verceliin | Jukka | kohta 4 |
 | Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
@@ -338,6 +338,7 @@ Päivitetty 2026-09-26.
 | 8 | Käsittelysopimus Adepta Tilat Oy ↔ Adepta Oy (eSinetti) | **luonnos** `docs/luonnos-kasittelysopimus-esinetti.md` (2026-09-26) |
 | 9 | Migraatiot `0016` ja `0017` live-Supabaseen | tekemättä |
 | 10 | Migraatio `0020` live-Supabaseen; `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL` Verceliin ja webhook GitHubin repoasetuksiin | tekemättä, ks. luku lopussa |
+| 11 | Migraatio `0021` (kehitystoiveen kuvakaappaus) live-Supabaseen | tekemättä, ks. luku lopussa |
 
 Huom kohta 7: `reilusoppari-web/src/app/{tietosuoja,kayttoehdot}` sisältää jo
 pohjat, joissa on käsitelty kuvat kodista, molempien oikeus samaan aineistoon ja
@@ -380,6 +381,18 @@ näyttää sen, eikä käyttäjä näe virhettä.
 
 Migraatio `0020` yhdistyy automaattisesti PR:n mukana (Jukan 4.10.2026-päätös
 koskee migraatioita) — se ei tarvitse erillistä ajoa, mutta tallenna rivi
+tähän, kun PR on yhdistetty ja migraatio on ajossa.
+
+---
+
+## Kehitystoiveen kuvakaappaus: migraatio `0021` (2026-10-09, yötyö)
+
+**Estää:** ei mitään kulkua — kuvakaappaus on valinnainen ja toive syntyy
+ilman sitä. Migraatio lisää viisi nullattavaa saraketta
+(`screenshot_storage_path`, `screenshot_sha256`, `screenshot_bytes`,
+`screenshot_width`, `screenshot_height`) `rs_feature_requests`-tauluun eikä
+muuta olemassa olevia rivejä. Samalla tavalla kuin 0020: yhdistyy
+automaattisesti PR:n mukana, ei vaadi erillistä ajoa, mutta tallenna rivi
 tähän, kun PR on yhdistetty ja migraatio on ajossa.
 
 ---

@@ -59,7 +59,7 @@ export function NewFeatureRequestForm({
   const describedBy = (name: string) => (state.errors[name] ? `${p}-${name}-virhe` : undefined);
 
   return (
-    <Form action={formAction} className="mt-6 flex flex-col gap-5">
+    <Form action={formAction} encType="multipart/form-data" className="mt-6 flex flex-col gap-5">
       <Message text={state.message} />
       <input type="hidden" name="pagePath" value={pagePath} />
 
@@ -146,6 +146,25 @@ export function NewFeatureRequestForm({
           ))}
         </select>
         <FieldError id={`${p}-importance-virhe`} text={state.errors.importance} />
+      </div>
+
+      <div>
+        <label htmlFor={`${p}-screenshot`} className="text-sm font-medium">
+          Kuvakaappaus (vapaaehtoinen)
+        </label>
+        <input
+          id={`${p}-screenshot`}
+          name="screenshot"
+          type="file"
+          accept="image/png,image/jpeg"
+          aria-invalid={state.errors.screenshot ? true : undefined}
+          aria-describedby={describedBy("screenshot")}
+          className={control(state.errors.screenshot) + " py-1.5"}
+        />
+        <p className="mt-1.5 text-sm text-ink/60">
+          Auttaa näkemään, mitä tapahtui. Kuva ei mene koskaan GitHubiin, vain tälle sivulle.
+        </p>
+        <FieldError id={`${p}-screenshot-virhe`} text={state.errors.screenshot} />
       </div>
 
       <div>

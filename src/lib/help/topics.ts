@@ -935,6 +935,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Kirjoita lyhyt otsikko.",
           "Kerro, mitä yritit tehdä ja mikä oli hankalaa.",
           "Valitse, kuinka tärkeä asia on sinulle.",
+          "Liitä halutessasi kuvakaappaus. Se ei ole pakollinen.",
           "Valitse Lähetä toive.",
         ],
       },

@@ -1,16 +1,19 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   approveFeatureRequest,
+  attachFeatureRequestScreenshot,
   confirmSuggestionWorks,
   createFeatureRequest,
   getFeatureRequest,
   rejectFeatureRequest,
   requestSuggestionChanges,
 } from "@/lib/db/feature-requests";
+import { getServiceClient } from "@/lib/db/supabase";
 import { buildIssueBody, getGithubIssuesClient } from "@/lib/dev-suggestions/github-issues";
 import {
   approveFeatureRequestSchema,
@@ -19,7 +22,8 @@ import {
   rejectFeatureRequestSchema,
   requestChangesSchema,
 } from "@/lib/feature-requests";
-import { checkRateLimit } from "@/lib/security/rate-limit";
+import { stripImageMetadata, UnsupportedImageError } from "@/lib/photos/strip-metadata";
+import { checkRateLimit, KUVARAJA, KUVARAJA_VIESTI } from "@/lib/security/rate-limit";
 
 /**
  * Kehitystoiveet (DECISIONS.md 2026-09-27) ja niiden käsittely
@@ -43,12 +47,19 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
  *    tai muokkaama kuvaus, ei alkuperäistä sellaisenaan — käsittelijän
  *    vastuulla on poistaa henkilötiedot ennen hyväksyntää.
  * 3. Syöte: zod. Jättäjä otetaan istunnosta, ei lomakkeelta. Sivun osoite
- *    hyväksytään vain sovelluksen sisäisenä polkuna.
- * 4. Toisto: raja toiveiden määrälle, ettei kukaan täytä jonoa.
+ *    hyväksytään vain sovelluksen sisäisenä polkuna. Valinnainen kuvakaappaus:
+ *    vain JPEG ja PNG, koko rajattu, EXIF poistetaan palvelimella samalla
+ *    tavalla kuin kuittikuville (`lib/photos/strip-metadata.ts`).
+ * 4. Toisto: raja toiveiden määrälle, ettei kukaan täytä jonoa. Kuvakaappaus
+ *    kuluttaa samaa kuvien kutsurajaa kuin muu kuvien lataus (CLAUDE.md
+ *    kohta 6) — vain silloin, kun toiveessa on kuva, ettei tekstitoive
+ *    kuluta kuvien kiintiötä.
  * 5. Salaisuuksia ei käsitellä — `GITHUB_ISSUES_TOKEN` jää palvelimelle
  *    (`lib/dev-suggestions/github-issues.ts`).
  * 6. Epäonnistuminen: kenttäkohtaiset virheet lomakkeelle, ei tietokannan
- *    viestejä. GitHub-kutsun epäonnistuminen ei estä hyväksyntää.
+ *    viestejä. GitHub-kutsun epäonnistuminen ei estä hyväksyntää, eikä
+ *    kuvakaappauksen tallennuksen epäonnistuminen estä toiveen syntymistä —
+ *    toive on jo tallessa sitä yritettäessä.
  * ===========================================================================
  */
 
@@ -60,6 +71,9 @@ export interface FeatureRequestFormState {
 /** Enintään 20 toivetta tunnissa. Riittää innokkaallekin, ei roskaajalle. */
 const RATE_ENDPOINT = "kehitystoive";
 const RATE_PER_HOUR = 20;
+
+/** Sama raja kuin muussa kuvien latauksessa (Vercelin funktio ottaa vastaan 4,5 Mt). */
+const MAX_SCREENSHOT_BYTES = 4 * 1024 * 1024;
 
 function firstErrors(issues: { path: PropertyKey[]; message: string }[]): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -86,6 +100,34 @@ export async function createFeatureRequestAction(
   });
   if (!parsed.success) return { errors: firstErrors(parsed.error.issues) };
 
+  /*
+    Valinnainen kuvakaappaus (docs/kehitysehdotukset.md kohta 1, migraatio
+    0021). Tyhjä tiedostokenttä tulee selaimelta nollakokoisena File-oliona,
+    ei puuttuvana, joten koko ratkaisee eikä pelkkä läsnäolo.
+  */
+  const screenshotFile = formData.get("screenshot");
+  const hasScreenshot = screenshotFile instanceof File && screenshotFile.size > 0;
+  if (hasScreenshot && screenshotFile.size > MAX_SCREENSHOT_BYTES) {
+    return { errors: { screenshot: "Kuvakaappaus on liian suuri. Enintään 4 Mt." } };
+  }
+
+  let screenshot: Awaited<ReturnType<typeof stripImageMetadata>> | null = null;
+  if (hasScreenshot) {
+    // Samaa rajaa kuin muu kuvien lataus, mutta vain kun toiveessa on kuva.
+    const raja = await checkRateLimit(user.id, KUVARAJA.endpoint, KUVARAJA.limit, KUVARAJA.windowMinutes);
+    if (!raja.allowed) return { errors: {}, message: KUVARAJA_VIESTI };
+
+    try {
+      screenshot = stripImageMetadata(new Uint8Array(await screenshotFile.arrayBuffer()));
+    } catch (err) {
+      if (err instanceof UnsupportedImageError) {
+        return { errors: { screenshot: "Vain PNG- ja JPEG-kuvakaappaukset kelpaavat." } };
+      }
+      console.error("[kehitystoiveet] kuvakaappauksen käsittely epäonnistui");
+      return { errors: { screenshot: "Kuvakaappausta ei voitu käsitellä." } };
+    }
+  }
+
   let id: string;
   try {
     const { allowed } = await checkRateLimit(user.id, RATE_ENDPOINT, RATE_PER_HOUR, 60);
@@ -95,6 +137,36 @@ export async function createFeatureRequestAction(
     id = await createFeatureRequest(user.id, parsed.data);
   } catch {
     return { errors: {}, message: "Tallennus ei onnistunut. Yritä hetken kuluttua uudelleen." };
+  }
+
+  /*
+    Kuvakaappaus liitetään vasta onnistuneen tallennuksen jälkeen. Rivi on
+    jo olemassa, joten latauksen epäonnistuminen ei saa estää toiveen
+    syntymistä — se jää näkymään ilman kuvaa, mikä on parempi kuin kadonnut
+    toive. Rivin kirjaus ja Storage-lataus eivät ole samassa transaktiossa,
+    joten osittainen tulos siivotaan itse kummin päin tahansa epäonnistuu.
+  */
+  if (screenshot) {
+    const extension = screenshot.format === "image/png" ? "png" : "jpg";
+    const storagePath = `kehitystoiveet/${user.id}/${id}.${extension}`;
+    const sha256 = createHash("sha256").update(screenshot.bytes).digest("hex");
+
+    const { error: uploadError } = await getServiceClient()
+      .storage.from("photos")
+      .upload(storagePath, screenshot.bytes, { contentType: screenshot.format, upsert: false });
+
+    if (uploadError) {
+      console.error("[kehitystoiveet] kuvakaappauksen tallennus epäonnistui:", uploadError.message);
+    } else {
+      const saved = await attachFeatureRequestScreenshot(id, {
+        storagePath,
+        sha256,
+        bytes: screenshot.bytes.byteLength,
+        width: screenshot.width,
+        height: screenshot.height,
+      });
+      if (!saved) await getServiceClient().storage.from("photos").remove([storagePath]);
+    }
   }
 
   revalidatePath("/kehitystoiveet");

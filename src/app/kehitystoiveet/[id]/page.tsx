@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getFeatureRequest } from "@/lib/db/feature-requests";
+import { photoUrl } from "@/lib/db/inspections";
 import { featureLabel, formatRequestDate, IMPORTANCE_LABEL, isFeatureRequestAdmin, REQUEST_STATUS } from "@/lib/feature-requests";
 import { helpTopic } from "@/lib/help/topics";
 import { DevSuggestionAdminPanel } from "../FeatureRequestForms";
@@ -27,6 +28,7 @@ export default async function FeatureRequestPage({
   if (!r) notFound();
   const topic = helpTopic(r.feature);
   const st = REQUEST_STATUS[r.status];
+  const screenshotUrl = r.screenshotStoragePath ? await photoUrl(r.screenshotStoragePath) : null;
 
   return (
     <AppShell>
@@ -81,6 +83,16 @@ export default async function FeatureRequestPage({
             </div>
           ) : null}
         </dl>
+        {r.screenshotStoragePath ? (
+          <div className="mt-4 border-t border-line pt-4">
+            {screenshotUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Signed URL vanhenee tunnissa, joten Next-optimointi ei sovi.
+              <img src={screenshotUrl} alt="Kuvakaappaus toiveesta" className="w-full rounded-[10px]" />
+            ) : (
+              <p className="text-sm text-ink/60">Kuvakaappausta ei juuri nyt saada näkyviin.</p>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <section className="mt-8">
