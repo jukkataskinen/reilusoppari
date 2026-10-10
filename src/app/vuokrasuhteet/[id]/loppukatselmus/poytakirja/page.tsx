@@ -67,6 +67,8 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
         <a
           href={pdf}
           download="loppukatselmus.pdf"
+          target="_blank"
+          rel="noopener"
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >
           Tallenna PDF
