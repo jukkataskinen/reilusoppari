@@ -204,6 +204,15 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
+        title: "Jos kokeilet kutsua omalla koneellasi",
+        steps: [
+          "Jos avaat vuokralaisen kutsun selaimessa, jossa olet kirjautuneena vuokranantajana, sivulla lukee: Olet kirjautuneena vuokranantajana.",
+          "Valitse Kirjaudu ulos.",
+          "Avaa kutsulinkki sähköpostista uudelleen ja kirjaudu vuokralaisen osoitteella.",
+        ],
+        bullets: ["Voit myös avata linkin selaimen yksityisessä ikkunassa."],
+      },
+      {
         title: "Jos liityit itse vuokralaiseksi",
         steps: [
           "Avaa vuokrasuhde.",

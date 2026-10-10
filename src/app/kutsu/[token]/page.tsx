@@ -89,6 +89,42 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       "väärästä tilistä" vaan siitä, mitä oikeasti tapahtui ja mitä tehdä:
       kutsu on todennäköisesti mennyt hänen omaan osoitteeseensa vahingossa.
     */
+    /*
+      Kutsu on toiselle osoitteelle, mutta se avattiin selaimessa, jossa
+      vuokranantaja on kirjautuneena (Jukka 10.10.2026: testasi kutsua omalla
+      koneellaan). Silloin kyse ei ole virheellisestä osoitteesta, vaan väärästä
+      kirjautumisesta: neuvotaan kirjautumaan ulos ja avaamaan linkki uudelleen.
+    */
+    const ownEmail = (user.email ?? "").trim().toLowerCase();
+    if (
+      result.reason === "own_tenancy" &&
+      preview.inviteEmail.trim().toLowerCase() !== ownEmail
+    ) {
+      return (
+        <AppShell nav={false}>
+          <div className="py-10">
+            <h1 className="text-2xl">Olet kirjautuneena vuokranantajana</h1>
+            <p className="mt-3 text-ink/70">
+              Kutsu on lähetetty osoitteeseen {preview.inviteEmail}, mutta tässä selaimessa olet
+              kirjautuneena tämän vuokrasuhteen vuokranantajana.
+            </p>
+            <p className="mt-3 text-ink/70">
+              Kirjaudu ulos ja avaa kutsulinkki sähköpostista uudelleen. Voit myös avata linkin
+              selaimen yksityisessä ikkunassa.
+            </p>
+            <p className="mt-6">
+              <a
+                href="/auth/logout"
+                className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
+              >
+                Kirjaudu ulos
+              </a>
+            </p>
+          </div>
+        </AppShell>
+      );
+    }
+
     if (result.reason === "own_tenancy") {
       return (
         <AppShell nav={false}>
