@@ -2192,3 +2192,12 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 - **Määräaika ja muistutukset.** 14 päivää alkupäivästä (UTC-päivämäärinä kuten vuokramuistutuksissa). Muistutukset 7 ja 14 päivän kohdalla molemmille, seitsemän päivän ikkunalla, samassa päivittäisessä cron-ajossa kuin vuokramuistutukset ja `dedupe_key`-estolla. Tilat `draft`, `inspection`, `signing`, `active`.
 - **Vertailukuvat ja todistus.** Loppukatselmus näyttää alkukuvat vain, jos alkukatselmus lukittiin (`initialPhotosForComparison`, ei luo alkukatselmusta). Todistuksen tilastoihin `initialInspectionDone`; rivi "Alkukatselmus: Ei tehty" näkyy molempien todistuksissa. Vanhoissa todistuksissa kenttää ei ole, eikä riviä silloin näytetä.
 - **Sopimuspohja.** "Asunnon kunto" -ehtoon lause pöytäkirjasta 14 päivän kuluessa. Juridinen tarkistus Jukalla kuten muukin pohjan teksti.
+
+## 2026-10-10 — "Allekirjoita nyt": Reilusopparin osa pois päältä, kunnes eSinetti on valmis
+
+- **eSinetistä puuttuu päätepiste.** eSinetti tallentaa allekirjoituslinkistä vain tiivisteen eikä palauta linkkiä rajapinnassa. eSinettiä ei muutettu tässä työssä; tarve kirjattiin eSinetin BLOCKERSiin omana PR:nään. Reilusoppari kutsuu ehdotettua päätepistettä `POST /rounds/{id}/signers/{signerId}/signing-link`, ja toiminto on päällä vain, kun `ESINETTI_SIGNING_LINKS=1` ja oikea eSinetti-avain on asetettu. Nappia, joka ei toimi, ei näytetä (Jukan kokemus 10.10.2026 ohjeista, joissa nimettiin puuttuvia nappeja).
+- **Upotuksen protokolla suoraan, ei `esinetti.js`-skriptiä.** Skripti avaa ikkunan itse, mutta linkki haetaan palvelimelta vasta painalluksen jälkeen, jolloin selain estäisi ikkunan. Siksi tyhjä ikkuna avataan heti painalluksesta ja ohjataan osoitteeseen `/sign/<token>?embed=1`, ja `esinetti:completed`-viesti hyväksytään vain eSinetin originista kuten skriptissä. Sama syy välttää skriptin lataaminen toisesta originista (CSP).
+- **Ei koskaan samaan ikkunaan.** Jos ikkuna estyy, näytetään linkki "Avaa allekirjoitus", joka avautuu uuteen ikkunaan (`rel="opener"`, jotta valmistumisviesti kulkee). Sivu päivittyy myös, kun käyttäjä palaa siihen, koska kotinäytön sovelluksessa viesti ei välttämättä kulje.
+- **Linkki ei jää mihinkään.** Haetaan napin painalluksesta palvelintoiminnolla, ei sivun latauksessa; ei tallenneta, ei lokiteta, ei osoiteriville. Avattava osoite tarkistetaan: eSinetin origin ja polku `/sign/<token>`.
+- **Laajuus.** Sopimuksen ja alkukatselmuksen pöytäkirjan kierrokset Allekirjoitus-sivulla. Loppukatselmus jää myöhemmäksi.
+

@@ -524,6 +524,14 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Jos katselmus oli lukittu jo sopimusta lähetettäessä, pöytäkirja lähti sopimuksen mukana, eikä sitä tarvitse lähettää uudelleen.",
         ],
       },
+      {
+        title: "Allekirjoitus suoraan sovelluksessa (tulossa)",
+        bullets: [
+          "Tulossa: vuokranantaja voi allekirjoittaa heti lähettämisen jälkeen tällä sivulla, ilman sähköpostia.",
+          "Kun toiminto on käytössä, sivulla näkyy nappi Allekirjoita nyt. Allekirjoitus avautuu omaan ikkunaansa.",
+          "Siihen asti allekirjoita sähköpostiisi tulleesta linkistä.",
+        ],
+      },
     ],
     tips: ["Maksu voi sisältyä myös salkkutilaukseen tai suositteluetuun. Tilanteen näet Laskutus-sivulta."],
     related: ["katselmus", "laskutus", "vuokranmaksu"],
