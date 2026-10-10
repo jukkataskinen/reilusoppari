@@ -2178,3 +2178,8 @@ liittymättömänä (`isSelfJoined`), mutta vain ennen allekirjoitusta, ja
 korjaus tyhjentää `user_id`, `joined_at` ja katselmuksen vuokralaisleimat.
 Uudelleenlähetystä ei näytetä tässä tilassa, koska kutsu lähtisi taas omaan
 osoitteeseen. Lokiin `tenancy.invite.self_join_cleared`.
+
+
+## 2026-10-10 — Sopimus ja alkukatselmus allekirjoitetaan erikseen (Jukka)
+
+Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut viat vasta muuttaessaan. Siksi sopimus allekirjoitetaan heti, kun tiedot ovat valmiit, ja alkukatselmuksen pöytäkirja omana kierroksenaan viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta. Jos katselmus on lukittu jo sopimusta lähetettäessä, molemmat allekirjoitetaan yhdessä. Maksu veloitetaan sopimuksen lähetyksessä; toinen kierros kasvattaa eSinetin tunnistuskulua. Korvaa CLAUDE.md:n aiemman säännön "yhdellä tunnistautumisella".
