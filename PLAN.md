@@ -369,6 +369,13 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
 - [ ] Vuokralaisen lisääminen jälkikäteen (esim. kutsun poiston jälkeen).
       Nyt vuokrasuhteen voi poistaa ja luoda uudelleen.
 
+## Vuokranantaja allekirjoittaa heti Reilusopparissa — Jukan havainto 2026-10-10 (lanseerauksen edellytys)
+
+Ensimmäinen oikea allekirjoitus 10.10.2026 onnistui, mutta vuokranantaja, joka lähettää asiakirjat allekirjoitettavaksi, joutui odottamaan omaa linkkiään sähköpostista. Hänen pitää voida allekirjoittaa suoraan sovelluksessa. Lisäksi kutsun sähköposti ei lähtenyt ("Kutsua ei voitu lähettää").
+
+- [ ] **Allekirjoita nyt.** Kun vuokranantaja painaa "Lähetä allekirjoitettavaksi", sivu näyttää heti napin "Allekirjoita nyt", joka avaa eSinetin allekirjoituksen ponnahdusikkunassa eSinetin upotuksella (`https://app.esinetti.fi/embed/v1/esinetti.js`, `/sign/[token]?embed=1`, `postMessage` `esinetti:completed`; ks. eSinetin README ja `src/app/embed/v1/esinetti.js/route.ts`). Vuokranantajan allekirjoituslinkki haetaan eSinetin rajapinnasta palvelimella, eikä sitä tallenneta eikä näytetä osoitteessa. Vuokralainen saa linkkinsä sähköpostilla kuten nyt. Jos upotus ei ole käytössä tai estyy, nappi avaa saman linkin uuteen ikkunaan (kotinäytön sovellus, ks. PDF-linkit 10.10.2026). Allekirjoituksen jälkeen sivu päivittää tilan. Jos eSinetin rajapinta ei palauta allekirjoittajan linkkiä, kirjaa tarve eSinetin BLOCKERSiin ja toteuta eSinettiin pieni päätepiste samassa työssä erillisenä PR:nä. Jukalle BLOCKERSiin: eSinetissä organisaation Reilusoppari asetuksiin kohtaan "Sallitut domainit (upotus)" `https://app.reilusoppari.fi`. Testit, ohje.
+- [ ] **Kutsun sähköposti ei lähtenyt 10.10.2026.** Selvitä syy: `src/lib/notifications/email.ts` palauttaa false ilman syytä käyttäjälle. Lisää lokiin Resendin virhekoodi ja virheen nimi (ei vastaanottajaa). reilusoppari.fi on vahvistettu Resendissä (eu-west-1, DNS tarkistettu 10.10.2026), joten todennäköinen syy on Vercelin `RESEND_API_KEY` (rajattu toiseen verkkotunnukseen) tai `EMAIL_FROM`. Jukka tarkistaa Resendin lokin (Resend → Logs, 10.10.2026 klo 9–10) ja Vercelin muuttujat; kirjaa BLOCKERSiin klikkauspolku.
+
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
 **Muutettu 2026-09-11:** Jukan korjaus — vaatimus ei ole sovelluskauppa vaan
