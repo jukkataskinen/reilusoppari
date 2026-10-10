@@ -55,6 +55,8 @@ export function SealTaxReport({
         <a
           href={`/asunnot/${propertyId}/verolaskelma/pdf?vuosi=${year}`}
           download={`verolaskelma-${year}.pdf`}
+          target="_blank"
+          rel="noopener"
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >
           Tallenna PDF
@@ -64,6 +66,8 @@ export function SealTaxReport({
           <a
             href={`/asunnot/${propertyId}/verolaskelma/pdf?vuosi=${year}&sinetoity=1`}
             download={`verolaskelma-${year}-sinetoity.pdf`}
+            target="_blank"
+            rel="noopener"
             className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
           >
             Tallenna sinetöity

@@ -63,6 +63,8 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
         <a
           href={pdf}
           download="vuokrasopimus-luonnos.pdf"
+          target="_blank"
+          rel="noopener"
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
         >
           Tallenna PDF

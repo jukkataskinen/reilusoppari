@@ -245,6 +245,8 @@ export function CertificatePanel({
           <a
             href={`/vuokrasuhteet/${tenancyId}/todistukset/pdf`}
             download="vuokratodistus.pdf"
+            target="_blank"
+            rel="noopener"
             className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
           >
             Tallenna todistus
