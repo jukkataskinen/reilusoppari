@@ -165,7 +165,12 @@ export const HELP_TOPICS: HelpTopic[] = [
     group: "Asunto ja vuokrasuhde",
     title: "Vuokrasuhde ja kutsu",
     summary: "Vuokrasuhde kokoaa sopimuksen, katselmuksen, vuokranmaksut ja huollot yhteen paikkaan.",
-    highlights: ["Yksi tai kaksi vuokralaista", "Kutsu vuokralaiselle sähköpostilla", "Ensimmäinen vuokrasuhde on ilmainen"],
+    highlights: [
+      "Sivu kertoo aina, mitä tehdä seuraavaksi",
+      "Yksi tai kaksi vuokralaista",
+      "Kutsu vuokralaiselle sähköpostilla",
+      "Ensimmäinen vuokrasuhde on ilmainen",
+    ],
     roles: "both",
     appPath: "/vuokrasuhteet",
     appLabel: "Vuokrasuhteet",
@@ -254,14 +259,46 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
+        title: "Seuraavaksi",
+        text: "Vuokrasuhteen sivun ylimpänä on kohta Seuraavaksi. Siinä on aina yksi asia, joka sinun kannattaa tehdä nyt, ja lyhyt syy miksi.",
+        steps: [
+          "Avaa vuokrasuhde.",
+          "Lue kohta Seuraavaksi.",
+          "Valitse kohdan painike, esimerkiksi Avaa sopimus tai Avaa katselmus.",
+          "Kun asia on tehty, palaa vuokrasuhteen sivulle. Seuraava tehtävä näkyy siinä.",
+        ],
+        bullets: [
+          "Jos kohdassa lukee Odottaa toista, sinun ei tarvitse tehdä mitään. Toinen osapuoli tekee seuraavan asian.",
+          "Jos kohdassa lukee Myöhässä, määräaika on mennyt. Tee asia silti mahdollisimman pian.",
+          "Jos kohdassa lukee Kaikki kunnossa, mikään ei odota sinua juuri nyt.",
+          "Vuokranantaja ja vuokralainen näkevät omat tehtävänsä. Esimerkiksi vuokran kuittaa vain vuokranantaja.",
+        ],
+      },
+      {
+        title: "Vaiheet",
+        text: "Kohdan Seuraavaksi alla on vuokrasuhteen neljä vaihetta. Jokaisen kohdalla lukee, missä mennään.",
+        steps: [
+          "Sopimus: sopimus täytetään ja allekirjoitetaan.",
+          "Alkukatselmus: asunto kuvataan muuton yhteydessä, viimeistään 14 päivän kuluessa alkamisesta.",
+          "Vuokrasuhde käynnissä: vuokranmaksu ja huoltokirja.",
+          "Päättyminen: irtisanominen, loppukatselmus ja todistukset.",
+        ],
+        bullets: [
+          "Vaiheen tila on yksi sanoista valmis, kesken, myöhässä tai tulossa.",
+          "Valitse vaihe, niin pääset sen sivulle.",
+        ],
+      },
+      {
         title: "Vuokrasuhteen sivu",
         bullets: [
-          "Ylhäällä näkyvät alkupäivä, kesto, vuokra, eräpäivä ja vakuus.",
-          "Kohdassa Alkukatselmus näet, onko katselmus tehty ja mihin päivään mennessä se pitää tehdä.",
-          "Painikkeista pääset sopimukseen, osapuolten tietoihin, katselmukseen, allekirjoitukseen, vuokranmaksuun, huoltokirjaan ja päättymiseen.",
+          "Kohdassa Osapuolet näet vuokranantajan ja vuokralaiset. Vuokralaisesta näet, onko hän jo liittynyt. Jos ei ole, vuokranantaja voi lähettää kutsun uudelleen, korjata sähköpostin tai poistaa kutsun.",
+          "Kohdassa Sopimus ja asiakirjat ovat Vuokrasopimus, Osapuolten tiedot, Allekirjoitus ja Alkukatselmus. Jokaisen kohdalla lukee lyhyesti, missä mennään.",
+          "Samassa kohdassa ovat Allekirjoitetut asiakirjat. Avaa ne valinnalla Avaa PDF.",
+          "Kohta Arki tulee näkyviin, kun sopimus on allekirjoitettu. Siinä ovat Vuokranmaksu, Huoltokirja ja vuokranantajalle Kulut.",
           "Kulut näkyvät vain vuokranantajalle.",
-          "Kohdassa Allekirjoitetut asiakirjat ovat allekirjoitettu sopimus ja pöytäkirjat. Avaa ne valinnalla Avaa PDF.",
-          "Vuokralaisesta näet, onko hän jo liittynyt. Jos ei ole, voit lähettää kutsun uudelleen, korjata sähköpostin tai poistaa kutsun.",
+          "Kohdassa Perustiedot ovat alkupäivä, kesto, vuokra, eräpäivä ja vakuus.",
+          "Kohta Päättyminen on sivun alaosassa. Sieltä löytyvät irtisanominen, loppukatselmus ja todistukset.",
+          "Osapuolten tiedot näkyvät listassa vain ennen allekirjoitusta. Allekirjoitettua sopimusta ei voi enää muuttaa.",
         ],
       },
       {
@@ -458,7 +495,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         title: "Pöytäkirjan allekirjoitus",
         steps: [
-          "Vuokranantaja avaa vuokrasuhteen ja valitsee Allekirjoitus.",
+          "Vuokranantaja avaa vuokrasuhteen. Kun sopimus on valmis, kohdassa Seuraavaksi lukee Lähetä sopimus allekirjoitettavaksi.",
+          "Valitse Siirry allekirjoitukseen.",
           "Kohdassa Alkukatselmuksen pöytäkirja hän valitsee Lähetä pöytäkirja allekirjoitettavaksi.",
           "Molemmat saavat linkin sähköpostiinsa ja allekirjoittavat pankkitunnuksilla tai mobiilivarmenteella.",
           "Jos katselmus on lukittu jo ennen kuin sopimus lähetetään, pöytäkirja allekirjoitetaan sopimuksen kanssa samalla kertaa.",
@@ -468,7 +506,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: "Määräaika",
         bullets: [
           "Katselmus tehdään viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta.",
-          "Määräpäivä näkyy vuokrasuhteen sivulla kohdassa Alkukatselmus ja katselmuksen sivulla.",
+          "Määräpäivä näkyy vuokrasuhteen sivulla kohdassa Seuraavaksi, vaiheissa ja katselmuksen sivulla. Jos määräaika on mennyt, siinä lukee Myöhässä.",
           "Jos katselmusta ei ole lukittu, molemmat saavat muistutuksen 7 päivän ja 14 päivän kohdalla.",
           "Jos katselmusta ei tehdä lainkaan, loppukatselmuksessa ei ole vertailukuvia. Vuokratodistuksessa kerrotaan, ettei alkukatselmusta tehty.",
         ],
@@ -500,7 +538,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         title: "Maksu",
         steps: [
-          "Vuokranantaja avaa vuokrasuhteen ja valitsee Allekirjoitus.",
+          "Vuokranantaja avaa vuokrasuhteen. Kun sopimus on valmis, kohdassa Seuraavaksi lukee Lähetä sopimus allekirjoitettavaksi.",
+          "Valitse Siirry allekirjoitukseen.",
           "Jos vuokrasuhde on ilmainen, valitse Ota käyttöön. Ensimmäinen vuokrasuhde on aina ilmainen.",
           "Muuten hinta on 29 euroa kerran. Lue ehto peruutusoikeudesta ja valitse ruutu.",
           "Valitse Maksa 29,00 €. Maksu tehdään kortilla maksupalvelun sivulla.",
@@ -651,7 +690,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         title: "Irtisanominen",
         steps: [
-          "Avaa vuokrasuhde ja valitse Päättyminen.",
+          "Avaa vuokrasuhde. Valitse sivun alaosasta kohdasta Päättyminen Irtisanominen ja vakuus.",
           "Tarkista irtisanomisaika ja päättymispäivä.",
           "Valitse Irtisano.",
           "Vahvista valinnalla Kyllä, irtisano. Toinen saa tiedon heti.",
