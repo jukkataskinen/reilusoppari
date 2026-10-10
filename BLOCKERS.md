@@ -16,6 +16,7 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 | Tietosuojaseloste, käyttöehdot ja käsittelysopimus: luonnokset `docs/` | Jukka | kohta 4 |
 | E2e-alkukaari: tarvitsee erillisen testikannan ja kirjautumisen ohituksen | Jukka | luku lopussa |
 | Kehitysehdotukset: `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL` ja webhook GitHubin repoasetuksiin | Jukka | luku lopussa |
+| "Allekirjoita nyt": eSinetin allekirjoituslinkin päätepiste, sallittu domain eSinetin asetuksiin, sitten `ESINETTI_SIGNING_LINKS=1` | eSinetti, Jukka | luku lopussa |
 
 `CLAUDE.md` kopioitiin Downloads-kansiosta 2026-09-10. ~~Hakemisto ei ole
 git-repo~~ — vanhentunut: repo luotiin 2026-09-11.
@@ -496,4 +497,39 @@ Kaksi päätettävää:
    Auth0:aa. Turvallinen tapa olisi testikirjautuminen, joka on käännetty
    pois tuotantobuildista kokonaan (ei pelkkä ympäristömuuttuja). Ei
    toteutettu ilman Jukan linjausta, koska väärin tehtynä se on takaovi.
+
+---
+
+## "Allekirjoita nyt": odottaa eSinettiä (2026-10-10)
+
+**Estää:** vuokranantaja ei vielä voi allekirjoittaa suoraan sovelluksessa,
+vaan allekirjoittaa sähköpostiin tulevasta linkistä kuten ennenkin. Mikään
+muu ei esty.
+
+Reilusopparin osa on valmis mutta pois päältä (`src/lib/esinetti/signing-link.ts`,
+`src/lib/tenancy/sign-now.ts`, `src/components/SignNow.tsx`). Nappia
+"Allekirjoita nyt" ei näytetä, ennen kuin kaikki kolme alla olevaa on tehty.
+
+1. **eSinetti: päätepiste allekirjoittajan linkille** (kirjattu eSinetin
+   BLOCKERS.md:hen 10.10.2026). eSinetti tallentaa linkistä vain tiivisteen,
+   joten nykyinen rajapinta ei voi palauttaa sitä. Reilusoppari kutsuu
+   `POST /api/v1/rounds/{id}/signers/{signerId}/signing-link` ja odottaa
+   vastausta `{ "data": { "url": "https://app.esinetti.fi/sign/<token>" } }`
+   (tai `{ "data": { "token": "..." } }`). 404 tulkitaan "ei vielä
+   käytössä".
+2. **Jukka: Reilusopparin osoite eSinetin sallittuihin domaineihin.**
+   Ilman tätä allekirjoitus toimii, mutta ikkuna ei ilmoita
+   Reilusopparille valmistumisesta, eikä se sulkeudu itsestään (sivu
+   päivittyy silti, kun palaat siihen).
+   1. Kirjaudu osoitteessa https://app.esinetti.fi.
+   2. Tarkista, että ylälaidassa lukee organisaation nimenä Reilusoppari.
+      Jos ei, paina nimeä ja valitse Reilusoppari.
+   3. Valitse ylävalikosta **Hallinta** ja sieltä **Asetukset**.
+   4. Kirjoita kohtaan **Sallitut domainit (upotus)** omalle rivilleen
+      `https://app.reilusoppari.fi`
+   5. Paina **Tallenna**.
+3. **Käyttöönotto Vercelissä**, kun kohdat 1 ja 2 ovat valmiit: muuttuja
+   `ESINETTI_SIGNING_LINKS` arvoksi `1` (Vercel → Reilusopparin projekti → Settings →
+   Environment Variables), sitten uusi julkaisu Production-riviltä
+   (Deployments → Production/Current-rivin kolme pistettä → Redeploy).
 

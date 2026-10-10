@@ -11,6 +11,8 @@ import {
   signingStatus,
 } from "@/lib/tenancy/signing";
 import { includeInspectionWithContract } from "@/lib/tenancy/signing-plan";
+import { canSignNow } from "@/lib/tenancy/sign-now";
+import { esinettiOrigin } from "@/lib/esinetti/signing-link";
 import { isUsingMockEsinetti, type Round } from "@/lib/esinetti";
 import { isUsingMockBilling } from "@/lib/billing";
 import { quoteTenancy } from "@/lib/billing/checkout";
@@ -19,6 +21,7 @@ import { getTenancyBillingState } from "@/lib/db/billing";
 import { AppShell } from "@/components/AppShell";
 import { InspectionSigning } from "@/components/InspectionSigning";
 import { SendForSigning } from "@/components/SendForSigning";
+import { SignNow } from "@/components/SignNow";
 import { TenancyPayment } from "@/components/TenancyPayment";
 import { fi } from "@/i18n/fi";
 
@@ -102,6 +105,13 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
   const combined = Boolean(round && inspection?.esinettiRoundId === round.id);
   const inspectionSigned = inspection?.status === "signed";
 
+  // "Allekirjoita nyt" vain vuokranantajalle, joka ei ole vielä allekirjoittanut.
+  const [signNowContract, signNowInspection] = await Promise.all([
+    round ? canSignNow(user.id, id, round) : Promise.resolve(false),
+    inspectionRound ? canSignNow(user.id, id, inspectionRound) : Promise.resolve(false),
+  ]);
+  const origin = esinettiOrigin();
+
   return (
     <AppShell>
       <h1 className="text-2xl">Allekirjoitus</h1>
@@ -149,6 +159,7 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
             Jokainen allekirjoittaja on saanut oman linkkinsä sähköpostiinsa. Kun kaikki ovat
             allekirjoittaneet, vuokrasuhde alkaa ja vuokrakaudet syntyvät automaattisesti.
           </p>
+          {signNowContract ? <SignNow tenancyId={id} kind="sopimus" esinettiOrigin={origin} /> : null}
           <SignerList round={round} />
         </div>
       ) : isLandlord ? (
@@ -183,6 +194,9 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
               <p className="mt-2 text-sm text-ink/70">
                 Jokainen allekirjoittaja on saanut oman linkkinsä sähköpostiinsa.
               </p>
+              {signNowInspection ? (
+                <SignNow tenancyId={id} kind="katselmus" esinettiOrigin={origin} />
+              ) : null}
               <SignerList round={inspectionRound} />
             </div>
           ) : isLandlord ? (

@@ -8,6 +8,7 @@ import {
   sendForSigning,
   sendInspectionForSigning,
 } from "@/lib/tenancy/signing";
+import { landlordSigningUrl, SIGN_NOW_FALLBACK_MESSAGE } from "@/lib/tenancy/sign-now";
 
 /**
  * Asiakirjojen lähetys allekirjoitettavaksi (CLAUDE.md 5.4).
@@ -101,4 +102,32 @@ export async function sendFinalForSigningAction(
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/paattyminen`);
   return { sent: true };
+}
+
+export interface SignNowResult {
+  /** Upotettava eSinetin allekirjoitusosoite. Ei tallenneta eikä lokiteta. */
+  url?: string;
+  message?: string;
+}
+
+/**
+ * "Allekirjoita nyt": vuokranantajan oma allekirjoitusosoite (10.10.2026).
+ *
+ * Kutsutaan napin painalluksesta, ei sivun latauksessa: linkki haetaan vasta
+ * kun sitä tarvitaan, eikä se päädy sivun HTML:ään valmiiksi.
+ */
+export async function signNowAction(tenancyId: string, document: string): Promise<SignNowResult> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  if (document !== "sopimus" && document !== "katselmus") {
+    return { message: SIGN_NOW_FALLBACK_MESSAGE };
+  }
+
+  try {
+    const result = await landlordSigningUrl(user.id, String(tenancyId), document);
+    return result.ok ? { url: result.url } : { message: result.message };
+  } catch {
+    return { message: SIGN_NOW_FALLBACK_MESSAGE };
+  }
 }
