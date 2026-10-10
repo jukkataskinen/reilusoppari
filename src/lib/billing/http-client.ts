@@ -25,8 +25,11 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { matchesMetadata } from "./mock";
 import type {
+  ActiveSubscription,
   BillingClient,
+  CompletedCheckout,
   CheckoutInput,
   CheckoutSession,
   PortalSession,
@@ -150,6 +153,79 @@ export class StripeHttpClient implements BillingClient {
     });
   }
 
+  async findCompletedCheckout(input: {
+    metadata: Record<string, string>;
+    since: Date;
+  }): Promise<CompletedCheckout | null> {
+    /*
+      Stripen listaa ei voi suodattaa metadatalla, joten aikaikkunan maksut
+      haetaan ja suodatetaan täällä. Ikkuna on lyhyt (minuutteja), joten
+      sivuja on käytännössä yksi; yläraja estää loputtoman silmukan.
+    */
+    const created = String(Math.floor(input.since.getTime() / 1000));
+    let startingAfter: string | null = null;
+
+    for (let page = 0; page < 5; page++) {
+      const query = new URLSearchParams({ status: "complete", "created[gte]": created, limit: "100" });
+      if (startingAfter) query.set("starting_after", startingAfter);
+
+      const list = await this.get<{
+        data: Array<{ id: string; subscription?: unknown; metadata?: Record<string, string> | null }>;
+        has_more?: boolean;
+      }>(`/checkout/sessions?${query.toString()}`);
+
+      for (const session of list.data) {
+        const metadata = session.metadata ?? {};
+        if (matchesMetadata(metadata, input.metadata)) {
+          return { id: session.id, subscriptionId: readId(session.subscription), metadata };
+        }
+      }
+
+      const last = list.data.at(-1);
+      if (!list.has_more || !last) break;
+      startingAfter = last.id;
+    }
+
+    return null;
+  }
+
+  async findActiveSubscription(input: {
+    metadataKey: string;
+    metadataValue: string;
+  }): Promise<ActiveSubscription | null> {
+    /*
+      Arvo menee Stripen hakukyselyyn, joten siihen hyväksytään vain
+      tunnisteen merkit. Muuten lainausmerkki voisi muuttaa kyselyn ehtoja.
+    */
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(input.metadataKey) || !/^[A-Za-z0-9_-]{1,100}$/.test(input.metadataValue)) {
+      return null;
+    }
+
+    const query = new URLSearchParams({
+      query: `status:'active' AND metadata['${input.metadataKey}']:'${input.metadataValue}'`,
+      limit: "1",
+    });
+
+    const result = await this.get<{
+      data: Array<{
+        id: string;
+        metadata?: Record<string, string> | null;
+        current_period_end?: number;
+        items?: { data?: Array<{ current_period_end?: number }> };
+      }>;
+    }>(`/subscriptions/search?${query.toString()}`);
+
+    const first = result.data[0];
+    if (!first) return null;
+
+    const end = first.current_period_end ?? first.items?.data?.[0]?.current_period_end;
+    return {
+      id: first.id,
+      metadata: first.metadata ?? {},
+      currentPeriodEnd: typeof end === "number" ? new Date(end * 1000).toISOString() : null,
+    };
+  }
+
   /* ---------------------------------------------------------------------- */
 
   private async post<T>(path: string, fields: Record<string, string>): Promise<T> {
@@ -198,6 +274,16 @@ export class StripeHttpClient implements BillingClient {
 
     return JSON.parse(text) as T;
   }
+}
+
+/** Stripe palauttaa id:n joko merkkijonona tai laajennettuna oliona. */
+function readId(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null && "id" in value) {
+    const id = (value as { id: unknown }).id;
+    return typeof id === "string" ? id : null;
+  }
+  return null;
 }
 
 /** `a=1&b[c]=2`. Hakasulkeet kuuluvat Stripen muotoon eikä niitä koodata pois. */

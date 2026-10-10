@@ -1,3 +1,4 @@
+import { readPaymentReturn } from "@/lib/billing/return-state";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
@@ -249,11 +250,25 @@ function Group({
  * allekirjoituksen jälkeen, osapuolten tietojen muokkaus vain ennen sitä.
  * ===========================================================================
  */
-export default async function TenancyPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TenancyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ maksu?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
 
   const { id } = await params;
+
+  /*
+    Ennen 10.10.2026 luodut maksusivut palaavat tänne. Maksun tilanne
+    kerrotaan Allekirjoitus-sivulla, jossa maksu aloitettiin.
+  */
+  const paymentReturn = readPaymentReturn((await searchParams).maksu);
+  if (paymentReturn) redirect(`/vuokrasuhteet/${id}/allekirjoitus?maksu=${paymentReturn}`);
+
   const tenancy = await getTenancy(user.id, id);
   if (!tenancy) notFound();
 

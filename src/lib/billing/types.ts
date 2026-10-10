@@ -62,6 +62,22 @@ export interface PortalSession {
   url: string;
 }
 
+/** Stripen sivulla loppuun viety maksu. Vain se, mitä päällekkäisen maksun estoon tarvitaan. */
+export interface CompletedCheckout {
+  id: string;
+  /** Tilausmaksussa syntyneen tilauksen id, kertamaksussa `null`. */
+  subscriptionId: string | null;
+  metadata: Record<string, string>;
+}
+
+/** Stripessä voimassa oleva tilaus. */
+export interface ActiveSubscription {
+  id: string;
+  metadata: Record<string, string>;
+  /** Kauden loppu ISO-muodossa, jos Stripe kertoi sen. */
+  currentPeriodEnd: string | null;
+}
+
 export interface BillingClient {
   /** Luo maksusivun. Ei veloita mitään — veloitus tapahtuu Stripen sivulla. */
   createCheckout(input: CheckoutInput): Promise<CheckoutSession>;
@@ -71,6 +87,21 @@ export interface BillingClient {
   updateSubscriptionQuantity(subscriptionId: string, quantity: number): Promise<void>;
   /** Maksun palautus peruutustapauksessa. */
   refund(paymentIntentId: string, reason: string): Promise<void>;
+  /**
+   * Onko annetun ajan jälkeen maksettu maksusivu, jonka metadata täsmää.
+   *
+   * Estää toisen veloituksen silloin, kun maksu on tehty mutta webhook ei
+   * ole vielä ehtinyt kirjata sitä meille.
+   */
+  findCompletedCheckout(input: {
+    metadata: Record<string, string>;
+    since: Date;
+  }): Promise<CompletedCheckout | null>;
+  /** Voimassa oleva tilaus, jonka metadatassa on annettu arvo. */
+  findActiveSubscription(input: {
+    metadataKey: string;
+    metadataValue: string;
+  }): Promise<ActiveSubscription | null>;
 }
 
 /** Webhookista poimittu tapahtuma siinä muodossa, jossa sovellus sen käsittelee. */
@@ -91,4 +122,10 @@ export interface BillingEvent {
   quantity: number | null;
   /** Tilauskauden loppu ISO-muodossa. `null`, jos tapahtuma ei ole tilaus. */
   currentPeriodEnd: string | null;
+  /** Tilauksen tila Stripen sanoin (`active`, `incomplete`, `past_due`…). */
+  status: string | null;
+  /** Maksusivun tila: `payment` tai `subscription`. Muissa tapahtumissa `null`. */
+  mode: string | null;
+  /** Maksusivun maksun tila: `paid`, `unpaid` tai `no_payment_required`. */
+  paymentStatus: string | null;
 }

@@ -8,6 +8,8 @@ import { formatPrice, TENANCY_PRICE_CENTS } from "@/lib/billing/pricing";
 import { getBillingProfile, getPortfolioState } from "@/lib/db/billing";
 import { AppShell } from "@/components/AppShell";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
+import { PaymentReturnNotice } from "@/components/PaymentReturnNotice";
+import { paymentReturnView, readPaymentReturn } from "@/lib/billing/return-state";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -30,7 +32,11 @@ export const metadata: Metadata = {
  * varmistua siitä.
  * ===========================================================================
  */
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tilaus?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
 
@@ -41,12 +47,21 @@ export default async function BillingPage() {
 
   const view = portfolioView(state);
 
+  // Paluu salkkutilauksen maksusivulta (`?tilaus=valmis` / `?tilaus=peruttu`).
+  const paymentReturn = paymentReturnView({
+    product: "portfolio",
+    param: readPaymentReturn((await searchParams).tilaus),
+    active: view.kind === "active",
+  });
+
   return (
     <AppShell>
       <h1 className="text-2xl">Laskutus</h1>
       <p className="mt-2 text-ink/70">
         Vuokralainen ei maksa koskaan mitään. Nämä koskevat vain sinua vuokranantajana.
       </p>
+
+      <PaymentReturnNotice view={paymentReturn} />
 
       {/* --- Mitä seuraava vuokrasuhde maksaa ------------------------------ */}
 
@@ -89,12 +104,15 @@ export default async function BillingPage() {
 
       {/* --- Salkku -------------------------------------------------------- */}
 
-      <PortfolioPanel
-        view={view}
-        tenanciesLastYear={state.tenanciesLastYear}
-        plusProperties={state.plusProperties}
-        mockMode={isUsingMockBilling()}
-      />
+      {/* Käsittelyn aikana tilausnappia ei näytetä: se veloittaisi toisen kerran. */}
+      {paymentReturn.kind === "processing" ? null : (
+        <PortfolioPanel
+          view={view}
+          tenanciesLastYear={state.tenanciesLastYear}
+          plusProperties={state.plusProperties}
+          mockMode={isUsingMockBilling()}
+        />
+      )}
 
       <p className="mt-8 text-sm text-ink/60">
         Hinnat sisältävät arvonlisäveron. Kuitti tulee sähköpostiisi jokaisesta maksusta.

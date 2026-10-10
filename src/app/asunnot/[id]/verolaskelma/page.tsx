@@ -10,6 +10,9 @@ import {
 } from "@/lib/db/tax-reports";
 import { isUsingMockBilling } from "@/lib/billing";
 import { quotePlus } from "@/lib/billing/plus";
+import { requiresPlusPayment } from "@/lib/billing/pricing";
+import { paymentReturnView, readPaymentReturn } from "@/lib/billing/return-state";
+import { PaymentReturnNotice } from "@/components/PaymentReturnNotice";
 import {
   CATEGORY_GUIDANCE,
   CLOSING_NOTE,
@@ -22,7 +25,7 @@ import {
   BILLING_UNAVAILABLE_MESSAGE,
   billingUnavailableInProduction,
 } from "@/lib/billing/index";
-import { SealTaxReport } from "@/components/SealTaxReport";
+import { SealTaxReport, SealTaxReportButton } from "@/components/SealTaxReport";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: "Verolaskelma" };
@@ -59,7 +62,7 @@ export default async function TaxReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ vuosi?: string }>;
+  searchParams: Promise<{ vuosi?: string; plus?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
@@ -69,7 +72,8 @@ export default async function TaxReportPage({
   if (!property) notFound();
 
   const years = await taxYears(user.id, id);
-  const wanted = Number((await searchParams).vuosi);
+  const query = await searchParams;
+  const wanted = Number(query.vuosi);
   const year = years.includes(wanted)
     ? wanted
     : (years[0] ?? new Date().getFullYear());
@@ -85,11 +89,26 @@ export default async function TaxReportPage({
   const sealed = stored.find((row) => row.year === year && row.sealedPath);
   const travel = report.lines.find((line) => line.category === "matkat");
 
+  /*
+    Paluu Stripen maksusivulta (`?plus=valmis` tai `?plus=peruttu`). Onko Plus
+    voimassa, luetaan kannasta eikä osoitteesta: webhook kirjaa sen.
+  */
+  const paymentReturn = paymentReturnView({
+    product: "plus",
+    param: readPaymentReturn(query.plus),
+    active: plusQuote !== null && !requiresPlusPayment(plusQuote),
+    completed: Boolean(sealed),
+  });
+
   return (
     <AppShell>
       <h1 className="text-2xl">Verolaskelma {year}</h1>
       <p className="mt-1 text-ink/70">{property.name ?? property.street}</p>
       <p className="mt-3 text-sm text-ink/70">{DISCLAIMER}</p>
+
+      <PaymentReturnNotice view={paymentReturn}>
+        <SealTaxReportButton propertyId={id} year={year} />
+      </PaymentReturnNotice>
 
       {/* --- Vuoden valinta ------------------------------------------------ */}
 
@@ -280,6 +299,7 @@ export default async function TaxReportPage({
         sealedAt={sealed?.generatedAt ?? null}
         hasContent={report.lines.length > 0 || report.rentalIncome > 0}
         plusQuote={plusQuote}
+        paymentProcessing={paymentReturn.kind === "processing"}
       />
 
       <p className="mt-6 text-sm text-ink/70">{CLOSING_NOTE}</p>

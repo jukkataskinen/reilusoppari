@@ -75,11 +75,15 @@ export type {
 } from "./confirmation";
 export {
   parseBillingEvent,
+  subscriptionChangeFromEvent,
   TOLERANCE_SECONDS,
   verifyWebhookSignature,
 } from "./webhook";
+export type { SubscriptionChange } from "./webhook";
 export type {
+  ActiveSubscription,
   BillingClient,
+  CompletedCheckout,
   BillingEvent,
   BillingProduct,
   CheckoutInput,

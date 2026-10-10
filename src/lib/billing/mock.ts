@@ -17,7 +17,9 @@
 
 import { randomUUID } from "node:crypto";
 import type {
+  ActiveSubscription,
   BillingClient,
+  CompletedCheckout,
   CheckoutInput,
   CheckoutSession,
   PortalSession,
@@ -33,6 +35,12 @@ export class BillingMockClient implements BillingClient {
   readonly checkouts: MockCheckout[] = [];
   readonly refunds: Array<{ paymentIntentId: string; reason: string }> = [];
   readonly quantityChanges: Array<{ subscriptionId: string; quantity: number }> = [];
+  /**
+   * Testit lisäävät tänne maksuja ja tilauksia, jotka "Stripessä" ovat jo
+   * olemassa. Oletuksena tyhjä, jolloin kaikki toimii kuten ennenkin.
+   */
+  readonly completedCheckouts: Array<CompletedCheckout & { createdAt: Date }> = [];
+  readonly activeSubscriptions: ActiveSubscription[] = [];
 
   async createCheckout(input: CheckoutInput): Promise<CheckoutSession> {
     const sessionId = `cs_mock_${randomUUID()}`;
@@ -63,4 +71,26 @@ export class BillingMockClient implements BillingClient {
   async refund(paymentIntentId: string, reason: string): Promise<void> {
     this.refunds.push({ paymentIntentId, reason });
   }
+
+  async findCompletedCheckout(input: {
+    metadata: Record<string, string>;
+    since: Date;
+  }): Promise<CompletedCheckout | null> {
+    const found = this.completedCheckouts.find(
+      (row) => row.createdAt >= input.since && matchesMetadata(row.metadata, input.metadata),
+    );
+    return found ? { id: found.id, subscriptionId: found.subscriptionId, metadata: found.metadata } : null;
+  }
+
+  async findActiveSubscription(input: {
+    metadataKey: string;
+    metadataValue: string;
+  }): Promise<ActiveSubscription | null> {
+    return this.activeSubscriptions.find((row) => row.metadata[input.metadataKey] === input.metadataValue) ?? null;
+  }
+}
+
+/** Kaikki halutut avaimet löytyvät samoilla arvoilla. */
+export function matchesMetadata(actual: Record<string, string>, wanted: Record<string, string>): boolean {
+  return Object.entries(wanted).every(([key, value]) => actual[key] === value);
 }

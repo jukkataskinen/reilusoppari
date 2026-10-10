@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { assertRealBilling, getBillingClient } from "@/lib/billing";
 import { portfolioView } from "@/lib/billing/portfolio";
 import { portfolioPriceCents } from "@/lib/billing/pricing";
+import { PAYMENT_PROCESSING_MESSAGE, RECENT_CHECKOUT_MS } from "@/lib/billing/return-state";
 import {
   getBillingProfile,
   getPortfolioState,
@@ -105,6 +106,22 @@ export async function startPortfolioAction(): Promise<PortfolioActionState> {
   }
 
   assertRealBilling();
+
+  /*
+    Maksettu mutta vielä kirjaamaton salkkumaksu estää uuden (Jukka
+    10.10.2026): muuten webhookia odottaessa painettu Tilaa veloittaisi
+    toisen kerran.
+  */
+  try {
+    const recent = await getBillingClient().findCompletedCheckout({
+      metadata: { userId: user.id, kind: "portfolio_yearly" },
+      since: new Date(Date.now() - RECENT_CHECKOUT_MS),
+    });
+    if (recent) return { message: PAYMENT_PROCESSING_MESSAGE };
+  } catch (err) {
+    console.error("[salkku] maksun tarkistus epäonnistui:", err instanceof Error ? err.message : err);
+    return { message: "Maksun tilaa ei voitu tarkistaa. Yritä hetken kuluttua uudelleen." };
+  }
 
   const profile = await getBillingProfile(user.id);
 

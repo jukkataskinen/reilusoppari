@@ -37,6 +37,7 @@ export function SealTaxReport({
   sealedAt,
   hasContent,
   plusQuote,
+  paymentProcessing = false,
 }: {
   propertyId: string;
   year: number;
@@ -44,11 +45,19 @@ export function SealTaxReport({
   hasContent: boolean;
   /** Mitä sinetöinti maksaisi juuri nyt. `null`, jos sitä ei voitu laskea. */
   plusQuote: PlusPriceDecision | null;
+  /**
+   * Maksu on tehty, mutta sitä ei ole vielä kirjattu. Silloin maksunappia
+   * ei näytetä, jottei käyttäjä maksa toiseen kertaan.
+   */
+  paymentProcessing?: boolean;
 }) {
   const [state, seal, pending] = useActionState(sealTaxReportAction, initialState);
 
   return (
-    <section className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
+    <section
+      id="sinetointi"
+      className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-5"
+    >
       <h2 className="font-medium">Laskelma paperille</h2>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -88,7 +97,11 @@ export function SealTaxReport({
         </p>
       )}
 
-      {hasContent ? (
+      {paymentProcessing ? (
+        <p className="mt-4 text-sm text-ink/70">
+          Sinetöinti on käytettävissä heti, kun maksu on käsitelty.
+        </p>
+      ) : hasContent ? (
         <Form action={seal} className="mt-4">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="year" value={year} />
@@ -127,5 +140,38 @@ export function SealTaxReport({
         </p>
       )}
     </section>
+  );
+}
+
+/**
+ * Sinetöi laskelma -nappi maksun jälkeiseen ilmoitukseen.
+ *
+ * Sinetöintiä ei tehdä automaattisesti sivun avautuessa: paluuosoite jää
+ * selaimen historiaan, ja jokainen päivitys tai takaisin-painallus
+ * sinetöisi laskelman uudelleen ja korvaisi edellisen. Yksi painallus on
+ * pieni vaiva, ja käyttäjä näkee, mitä tapahtuu.
+ */
+export function SealTaxReportButton({ propertyId, year }: { propertyId: string; year: number }) {
+  const [state, seal, pending] = useActionState(sealTaxReportAction, initialState);
+
+  return (
+    <Form action={seal} className="mt-4">
+      <input type="hidden" name="propertyId" value={propertyId} />
+      <input type="hidden" name="year" value={year} />
+
+      {state.message ? (
+        <p role="alert" className="mb-2 text-sm text-coral">
+          {state.message}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper disabled:opacity-60"
+      >
+        {pending ? "Sinetöidään…" : "Sinetöi laskelma"}
+      </button>
+    </Form>
   );
 }
