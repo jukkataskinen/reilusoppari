@@ -2224,3 +2224,12 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 - **Ei N+1-kyselyitä.** `src/lib/db/tenancy-summaries.ts` hakee listojen tiedot `in`-kyselyillä (asuntolista 3 kyselyä, vuokrasuhdelista 5). Vanha vuokrasuhdelista haki osoitteen jokaiselle riville erikseen.
 - **Värit.** Sana aina näkyvissä, väri pisteenä, vaaleana taustana ja kortin vasempana reunana (myös asuntolistan korteissa, Jukan lisäys). Teksti pysyy ink-tummana kontrastin vuoksi. Coral vain toimenpiteelle. Tilojen nimet ovat sovelluksen nykyiset (Voimassa, Päättymässä).
 - **Takaisin-linkki pois** Asunnot- ja Vuokrasuhteet-listoilta: ne ovat alanavigaation pääosioita.
+
+## 2026-10-10 — Maksun jälkeen sivu kertoo tilanteen (Jukka)
+
+- **Paluuosoite valitsee vain tekstin.** `?plus=`, `?maksu=` ja `?tilaus=` (valmis/peruttu) näyttävät ilmoituksen (`src/lib/billing/return-state.ts`, puhdas funktio). Onko maksu kirjattu, luetaan aina kannasta (webhook).
+- **Sinetöintiä ei tehdä automaattisesti.** Paluuosoite jää selaimen historiaan, ja jokainen päivitys sinetöisi uudelleen ja korvaisi edellisen. Ilmoituksessa on oma Sinetöi laskelma -nappi.
+- **Käsittelyn aikana ei tarjota uutta maksua.** Sivu päivittyy 3 s välein minuutin ajan. Palvelimella Stripeltä kysytään ennen uutta maksusivua, onko samalle asunnolle, vuokrasuhteelle tai salkulle maksettu maksusivu 10 min sisällä. Jos Stripe ei vastaa, maksusivua ei avata.
+- **Stripessä voimassa oleva Plus kirjataan meille Sinetöi-painalluksessa** (haku metadatan `propertyId`:llä, sama käyttäjä). Tieto tulee Stripeltä omalla avaimella, joten siihen voi luottaa; korjaa myös tilaukset, joiden webhook jäi kirjaamatta.
+- **Webhook:** Plus kirjataan jo `checkout.session.completed`-tapahtumasta (tilausmuoto, maksettu), `customer.subscription.created` käsitellään kuten `updated`, ja tilausolion tila ratkaisee (`incomplete` ei anna oikeutta, `past_due` kirjataan erääntyneeksi). Aiemmin kaikki kirjattiin `active`ksi ja vain `updated`ista.
+- **Vuokrasuhteen maksun paluu Allekirjoitus-sivulle**, jossa maksu aloitettiin. Vanhat paluuosoitteet ohjataan sinne.

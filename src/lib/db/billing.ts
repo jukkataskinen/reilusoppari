@@ -254,6 +254,42 @@ export async function upsertSubscription(input: {
   }
 }
 
+/**
+ * Lisää tilauksen vain, jos sitä ei vielä ole.
+ *
+ * Maksusivun tapahtumassa ei ole tilauskautta. Jos tilaustapahtuma ehti
+ * ensin, sen tiedot jäävät voimaan eikä niitä korvata tyhjillä.
+ */
+export async function insertSubscriptionIfMissing(input: {
+  userId: string;
+  kind: "portfolio_yearly" | "plus_yearly";
+  stripeSubscriptionId: string;
+  quantity: number;
+  status: "active" | "past_due" | "canceled";
+  currentPeriodEnd: string | null;
+  propertyId?: string | null;
+}): Promise<void> {
+  const { error } = await getServiceClient()
+    .from("rs_subscriptions")
+    .upsert(
+      {
+        user_id: input.userId,
+        kind: input.kind,
+        stripe_subscription_id: input.stripeSubscriptionId,
+        quantity: input.quantity,
+        status: input.status,
+        current_period_end: input.currentPeriodEnd,
+        property_id: input.propertyId ?? null,
+      },
+      { onConflict: "stripe_subscription_id", ignoreDuplicates: true },
+    );
+
+  if (error) {
+    console.error("[laskutus] tilauksen tallennus epäonnistui:", error.message);
+    throw new Error("Tilauksen tallennus epäonnistui.");
+  }
+}
+
 /** Merkitsee tilauksen päättyneeksi. Käyttöoikeus loppuu kauden lopussa. */
 export async function cancelSubscription(stripeSubscriptionId: string): Promise<void> {
   await getServiceClient()

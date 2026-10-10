@@ -79,6 +79,13 @@ function timingSafeEqualHex(a: string, b: string): boolean {
 /** Stripen tapahtumatyyppi sovelluksen tyypiksi. `null` = ei kiinnosta meitä. */
 function eventType(stripeType: string): BillingEvent["type"] | null {
   if (stripeType === "checkout.session.completed") return "checkout.completed";
+  /*
+    Uusi tilaus tulee `created`-tapahtumana. Ensimmäinen versio kuunteli vain
+    `updated`ia, jota Stripe ei lähetä jokaisen maksun jälkeen — Plus jäi
+    silloin kirjaamatta, vaikka maksu meni läpi (Jukka 10.10.2026). Molemmat
+    käsitellään samoin: tilausolion tila ratkaisee.
+  */
+  if (stripeType === "customer.subscription.created") return "subscription.updated";
   if (stripeType === "customer.subscription.updated") return "subscription.updated";
   if (stripeType === "customer.subscription.deleted") return "subscription.deleted";
   if (stripeType === "charge.refunded") return "payment.refunded";
@@ -134,7 +141,98 @@ export function parseBillingEvent(payload: string): BillingEvent | null {
     */
     quantity: readQuantity(object),
     currentPeriodEnd: readPeriodEnd(object),
+    status: typeof object.status === "string" ? object.status : null,
+    mode: typeof object.mode === "string" ? object.mode : null,
+    paymentStatus: typeof object.payment_status === "string" ? object.payment_status : null,
   };
+}
+
+/** Mitä tilaukselle tehdään kannassa. */
+export interface SubscriptionChange {
+  /**
+   * `upsert` kirjoittaa Stripen tilausolion tiedot sellaisinaan.
+   * `insert_if_missing` lisää rivin vain, jos sitä ei vielä ole: maksusivun
+   * tapahtumassa ei ole kautta, eikä se saa pyyhkiä sitä, jos
+   * tilaustapahtuma ehti ensin.
+   */
+  write: "upsert" | "insert_if_missing";
+  userId: string;
+  kind: "plus_yearly" | "portfolio_yearly";
+  stripeSubscriptionId: string;
+  quantity: number;
+  status: "active" | "past_due" | "canceled";
+  currentPeriodEnd: string | null;
+  propertyId: string | null;
+}
+
+/**
+ * Stripen tilauksen tila meidän kolmeen tilaamme. `null` = ei kirjata vielä.
+ *
+ * `incomplete` tarkoittaa, että ensimmäinen maksu on kesken. Sitä ei kirjata
+ * voimassa olevaksi. Ensimmäinen versio kirjasi kaiken `active`ksi, jolloin
+ * myös erääntynyt tai kesken jäänyt tilaus olisi antanut käyttöoikeuden.
+ */
+function mapStatus(status: string | null): SubscriptionChange["status"] | null {
+  if (status === "active" || status === "trialing") return "active";
+  if (status === "past_due" || status === "unpaid") return "past_due";
+  if (status === "canceled" || status === "incomplete_expired") return "canceled";
+  return null;
+}
+
+/**
+ * Tilausmuutos webhookista, tai `null` jos tapahtuma ei muuta tilausta.
+ *
+ * Puhdas funktio, jotta tilausten käsittely voidaan testata Stripen
+ * oikeannäköisillä tapahtumilla ilman kantaa.
+ *
+ * PLUS KIRJATAAN JO MAKSUSIVUN TAPAHTUMASTA
+ *
+ * `checkout.session.completed` tulee varmimmin, ja siinä on sama metadata
+ * (asunto ja käyttäjä). Jos Plus odottaisi vain tilaustapahtumaa, maksanut
+ * käyttäjä näkisi paluusivulla "käsitellään" niin kauan kuin se viipyy —
+ * tai ikuisesti, jos Stripen webhook-asetuksista puuttuvat tilaustapahtumat.
+ * Salkkua ei kirjata tästä, koska sen asuntomäärä on vain tilausoliossa.
+ */
+export function subscriptionChangeFromEvent(event: BillingEvent): SubscriptionChange | null {
+  const { userId, kind, propertyId } = event.metadata;
+  if (!userId || !event.subscriptionId) return null;
+
+  if (event.type === "checkout.completed") {
+    if (event.mode !== "subscription") return null;
+    if (event.paymentStatus !== "paid" && event.paymentStatus !== "no_payment_required") return null;
+    if (kind !== "plus_yearly" || !propertyId) return null;
+
+    return {
+      write: "insert_if_missing",
+      userId,
+      kind: "plus_yearly",
+      stripeSubscriptionId: event.subscriptionId,
+      quantity: 1,
+      status: "active",
+      currentPeriodEnd: null,
+      propertyId,
+    };
+  }
+
+  if (event.type === "subscription.updated") {
+    const status = mapStatus(event.status);
+    if (!status) return null;
+
+    const isPlus = kind === "plus_yearly";
+    return {
+      write: "upsert",
+      userId,
+      kind: isPlus ? "plus_yearly" : "portfolio_yearly",
+      stripeSubscriptionId: event.subscriptionId,
+      quantity: event.quantity ?? 1,
+      status,
+      currentPeriodEnd: event.currentPeriodEnd,
+      // Plus on asunnon tilaus (migraatio 0019), salkku käyttäjän.
+      propertyId: isPlus ? (propertyId ?? null) : null,
+    };
+  }
+
+  return null;
 }
 
 /** Tilauksen määrä ensimmäiseltä riviltä. Salkussa se on asuntojen määrä. */

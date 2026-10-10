@@ -26,6 +26,7 @@ import {
 import { getTenancy } from "../db/tenancies";
 import { assertRealBilling, getBillingClient } from "./index";
 import { priceForTenancy, requiresPayment, type PriceDecision } from "./pricing";
+import { PAYMENT_PROCESSING_MESSAGE, RECENT_CHECKOUT_MS } from "./return-state";
 
 export type CheckoutResult =
   | { ok: true; paid: true; decision: PriceDecision }
@@ -102,6 +103,22 @@ export async function startTenancyCheckout(input: {
 
   assertRealBilling();
 
+  /*
+    Maksettu mutta vielä kirjaamaton maksu estää uuden (Jukka 10.10.2026).
+    Webhook voi viipyä hetken, ja sillä välin painettu Maksa veloittaisi
+    toisen kerran. Jos Stripe ei vastaa, uutta maksua ei avata.
+  */
+  try {
+    const recent = await getBillingClient().findCompletedCheckout({
+      metadata: { tenancyId: input.tenancyId },
+      since: new Date(now.getTime() - RECENT_CHECKOUT_MS),
+    });
+    if (recent) return { ok: false, message: PAYMENT_PROCESSING_MESSAGE };
+  } catch (err) {
+    console.error("[laskutus] maksun tarkistus epäonnistui:", err instanceof Error ? err.message : err);
+    return { ok: false, message: "Maksun tilaa ei voitu tarkistaa. Yritä hetken kuluttua uudelleen." };
+  }
+
   await recordWithdrawalConsent(input.tenancyId, now);
 
   try {
@@ -111,8 +128,9 @@ export async function startTenancyCheckout(input: {
       description: "Reilusoppari – vuokrasuhde",
       customerId: profile.stripeCustomerId,
       email: profile.email,
-      successUrl: `${input.appUrl}/vuokrasuhteet/${input.tenancyId}?maksu=valmis`,
-      cancelUrl: `${input.appUrl}/vuokrasuhteet/${input.tenancyId}?maksu=peruttu`,
+      // Paluu samalle sivulle, jolla maksu aloitettiin: siellä kerrotaan tilanne.
+      successUrl: `${input.appUrl}/vuokrasuhteet/${input.tenancyId}/allekirjoitus?maksu=valmis`,
+      cancelUrl: `${input.appUrl}/vuokrasuhteet/${input.tenancyId}/allekirjoitus?maksu=peruttu`,
       // Ei nimiä eikä osoitteita: metadata päätyy Stripen järjestelmiin.
       metadata: { tenancyId: input.tenancyId, userId: input.userId },
       consentGiven: true,

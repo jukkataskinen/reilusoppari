@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import { orderConfirmationEmail, parseBillingEvent, verifyWebhookSignature } from "@/lib/billing";
+import {
+  orderConfirmationEmail,
+  parseBillingEvent,
+  subscriptionChangeFromEvent,
+  verifyWebhookSignature,
+} from "@/lib/billing";
 import type { BillingProduct } from "@/lib/billing";
 import {
   cancelSubscription,
   getBillingProfile,
+  insertSubscriptionIfMissing,
   markTenancyPaid,
   recordEvent,
   saveCustomerId,
@@ -109,10 +115,11 @@ async function handle(event: BillingEvent): Promise<void> {
     }
 
     /*
-      Tilaus (salkku tai Plus) tulee erillisenä `subscription.updated`
-      -tapahtumana, jossa on määrä ja kausi. Sitä ei yritetä päätellä tästä:
-      checkout kertoo vain, että jotain ostettiin.
+      Plus kirjataan voimaan jo tästä tapahtumasta (`subscriptionChangeFromEvent`),
+      jotta maksanut käyttäjä pääsee sinetöimään heti. Salkku tulee
+      tilaustapahtumasta, jossa on asuntomäärä ja kausi.
     */
+    await applySubscriptionChange(event);
 
     if (userId && event.amountCents) {
       await sendOrderConfirmation({
@@ -128,21 +135,8 @@ async function handle(event: BillingEvent): Promise<void> {
   }
 
   if (event.type === "subscription.updated") {
-    const { userId, kind, propertyId } = event.metadata;
-    if (!userId || !event.subscriptionId) return;
-
-    const isPlus = kind === "plus_yearly";
-
-    await upsertSubscription({
-      userId,
-      kind: isPlus ? "plus_yearly" : "portfolio_yearly",
-      stripeSubscriptionId: event.subscriptionId,
-      quantity: event.quantity ?? 1,
-      status: "active",
-      currentPeriodEnd: event.currentPeriodEnd,
-      // Plus on asunnon tilaus (migraatio 0019), salkku käyttäjän.
-      propertyId: isPlus ? (propertyId ?? null) : null,
-    });
+    // Myös `customer.subscription.created` tulee tätä kautta (webhook.ts).
+    await applySubscriptionChange(event);
     return;
   }
 
@@ -158,6 +152,16 @@ async function handle(event: BillingEvent): Promise<void> {
     täältä, Stripessä tehty osittainen hyvitys sulkisi vuokrasuhteen, joka
     on jo allekirjoitettu.
   */
+}
+
+/** Kirjaa Plus- tai salkkutilauksen muutoksen, jos tapahtumassa on sellainen. */
+async function applySubscriptionChange(event: BillingEvent): Promise<void> {
+  const change = subscriptionChangeFromEvent(event);
+  if (!change) return;
+
+  const { write, ...row } = change;
+  if (write === "insert_if_missing") await insertSubscriptionIfMissing(row);
+  else await upsertSubscription(row);
 }
 
 /**

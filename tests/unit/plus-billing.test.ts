@@ -4,6 +4,7 @@ import { upsertSubscription } from "@/lib/db/billing";
 import { BillingMockClient, getBillingClient, resetBillingClientForTests } from "@/lib/billing";
 import { ensurePlusAccess, quotePlus } from "@/lib/billing/plus";
 import { PLUS_YEARLY_CENTS } from "@/lib/billing/pricing";
+import { PAYMENT_PROCESSING_MESSAGE } from "@/lib/billing/return-state";
 
 /**
  * Plus-maksun laukaisu (CLAUDE.md 5.7, vaihe 5) integraatiotestinä oikeaa
@@ -126,5 +127,43 @@ describe.skipIf(!RUN)("Plus-maksu asunnolle (integraatio, live Supabase)", () =>
       appUrl: "https://app.example.invalid",
     });
     expect(access).toEqual({ ok: false, message: "Asuntoa ei löytynyt." });
+  });
+
+  it("juuri maksettu mutta kirjaamaton maksu ei avaa uutta maksusivua", async () => {
+    // Jukka 10.10.2026: webhookia odottaessa painettu Sinetöi veloittaisi toisen kerran.
+    resetBillingClientForTests();
+    const owner = await createUser("odottaa");
+    const property = await createProperty(owner);
+
+    const mock = getBillingClient() as BillingMockClient;
+    mock.completedCheckouts.push({
+      id: "cs_juuri",
+      subscriptionId: "sub_juuri",
+      metadata: { propertyId: property, userId: owner, kind: "plus_yearly" },
+      createdAt: new Date(),
+    });
+
+    const access = await ensurePlusAccess({ userId: owner, propertyId: property, appUrl: "https://app.example.invalid" });
+    expect(access).toEqual({ ok: false, message: PAYMENT_PROCESSING_MESSAGE });
+    expect(mock.checkouts).toHaveLength(0);
+  });
+
+  it("Stripessä voimassa oleva tilaus kirjataan ja sinetöinti jatkuu", async () => {
+    // Korjaa tilauksen, jonka webhook jäi aikanaan kirjaamatta.
+    resetBillingClientForTests();
+    const owner = await createUser("korjaus");
+    const property = await createProperty(owner);
+
+    const mock = getBillingClient() as BillingMockClient;
+    mock.activeSubscriptions.push({
+      id: `sub_${PREFIX}_korjaus`,
+      metadata: { propertyId: property, userId: owner, kind: "plus_yearly" },
+      currentPeriodEnd: null,
+    });
+
+    const access = await ensurePlusAccess({ userId: owner, propertyId: property, appUrl: "https://app.example.invalid" });
+    expect(access).toEqual({ ok: true, paidVia: "plus_yearly" });
+    expect((await quotePlus(owner, property))?.amountCents).toBe(0);
+    expect(mock.checkouts).toHaveLength(0);
   });
 });

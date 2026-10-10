@@ -33,6 +33,11 @@ import {
   signedDocumentList,
 } from "@/lib/tenancy/signed-documents";
 import { TenancyPayment } from "@/components/TenancyPayment";
+import { PaymentReturnNotice } from "@/components/PaymentReturnNotice";
+import {
+  paymentReturnView,
+  readPaymentReturn,
+} from "@/lib/billing/return-state";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -91,8 +96,10 @@ function SignerList({ round }: { round: Round }) {
  */
 export default async function SigningPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ maksu?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
@@ -124,8 +131,25 @@ export default async function SigningPage({
     hämmentävää — ja hinta voi muuttua, koska ilmainen ensimmäinen ja
     krediitit kuluvat.
   */
+  /*
+    Paluu Stripen maksusivulta. Maksun tila luetaan kannasta (webhook), ei
+    osoitteesta. Käsittelyn aikana maksulomaketta ei näytetä, jottei
+    käyttäjä maksa toiseen kertaan.
+  */
+  const paymentReturn = isLandlord
+    ? paymentReturnView({
+        product: "tenancy",
+        param: readPaymentReturn((await searchParams).maksu),
+        active: Boolean(billing?.paidVia),
+        completed: Boolean(round),
+      })
+    : ({ kind: "none" } as const);
+
   const quote =
-    isLandlord && !billing?.paidVia && !round
+    isLandlord &&
+    !billing?.paidVia &&
+    !round &&
+    paymentReturn.kind !== "processing"
       ? await quoteTenancy(user.id, id)
       : null;
 
@@ -158,6 +182,8 @@ export default async function SigningPage({
         viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta. Jos katselmus
         on jo lukittu, molemmat allekirjoitetaan kerralla.
       </p>
+
+      <PaymentReturnNotice view={paymentReturn} />
 
       {isUsingMockEsinetti() ? (
         <p className="mt-6 rounded-[var(--radius-panel)] border border-coral bg-paper p-5 text-sm">

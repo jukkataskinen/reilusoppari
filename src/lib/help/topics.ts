@@ -567,6 +567,9 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Jos vuokrasuhde on ilmainen, valitse Ota käyttöön. Ensimmäinen vuokrasuhde on aina ilmainen.",
           "Muuten hinta on 29 euroa kerran. Lue ehto peruutusoikeudesta ja valitse ruutu.",
           "Valitse Maksa 29,00 €. Maksu tehdään kortilla maksupalvelun sivulla.",
+          "Maksun jälkeen palaat Allekirjoitus-sivulle. Sivu kertoo, että maksu on vastaanotettu.",
+          "Jos sivulla lukee, että maksua käsitellään, odota hetki. Sivu päivittyy itse. Älä maksa uudelleen.",
+          "Kun maksu näkyy, voit lähettää sopimuksen allekirjoitettavaksi.",
         ],
       },
       {
@@ -981,6 +984,16 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Jos sinulla ei ole salkkutilausta, sinut ohjataan ensin maksamaan Plus.",
         ],
       },
+      {
+        title: "Kun olet maksanut Plussan",
+        steps: [
+          "Maksun jälkeen palaat Verolaskelma-sivulle samaan vuoteen.",
+          "Sivulla lukee Maksu vastaanotettu. Plus on käytössä tälle asunnolle.",
+          "Valitse Sinetöi laskelma. Laskelma sinetöidään, ja voit tallentaa sen kohdasta Tallenna sinetöity.",
+          "Jos sivulla lukee, että maksua käsitellään, odota hetki. Sivu päivittyy itse. Älä maksa uudelleen.",
+          "Jos peruit maksun, sivulla lukee Maksu peruttiin. Mitään ei veloitettu, ja voit yrittää myöhemmin uudelleen.",
+        ],
+      },
     ],
     tips: [
       "Laskelma on yhteenveto omista kirjauksistasi, ei veroneuvontaa.",
@@ -1055,6 +1068,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Salkku sisältää kaikki vuokrasuhteet ja verolaskelmat.",
           "Sivu kertoo suoraan, kannattaako salkku sinulle.",
           "Valitse Laskut ja maksutapa, jos haluat nähdä laskut, vaihtaa kortin tai lopettaa tilauksen.",
+          "Maksun jälkeen palaat Laskutus-sivulle. Jos sivulla lukee, että maksua käsitellään, odota hetki. Sivu päivittyy itse. Älä maksa uudelleen.",
         ],
       },
       {

@@ -82,7 +82,7 @@ export async function sealTaxReportAction(
 
   let access: Awaited<ReturnType<typeof ensurePlusAccess>>;
   try {
-    access = await ensurePlusAccess({ userId: user.id, propertyId, appUrl });
+    access = await ensurePlusAccess({ userId: user.id, propertyId, appUrl, year });
   } catch (error) {
     // Sama kuin vuokrasuhteen maksussa: puuttuva Stripe ei saa kaataa sivua.
     if (billingUnavailableInProduction())
