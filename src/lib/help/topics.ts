@@ -142,9 +142,21 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
+        title: "Asunnon tila",
+        text: "Asuntolistalla ja asunnon sivulla näkyy asunnon tila. Sana kertoo tilan, ja väri on kortin vasemmassa reunassa.",
+        bullets: [
+          "Vuokrattu (vihreä): vuokrasuhde on voimassa. Näet vuokralaisen ja vuokran. Valitse Avaa vuokrasuhde.",
+          "Irtisanottu (keltainen): vuokrasuhde on irtisanottu. Näet päivän, jolloin se päättyy. Valitse Avaa vuokrasuhde.",
+          "Sopimus kesken (sininen): sopimusta tehdään tai se odottaa allekirjoitusta. Valitse Jatka sopimusta.",
+          "Vapaa (harmaa): asunnolla ei ole voimassa olevaa vuokrasuhdetta. Valitse Luo vuokrasuhde.",
+          "Jos asunnolla on kaksi vuokrasuhdetta samassa vaiheessa, linkki vie uusimpaan. Molemmat näet Vuokrasuhteet-sivulla.",
+        ],
+      },
+      {
         title: "Asunnon sivu",
         bullets: [
-          "Uusi vuokrasuhde: aloita vuokrasuhde tähän asuntoon.",
+          "Ylimpänä on linkki nykyiseen vuokrasuhteeseen: Avaa vuokrasuhde, Jatka sopimusta tai Luo vuokrasuhde.",
+          "Uusi vuokrasuhde: aloita toinen vuokrasuhde tähän asuntoon, esimerkiksi seuraavalle vuokralaiselle.",
           "Kulut, Toistuvat kulut ja Verolaskelma: asunnon kulut ja vuoden yhteenveto.",
           "Katselmuksen kohdat: lista huoneista ja asioista, joita katselmuksessa kannattaa katsoa.",
         ],
@@ -299,6 +311,18 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Kohdassa Perustiedot ovat alkupäivä, kesto, vuokra, eräpäivä ja vakuus.",
           "Kohta Päättyminen on sivun alaosassa. Sieltä löytyvät irtisanominen, loppukatselmus ja todistukset.",
           "Osapuolten tiedot näkyvät listassa vain ennen allekirjoitusta. Allekirjoitettua sopimusta ei voi enää muuttaa.",
+        ],
+      },
+      {
+        title: "Vuokrasuhteet-sivun värit",
+        text: "Vuokrasuhteet-sivulla jokaisella vuokrasuhteella on tila sanana ja väri kortin vasemmassa reunassa.",
+        bullets: [
+          "Vaatii toimenpiteitä (punainen): jokin on myöhässä, esimerkiksi alkukatselmus. Nämä ovat listassa ylimpänä.",
+          "Voimassa (vihreä).",
+          "Luonnos tai Odottaa allekirjoitusta (sininen).",
+          "Päättymässä (keltainen).",
+          "Päättynyt tai Todistukset annettu (harmaa).",
+          "Järjestys on: ensin toimenpiteitä vaativat, sitten voimassa olevat, luonnokset, päättymässä olevat ja päättyneet.",
         ],
       },
       {

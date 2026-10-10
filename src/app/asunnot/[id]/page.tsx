@@ -4,7 +4,10 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getProperty, listCheckpoints } from "@/lib/db/properties";
 import { formatAddress } from "@/lib/property/schema";
+import { listPropertyTenancies } from "@/lib/db/tenancy-summaries";
+import { propertyStatus, propertyStatusView } from "@/lib/property/status";
 import { AppShell } from "@/components/AppShell";
+import { StatusBadge } from "@/components/StatusBadge";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: "Asunto" };
@@ -36,7 +39,12 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
   const property = await getProperty(user.id, id);
   if (!property) notFound();
 
-  const checkpoints = await listCheckpoints(user.id, id);
+  const [checkpoints, tenancies] = await Promise.all([
+    listCheckpoints(user.id, id),
+    listPropertyTenancies(user.id, [id]),
+  ]);
+  const status = propertyStatus(tenancies.get(id) ?? []);
+  const view = propertyStatusView(id, status);
 
   const rooms: { room: string; items: string[] }[] = [];
   for (const checkpoint of checkpoints) {
@@ -50,13 +58,31 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
       <h1 className="text-2xl">{property.name ?? formatAddress(property)}</h1>
       {property.name ? <p className="mt-1 text-ink/70">{formatAddress(property)}</p> : null}
 
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <StatusBadge tone={view.tone}>{view.label}</StatusBadge>
+        {view.detail ? <span className="text-sm text-ink/70">{view.detail}</span> : null}
+      </div>
+      {view.note ? <p className="mt-2 text-sm text-ink/70">{view.note}</p> : null}
+
       <div className="mt-5 flex flex-wrap gap-2">
+        {/*
+          Nykyinen vuokrasuhde on asunnon sivun tärkein linkki. Vapaalla
+          asunnolla sen paikalla on vuokrasuhteen luonti.
+        */}
         <Link
-          href={`/asunnot/${property.id}/vuokrasuhde/uusi`}
+          href={view.href}
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
         >
-          {fi.tenancy.new}
+          {view.linkLabel}
         </Link>
+        {status.tenancy ? (
+          <Link
+            href={`/asunnot/${property.id}/vuokrasuhde/uusi`}
+            className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+          >
+            {fi.tenancy.new}
+          </Link>
+        ) : null}
         {/*
           Verolaskelma on asunnon alla eikä vuokrasuhteen: yhdessä vuodessa voi
           olla kaksi vuokralaista peräkkäin, ja hoitovastike juoksee myös

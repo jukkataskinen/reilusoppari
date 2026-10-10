@@ -4,7 +4,10 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { listProperties } from "@/lib/db/properties";
 import { formatAddress } from "@/lib/property/schema";
+import { listPropertyTenancies } from "@/lib/db/tenancy-summaries";
+import { propertyStatus, propertyStatusView } from "@/lib/property/status";
 import { AppShell } from "@/components/AppShell";
+import { CARD_ACCENT, StatusBadge } from "@/components/StatusBadge";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: fi.nav.properties };
@@ -27,6 +30,11 @@ export default async function PropertiesPage() {
   if (!user) redirect("/auth/login");
 
   const properties = await listProperties(user.id);
+  // Kaikkien asuntojen vuokrasuhteet kerralla, ei asunto kerrallaan.
+  const tenancies = await listPropertyTenancies(
+    user.id,
+    properties.map((property) => property.id),
+  );
 
   return (
     <AppShell>
@@ -63,13 +71,27 @@ export default async function PropertiesPage() {
         </div>
       ) : (
         <ul className="mt-8 flex flex-col gap-3">
-          {properties.map((property) => (
-            <li key={property.id}>
-              <Link
-                href={"/asunnot/" + property.id}
-                className="flex min-h-[var(--size-touch)] flex-col rounded-[var(--radius-panel)] border border-line bg-paper p-4"
+          {properties.map((property) => {
+            const view = propertyStatusView(
+              property.id,
+              propertyStatus(tenancies.get(property.id) ?? []),
+            );
+            return (
+              <li
+                key={property.id}
+                className={`relative flex flex-col rounded-[var(--radius-panel)] border border-line bg-paper p-4 ${CARD_ACCENT[view.tone]}`}
               >
-                <span className="font-medium">{property.name ?? formatAddress(property)}</span>
+                {/*
+                  Koko kortti avaa asunnon (linkin ::after peittää kortin), ja
+                  vuokrasuhteen linkki on sen päällä omana kosketuskohteenaan.
+                  Linkkejä ei voi sijoittaa sisäkkäin.
+                */}
+                <Link
+                  href={"/asunnot/" + property.id}
+                  className="font-medium after:absolute after:inset-0 after:rounded-[var(--radius-panel)] after:content-['']"
+                >
+                  {property.name ?? formatAddress(property)}
+                </Link>
                 {property.name ? (
                   <span className="mt-0.5 text-sm text-ink/70">{formatAddress(property)}</span>
                 ) : null}
@@ -78,17 +100,22 @@ export default async function PropertiesPage() {
                   {property.rooms ? " · " + property.rooms + " h" : ""}
                   {property.areaM2 ? " · " + property.areaM2 + " m²" : ""}
                 </span>
-              </Link>
-            </li>
-          ))}
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <StatusBadge tone={view.tone}>{view.label}</StatusBadge>
+                  {view.detail ? <span className="text-sm text-ink/70">{view.detail}</span> : null}
+                </div>
+                {view.note ? <p className="mt-2 text-sm text-ink/70">{view.note}</p> : null}
+                <Link
+                  href={view.href}
+                  className="relative z-10 mt-2 inline-flex min-h-[var(--size-touch)] items-center self-start text-sm font-medium underline underline-offset-4"
+                >
+                  {view.linkLabel}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
-
-      <p className="mt-10 text-sm">
-        <Link href="/" className="underline underline-offset-4">
-          {fi.common.back}
-        </Link>
-      </p>
     </AppShell>
   );
 }
