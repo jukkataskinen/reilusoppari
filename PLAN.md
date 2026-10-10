@@ -363,6 +363,9 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
       sähköpostilla myös vuokrasuhdetta luotaessa
 - [x] Poista kutsu (vahvistus), poista vuokrasuhdeluonnos (vahvistus; syy
       näkyy, jos poisto ei ole mahdollinen), ks. DECISIONS.md 2026-10-10
+- [x] Vuokranantaja ei voi antaa omaa osoitettaan vuokralaisen osoitteeksi
+      eikä liittyä omaan vuokrasuhteeseensa vuokralaisena; jo syntyneen tilan
+      voi korjata vuokrasuhteen sivulla (Korjaa sähköposti / Poista kutsu)
 - [ ] Vuokralaisen lisääminen jälkikäteen (esim. kutsun poiston jälkeen).
       Nyt vuokrasuhteen voi poistaa ja luoda uudelleen.
 

@@ -18,6 +18,8 @@ import { tenancyFieldName, tenancyFormToInput, tenancySchema } from "@/lib/tenan
 import { inviteUrl } from "@/lib/tenancy/invite";
 import {
   inviteEmailSchema,
+  isOwnEmail,
+  OWN_EMAIL_MESSAGE,
   KUTSUSAHKOPOSTIRAJA,
   KUTSUSAHKOPOSTIRAJA_VIESTI,
   PENDING_PARTY_MESSAGES,
@@ -87,6 +89,17 @@ export async function createTenancyAction(
   if (!parsed.success) {
     return { errors: fieldErrors(parsed.error, tenancyFieldName) };
   }
+
+  // Oma osoite vuokralaisen kohdalla on lähes aina vahinko, ja se johtaisi
+  // tilaan, jossa vuokranantaja on oman vuokrasuhteensa vuokralainen (Jukan
+  // havainto 10.10.2026). Liittyminen estetään myös kutsun puolella.
+  const ownEmailErrors: Record<string, string> = {};
+  parsed.data.tenants.forEach((tenant, index) => {
+    if (isOwnEmail(tenant.email, user.email)) {
+      ownEmailErrors[`tenantEmail${index}`] = OWN_EMAIL_MESSAGE;
+    }
+  });
+  if (Object.keys(ownEmailErrors).length > 0) return { errors: ownEmailErrors };
 
   try {
     const { tenancy, invites } = await createTenancy(user.id, parsed.data);
@@ -209,6 +222,7 @@ export async function changeInviteEmailAction(
 
   const parsed = inviteEmailSchema.safeParse({ email: formData.get("email") ?? "" });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  if (isOwnEmail(parsed.data.email, user.email)) return { errors: { email: OWN_EMAIL_MESSAGE } };
 
   if (!(await inviteEmailAllowed(user.id))) return { message: KUTSUSAHKOPOSTIRAJA_VIESTI };
 

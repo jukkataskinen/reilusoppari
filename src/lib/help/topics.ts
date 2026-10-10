@@ -172,7 +172,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: "Uusi vuokrasuhde",
         steps: [
           "Avaa asunto ja valitse Uusi vuokrasuhde.",
-          "Kirjoita vuokralaisen nimi ja sähköposti. Kutsu ja kirjautuminen menevät tähän osoitteeseen.",
+          "Kirjoita vuokralaisen nimi ja sähköposti. Kutsu ja kirjautuminen menevät tähän osoitteeseen. Omaa osoitettasi et voi antaa vuokralaisen osoitteeksi.",
           "Jos vuokralaisia on kaksi, valitse Lisää toinen vuokralainen. Heillä pitää olla eri sähköpostit.",
           "Kirjoita alkupäivä, vuokra kuukaudessa, eräpäivä ja vakuus.",
           "Jos sopimus on määräaikainen, valitse Määräaikainen ja kirjoita päättymispäivä. Muuten sopimus on voimassa toistaiseksi.",
@@ -199,6 +199,22 @@ export const HELP_TOPICS: HelpTopic[] = [
         bullets: [
           "Osoitteen voi korjata vain, jos vuokralainen ei ole vielä liittynyt. Liittynyt vuokralainen hallitsee itse omaa sähköpostiaan.",
           "Kun sopimus on lähetetty allekirjoitettavaksi, osoitetta ei voi enää korjata.",
+        ],
+      },
+      {
+        title: "Jos liityit itse vuokralaiseksi",
+        steps: [
+          "Avaa vuokrasuhde.",
+          "Vuokralaisen kohdalla lukee: Olet liittynyt omaan vuokrasuhteeseesi vuokralaisena.",
+          "Valitse Korjaa sähköposti.",
+          "Kirjoita vuokralaisen oma osoite ja valitse Tallenna ja lähetä kutsu.",
+          "Kutsu lähtee vuokralaiselle. Sinä et ole enää vuokralaisen paikalla.",
+        ],
+        bullets: [
+          "Näin käy, jos vuokralaisen osoitteeksi on kirjoitettu oma osoitteesi ja olet avannut kutsun. Nyt sovellus estää tämän.",
+          "Jos merkitsit katselmuksen valmiiksi vuokralaisen puolesta, merkintä poistuu. Vuokralainen tekee sen itse.",
+          "Voit myös valita Poista kutsu ja lisätä vuokralaisen myöhemmin.",
+          "Korjaus onnistuu vain ennen kuin sopimus on lähetetty allekirjoitettavaksi.",
         ],
       },
       {
@@ -273,6 +289,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         bullets: [
           "Kutsu ei ole voimassa: linkki on vanhentunut tai vuokranantaja on lähettänyt uuden. Katso, onko sähköpostiisi tullut uudempi kutsu, tai pyydä vuokranantajaa lähettämään kutsu uudelleen.",
           "Kutsu on toiselle osoitteelle: olet kirjautunut eri sähköpostilla. Valitse Kirjaudu ulos ja yritä toisella osoitteella.",
+          "Tämä on oma vuokrasuhteesi: avasit kutsun vuokranantajan tunnuksilla. Vuokranantaja ei voi liittyä omaan vuokrasuhteeseensa vuokralaisena.",
           "Odota hetki: linkkiä on avattu monta kertaa lyhyessä ajassa. Yritä hetken päästä uudelleen.",
         ],
       },

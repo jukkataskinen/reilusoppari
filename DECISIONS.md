@@ -2158,3 +2158,23 @@ kirjoitetaan palveluroolilla, joten RLS ei ole tässä suoja. Kirjoituksissa
 ehto toistetaan (`user_id is null`, tila), jotta väliin ehtinyt liittyminen
 tai allekirjoitus ei jää alle.
 
+
+## 2026-10-10 — Vuokranantaja ei voi olla oman vuokrasuhteensa vuokralainen
+
+Jukka kirjoitti kutsuun oman osoitteensa ja liittyi kutsusta omalla
+tilillään. Vuokralaisen vaiheet (katselmuksen avaus ja valmiiksi merkintä)
+jäivät mahdottomiksi, ja kutsun hallinta piiloutui, koska vuokralainen oli
+"liittynyt".
+
+**Estetään kahdessa kohdassa:** luonnissa ja osoitteen korjauksessa oma
+osoite on kenttävirhe, ja kutsun lunastus palauttaa `own_tenancy`, jos
+lunastaja on vuokrasuhteen vuokranantaja (kutsu ei kulu). Jälkimmäinen
+riittää yksinkin, joten esto ei nojaa siihen, että käyttäjän osoite pysyy
+samana.
+
+**Jo syntynyt tila korjataan vuokranantajan omilla napeilla**, ei
+tukipyynnöllä: vuokralaisen paikka, jolla on vuokranantajan tili, käsitellään
+liittymättömänä (`isSelfJoined`), mutta vain ennen allekirjoitusta, ja
+korjaus tyhjentää `user_id`, `joined_at` ja katselmuksen vuokralaisleimat.
+Uudelleenlähetystä ei näytetä tässä tilassa, koska kutsu lähtisi taas omaan
+osoitteeseen. Lokiin `tenancy.invite.self_join_cleared`.

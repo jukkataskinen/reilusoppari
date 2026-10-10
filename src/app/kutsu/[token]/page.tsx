@@ -84,6 +84,37 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       redirect(`/vuokrasuhteet/${result.tenancyId}`);
     }
 
+    /*
+      Vuokranantaja avasi oman vuokrasuhteensa kutsun. Hänelle ei kerrota
+      "väärästä tilistä" vaan siitä, mitä oikeasti tapahtui ja mitä tehdä:
+      kutsu on todennäköisesti mennyt hänen omaan osoitteeseensa vahingossa.
+    */
+    if (result.reason === "own_tenancy") {
+      return (
+        <AppShell nav={false}>
+          <div className="py-10">
+            <h1 className="text-2xl">Tämä on oma vuokrasuhteesi</h1>
+            <p className="mt-3 text-ink/70">
+              Et voi liittyä omaan vuokrasuhteeseesi vuokralaisena. Jos kutsu tuli omaan
+              sähköpostiisi, vuokralaisen osoitteeksi on kirjoitettu sinun osoitteesi.
+            </p>
+            <p className="mt-3 text-ink/70">
+              Korjaa osoite vuokrasuhteen sivulla: valitse vuokralaisen kohdalta Korjaa sähköposti
+              ja kirjoita vuokralaisen oma osoite. Kutsu lähtee silloin hänelle.
+            </p>
+            <p className="mt-6">
+              <Link
+                href={`/vuokrasuhteet/${preview.tenancyId}`}
+                className="inline-flex min-h-[var(--size-touch)] items-center rounded-full bg-ink px-5 text-sm font-medium text-paper"
+              >
+                Avaa vuokrasuhde
+              </Link>
+            </p>
+          </div>
+        </AppShell>
+      );
+    }
+
     return (
       <AppShell nav={false}>
         <div className="py-10">

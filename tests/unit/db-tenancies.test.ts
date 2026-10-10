@@ -383,6 +383,68 @@ describe.skipIf(!RUN)("kutsun korjaus ja vuokrasuhteen poisto (integraatio, live
     expect(parties.filter((p) => p.role === "tenant")).toHaveLength(0);
   });
 
+  it("vuokranantaja ei voi liittyä omaan vuokrasuhteeseensa, eikä kutsu kulu", async () => {
+    const landlord = await createUser("k-c6");
+    const propertyId = await createTestProperty(landlord);
+    const ownEmail = `${PREFIX}-k-c6@example.invalid`;
+    const { tenancy, invites } = await createTenancy(
+      landlord,
+      input(propertyId, { tenants: [{ name: "Minä", email: ownEmail }] }),
+    );
+    created.tenancies.push(tenancy.id);
+
+    expect(await acceptInvite(invites[0].token, landlord, ownEmail)).toEqual({
+      ok: false,
+      reason: "own_tenancy",
+    });
+    const tenantParty = (await listParties(landlord, tenancy.id)).find((p) => p.role === "tenant");
+    expect(tenantParty?.userId).toBeNull();
+    expect(await findTenancyByInvite(invites[0].token)).not.toBeNull();
+  });
+
+  it("itse liittyneen vuokranantajan paikan voi korjata, ja leimat tyhjenevät", async () => {
+    const { landlord, tenancy, tenantParty } = await setup("c7");
+    // Vanha virhetila suoraan kantaan: ennen korjausta tähän pääsi kutsulla.
+    await getServiceClient()
+      .from("rs_tenancy_parties")
+      .update({
+        user_id: landlord,
+        joined_at: new Date().toISOString(),
+        first_seen_inspection_at: new Date().toISOString(),
+        inspection_ready_at: new Date().toISOString(),
+      })
+      .eq("id", tenantParty.id);
+
+    const uusiOsoite = `${PREFIX}-c7-oikea@example.invalid`;
+    const result = await changeInviteEmail(landlord, tenancy.id, tenantParty.id, uusiOsoite);
+    expect(result.ok).toBe(true);
+
+    const { data } = await getServiceClient()
+      .from("rs_tenancy_parties")
+      .select("user_id, joined_at, first_seen_inspection_at, inspection_ready_at, invite_email")
+      .eq("id", tenantParty.id)
+      .single();
+    expect(data).toEqual({
+      user_id: null,
+      joined_at: null,
+      first_seen_inspection_at: null,
+      inspection_ready_at: null,
+      invite_email: uusiOsoite,
+    });
+  });
+
+  it("itse liittyneen vuokranantajan kutsun voi poistaa", async () => {
+    const { landlord, tenancy, tenantParty } = await setup("c8");
+    await getServiceClient()
+      .from("rs_tenancy_parties")
+      .update({ user_id: landlord, joined_at: new Date().toISOString() })
+      .eq("id", tenantParty.id);
+
+    expect(await removeInvite(landlord, tenancy.id, tenantParty.id)).toEqual({ ok: true });
+    const parties = await listParties(landlord, tenancy.id);
+    expect(parties.filter((p) => p.role === "tenant")).toHaveLength(0);
+  });
+
   it("luonnoksen voi poistaa, mutta vain vuokranantaja", async () => {
     const { landlord, tenancy } = await setup("c5");
     const outsider = await createUser("x-c5");

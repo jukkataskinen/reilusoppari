@@ -24,6 +24,11 @@ const SECONDARY =
  *
  * Liittyneelle ei näytetä mitään näistä: hän hallitsee omaa tiliään.
  *
+ * Poikkeus: jos vuokralaisen paikalle on liittynyt vuokranantaja itse
+ * (`selfJoined`, kutsu omaan osoitteeseen vahingossa), paikka on korjattava.
+ * Silloin näytetään selitys sekä Korjaa sähköposti ja Poista kutsu, mutta
+ * ei uudelleenlähetystä: se lähtisi taas omaan osoitteeseen.
+ *
  * Uusi linkki näytetään tässä eikä ohjata minnekään: tunniste ei saa päätyä
  * osoiteriville (ks. `actions.ts`). Vanhan linkin mitätöityminen sanotaan
  * ääneen, koska vuokranantaja on voinut jo lähettää sen.
@@ -33,12 +38,15 @@ export function InviteRow({
   partyId,
   email,
   joined,
+  selfJoined = false,
   editable,
 }: {
   tenancyId: string;
   partyId: string;
   email: string;
   joined: boolean;
+  /** Vuokranantaja on liittynyt vuokralaisen paikalle omalla tilillään. */
+  selfJoined?: boolean;
   /** Voiko osoitetta vielä korjata ja kutsun poistaa (ennen allekirjoitusta). */
   editable: boolean;
 }) {
@@ -78,16 +86,28 @@ export function InviteRow({
         {joined ? "Liittynyt" : "Ei ole vielä liittynyt"}
       </p>
 
+      {selfJoined && !issued ? (
+        <p className="mt-3 rounded-[10px] bg-cloud p-3 text-sm">
+          Olet liittynyt omaan vuokrasuhteeseesi vuokralaisena. Korjaa vuokralaisen sähköposti,
+          niin kutsu lähtee oikealle henkilölle.
+          {editable
+            ? null
+            : " Sopimus on jo lähetetty allekirjoitettavaksi, joten korjaus ei onnistu täältä. Ota yhteyttä tukeen."}
+        </p>
+      ) : null}
+
       {joined ? null : (
         <>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Form action={resendAction}>
-              <input type="hidden" name="tenancyId" value={tenancyId} />
-              <input type="hidden" name="partyId" value={partyId} />
-              <button type="submit" disabled={resendPending} className={SECONDARY}>
-                {resendPending ? "Lähetetään…" : "Lähetä kutsu uudelleen"}
-              </button>
-            </Form>
+            {selfJoined ? null : (
+              <Form action={resendAction}>
+                <input type="hidden" name="tenancyId" value={tenancyId} />
+                <input type="hidden" name="partyId" value={partyId} />
+                <button type="submit" disabled={resendPending} className={SECONDARY}>
+                  {resendPending ? "Lähetetään…" : "Lähetä kutsu uudelleen"}
+                </button>
+              </Form>
+            )}
             {editable ? (
               <>
                 <button
@@ -128,7 +148,8 @@ export function InviteRow({
                   inputMode="email"
                   autoComplete="off"
                   required
-                  defaultValue={issued?.email ?? email}
+                  // Oma osoite ei kelpaa, joten sitä ei tarjota valmiiksi.
+                  defaultValue={selfJoined && !issued ? "" : (issued?.email ?? email)}
                   aria-invalid={emailError ? true : undefined}
                   aria-describedby={emailError ? `${prefix}-email-virhe` : undefined}
                   className={

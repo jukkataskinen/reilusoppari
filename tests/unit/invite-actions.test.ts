@@ -28,8 +28,9 @@ vi.mock("@/lib/auth/session", () => ({
 }));
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+const createTenancy = vi.fn();
 vi.mock("@/lib/db/tenancies", () => ({
-  createTenancy: vi.fn(),
+  createTenancy,
   changeInviteEmail,
   resendInvite,
   removeInvite,
@@ -45,6 +46,7 @@ vi.mock("@/lib/security/rate-limit", () => ({ checkRateLimit }));
 
 const {
   changeInviteEmailAction,
+  createTenancyAction,
   deleteTenancyAction,
   removeInviteAction,
   resendInviteAction,
@@ -117,6 +119,14 @@ describe("sähköpostin korjaus", () => {
     const state = await changeInviteEmailAction({}, form({ ...IDS, email: "x@example.invalid" }));
     expect(state.message).toMatch(/jo liittynyt/);
     expect(sendInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it("oma osoite hylätään kentän virheenä ennen kantaa", async () => {
+    const state = await changeInviteEmailAction({}, form({ ...IDS, email: " V@Example.invalid " }));
+    expect(state.errors?.email).toBe("Tämä on oma sähköpostiosoitteesi. Anna vuokralaisen osoite.");
+    expect(changeInviteEmail).not.toHaveBeenCalled();
+    expect(sendInviteEmail).not.toHaveBeenCalled();
+    expect(checkRateLimit).not.toHaveBeenCalled();
   });
 
   it("toisen vuokralaisen osoite näkyy kentän virheenä", async () => {
@@ -209,5 +219,49 @@ describe("vuokrasuhteen poisto", () => {
     await expect(
       deleteTenancyAction({}, form({ tenancyId: IDS.tenancyId, confirm: "yes" })),
     ).rejects.toThrow("redirect /vuokrasuhteet?poistettu=1");
+  });
+});
+
+describe("vuokrasuhteen luonti", () => {
+  function tenancyForm(tenants: Array<{ name: string; email: string }>): FormData {
+    const values: Record<string, string> = {
+      propertyId: "11111111-1111-4111-8111-111111111111",
+      startDate: "2026-11-01",
+      rentAmount: "850",
+      rentDueDay: "5",
+      depositAmount: "1700",
+    };
+    tenants.forEach((tenant, index) => {
+      values[`tenantName${index}`] = tenant.name;
+      values[`tenantEmail${index}`] = tenant.email;
+    });
+    return form(values);
+  }
+
+  it("oma osoite vuokralaisen kohdalla on kentän virhe, eikä mitään luoda", async () => {
+    const state = await createTenancyAction(
+      { errors: {} },
+      tenancyForm([
+        { name: "Maija", email: "maija@example.invalid" },
+        { name: "Minä", email: "V@EXAMPLE.invalid" },
+      ]),
+    );
+    expect(state.errors).toEqual({
+      tenantEmail1: "Tämä on oma sähköpostiosoitteesi. Anna vuokralaisen osoite.",
+    });
+    expect(createTenancy).not.toHaveBeenCalled();
+    expect(sendInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it("kaksi vuokralaista samalla osoitteella hylätään", async () => {
+    const state = await createTenancyAction(
+      { errors: {} },
+      tenancyForm([
+        { name: "Maija", email: "maija@example.invalid" },
+        { name: "Matti", email: "Maija@example.invalid" },
+      ]),
+    );
+    expect(state.errors.tenants).toMatch(/eri sähköpostiosoitteet/);
+    expect(createTenancy).not.toHaveBeenCalled();
   });
 });
