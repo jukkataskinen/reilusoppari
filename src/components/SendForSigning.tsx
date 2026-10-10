@@ -18,11 +18,14 @@ export function SendForSigning({
   ready,
   message,
   missing,
+  withInspection,
 }: {
   tenancyId: string;
   ready: boolean;
   message: string | null;
   missing: string[];
+  /** Lähteekö lukittu alkukatselmuksen pöytäkirja samalla kierroksella. */
+  withInspection: boolean;
 }) {
   const [state, formAction, pending] = useActionState(sendForSigningAction, initialState);
 
@@ -34,6 +37,11 @@ export function SendForSigning({
       <p className="mt-2 text-sm text-ink/70">
         Molemmat osapuolet saavat oman linkkinsä sähköpostiinsa. Allekirjoitus tehdään
         pankkitunnuksilla tai mobiilivarmenteella.
+      </p>
+      <p className="mt-2 text-sm text-ink/70">
+        {withInspection
+          ? "Alkukatselmus on lukittu, joten sen pöytäkirja allekirjoitetaan samalla kertaa."
+          : "Alkukatselmuksen pöytäkirja allekirjoitetaan myöhemmin erikseen, kun katselmus on lukittu."}
       </p>
 
       {message ? (

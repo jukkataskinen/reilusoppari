@@ -79,8 +79,9 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Lisää asunto.",
           "Luo asunnolle vuokrasuhde ja anna vuokralaisen sähköposti.",
           "Kutsu lähtee vuokralaiselle sähköpostilla.",
-          "Täytä sopimus ja tee alkukatselmus yhdessä vuokralaisen kanssa.",
-          "Lähetä sopimus allekirjoitettavaksi.",
+          "Täytä sopimus ja lähetä se allekirjoitettavaksi.",
+          "Tehkää alkukatselmus muuton yhteydessä, viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta.",
+          "Kun katselmus on lukittu, lähetä sen pöytäkirja allekirjoitettavaksi.",
         ],
       },
       {
@@ -88,8 +89,9 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           "Avaa vuokranantajalta saamasi kutsulinkki.",
           "Kirjaudu samalla sähköpostilla, johon kutsu tuli.",
-          "Lue sopimusluonnos ja kuvaa asunto alkukatselmuksessa.",
-          "Allekirjoita, kun saat linkin sähköpostiisi.",
+          "Lue sopimusluonnos. Allekirjoita sopimus, kun saat linkin sähköpostiisi.",
+          "Kuvaa asunto alkukatselmuksessa, kun muutat.",
+          "Allekirjoita katselmuksen pöytäkirja, kun saat sen linkin sähköpostiisi.",
         ],
       },
       {
@@ -246,6 +248,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: "Vuokrasuhteen sivu",
         bullets: [
           "Ylhäällä näkyvät alkupäivä, kesto, vuokra, eräpäivä ja vakuus.",
+          "Kohdassa Alkukatselmus näet, onko katselmus tehty ja mihin päivään mennessä se pitää tehdä.",
           "Painikkeista pääset sopimukseen, osapuolten tietoihin, katselmukseen, allekirjoitukseen, vuokranmaksuun, huoltokirjaan ja päättymiseen.",
           "Kulut näkyvät vain vuokranantajalle.",
           "Vuokralaisesta näet, onko hän jo liittynyt. Jos ei ole, voit lähettää kutsun uudelleen, korjata sähköpostin tai poistaa kutsun.",
@@ -254,8 +257,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         title: "Vuokrasuhteen tila",
         bullets: [
-          "Katselmus kesken: sopimusta täytetään ja asuntoa kuvataan.",
-          "Odottaa allekirjoitusta: asiakirjat on lähetetty allekirjoitettaviksi.",
+          "Luonnos: sopimusta täytetään, eikä sitä ole vielä lähetetty.",
+          "Odottaa allekirjoitusta: sopimus on lähetetty allekirjoitettavaksi.",
           "Voimassa: sopimus on allekirjoitettu.",
           "Päättymässä: vuokrasuhde on irtisanottu.",
           "Päättynyt: loppukatselmus on allekirjoitettu.",
@@ -301,7 +304,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     group: "Asunto ja vuokrasuhde",
     title: "Vuokrasopimus",
     summary: "Vuokranantaja täyttää sopimuksen ehdot lomakkeella. Molemmat näkevät luonnoksen ja voivat kommentoida.",
-    highlights: ["Esikatselu PDF-tiedostona", "Vuokralainen voi pyytää muutoksia kommentilla", "Allekirjoitus vasta alkukatselmuksen jälkeen"],
+    highlights: ["Esikatselu PDF-tiedostona", "Vuokralainen voi pyytää muutoksia kommentilla", "Allekirjoitus heti, kun tiedot ovat valmiit"],
     roles: "both",
     sections: [
       {
@@ -393,8 +396,8 @@ export const HELP_TOPICS: HelpTopic[] = [
     slug: "katselmus",
     group: "Katselmus ja allekirjoitus",
     title: "Alkukatselmus",
-    summary: "Molemmat kuvaavat asunnon ennen allekirjoitusta. Kuvat auttavat välttämään riitoja lopussa.",
-    highlights: ["Kuvaa huone kerrallaan", "Toisen kuvat näkyvät heti", "Kuvia ei voi poistaa eikä muuttaa"],
+    summary: "Molemmat kuvaavat asunnon muuton yhteydessä. Kuvat auttavat välttämään riitoja lopussa.",
+    highlights: ["Viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta", "Toisen kuvat näkyvät heti", "Kuvia ei voi poistaa eikä muuttaa"],
     roles: "both",
     sections: [
       {
@@ -440,7 +443,24 @@ export const HELP_TOPICS: HelpTopic[] = [
         bullets: [
           "Pöytäkirja syntyy, kun katselmus lukitaan. Avaa se valinnalla Avaa pöytäkirja.",
           "Pöytäkirjassa ovat kuvat huoneittain, selitteet, kuvaaja ja kuvan vastaanottoaika.",
-          "Pöytäkirja allekirjoitetaan yhdessä sopimuksen kanssa.",
+        ],
+      },
+      {
+        title: "Pöytäkirjan allekirjoitus",
+        steps: [
+          "Vuokranantaja avaa vuokrasuhteen ja valitsee Allekirjoitus.",
+          "Kohdassa Alkukatselmuksen pöytäkirja hän valitsee Lähetä pöytäkirja allekirjoitettavaksi.",
+          "Molemmat saavat linkin sähköpostiinsa ja allekirjoittavat pankkitunnuksilla tai mobiilivarmenteella.",
+          "Jos katselmus on lukittu jo ennen kuin sopimus lähetetään, pöytäkirja allekirjoitetaan sopimuksen kanssa samalla kertaa.",
+        ],
+      },
+      {
+        title: "Määräaika",
+        bullets: [
+          "Katselmus tehdään viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta.",
+          "Määräpäivä näkyy vuokrasuhteen sivulla kohdassa Alkukatselmus ja katselmuksen sivulla.",
+          "Jos katselmusta ei ole lukittu, molemmat saavat muistutuksen 7 päivän ja 14 päivän kohdalla.",
+          "Jos katselmusta ei tehdä lainkaan, loppukatselmuksessa ei ole vertailukuvia. Vuokratodistuksessa kerrotaan, ettei alkukatselmusta tehty.",
         ],
       },
     ],
@@ -455,14 +475,13 @@ export const HELP_TOPICS: HelpTopic[] = [
     slug: "allekirjoitus",
     group: "Katselmus ja allekirjoitus",
     title: "Allekirjoitus ja maksu",
-    summary: "Sopimus ja alkukatselmuksen pöytäkirja allekirjoitetaan yhdessä pankkitunnuksilla.",
-    highlights: ["Yksi tunnistautuminen kahdelle asiakirjalle", "Ensimmäinen vuokrasuhde on ilmainen", "Vuokralainen ei maksa mitään"],
+    summary: "Sopimus allekirjoitetaan heti pankkitunnuksilla. Alkukatselmuksen pöytäkirja allekirjoitetaan erikseen muuton jälkeen.",
+    highlights: ["Sopimus ei odota katselmusta", "Ensimmäinen vuokrasuhde on ilmainen", "Vuokralainen ei maksa mitään"],
     roles: "both",
     sections: [
       {
         title: "Ennen lähettämistä",
         bullets: [
-          "Alkukatselmus on lukittu.",
           "Osapuolten tiedot on täytetty.",
           "Vuokranantaja on vahvistanut vuokrasuhteen maksun.",
           "Jos jokin puuttuu, sivu kertoo mitä.",
@@ -478,13 +497,22 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
-        title: "Allekirjoittaminen",
+        title: "Sopimuksen allekirjoittaminen",
         steps: [
-          "Vuokranantaja valitsee Lähetä allekirjoitettavaksi.",
+          "Vuokranantaja valitsee kohdassa Vuokrasopimus Lähetä allekirjoitettavaksi.",
           "Jokainen saa oman allekirjoituslinkin sähköpostiinsa.",
           "Avaa linkki ja tunnistaudu pankkitunnuksilla tai mobiilivarmenteella.",
           "Sivulla näet, kuka on jo allekirjoittanut.",
           "Kun kaikki ovat allekirjoittaneet, vuokrasuhde on voimassa ja vuokrakuukaudet syntyvät.",
+        ],
+      },
+      {
+        title: "Alkukatselmuksen pöytäkirja",
+        steps: [
+          "Kun sopimus on lähetetty, sivulle tulee kohta Alkukatselmuksen pöytäkirja.",
+          "Kun alkukatselmus on lukittu, vuokranantaja valitsee Lähetä pöytäkirja allekirjoitettavaksi.",
+          "Pöytäkirja allekirjoitetaan samalla tavalla kuin sopimus. Siitä ei makseta erikseen.",
+          "Jos katselmus oli lukittu jo sopimusta lähetettäessä, pöytäkirja lähti sopimuksen mukana, eikä sitä tarvitse lähettää uudelleen.",
         ],
       },
     ],
@@ -655,7 +683,11 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
     ],
-    tips: ["Tavanomainen kuluminen ei ole vahinko.", "Lukitussääntö on sama kuin alussa: vuokralaisella on vähintään 24 tuntia aikaa."],
+    tips: [
+      "Tavanomainen kuluminen ei ole vahinko.",
+      "Lukitussääntö on sama kuin alussa: vuokralaisella on vähintään 24 tuntia aikaa.",
+      "Jos alkukatselmusta ei lukittu vuokrasuhteen alussa, vertailukuvia ei ole. Loppukatselmus tehdään silti samalla tavalla.",
+    ],
     related: ["katselmus", "todistukset"],
   },
   {

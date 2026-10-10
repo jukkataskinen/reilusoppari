@@ -4,7 +4,8 @@
  * ===========================================================================
  * TÄMÄ ON SE HETKI, JOLLOIN VUOKRASUHDE ALKAA
  *
- * Kun kaikki ovat allekirjoittaneet, tapahtuu neljä asiaa:
+ * Kun kaikki ovat allekirjoittaneet sopimuksen (ja pöytäkirjan, jos se oli
+ * samalla kierroksella), tapahtuu neljä asiaa:
  *   1. Sinetöidyt PDF:t ladataan omaan Storageen. Latauslinkkiä ei
  *      tallenneta — se vanhenee, ja vanhentunut linkki arkistossa on sama
  *      kuin ei asiakirjaa.
@@ -169,21 +170,42 @@ export async function handleRoundCompleted(
     Kierros on valmis silloin kun se on valmis, riippumatta siitä montako
     tiedostoa siitä osasimme lukea.
   */
+  /*
+    Pöytäkirja merkitään allekirjoitetuksi vain, jos se oli TÄLLÄ kierroksella.
+
+    Sopimus lähtee nykyään usein ilman pöytäkirjaa (Jukan päätös 10.10.2026).
+    Silloin katselmus voi olla vielä kesken, eikä sopimuksen allekirjoitus saa
+    merkitä sitä allekirjoitetuksi. Kierroksen tunniste rivillä kertoo, kuuluiko
+    pöytäkirja tähän kierrokseen.
+  */
+  const { data: inspectionRow } = await supabase
+    .from("rs_inspections")
+    .select("esinetti_round_id")
+    .eq("tenancy_id", tenancyId)
+    .eq("kind", "initial")
+    .maybeSingle();
+  const inspectionOnThisRound =
+    (inspectionRow as { esinetti_round_id: string | null } | null)?.esinetti_round_id ===
+    event.roundId;
+
   await Promise.all([
     supabase
       .from("rs_contracts")
       .update({ signed_at: now, updated_at: now })
       .eq("tenancy_id", tenancyId),
-    supabase
-      .from("rs_inspections")
-      .update({ status: "signed", signed_at: now, updated_at: now })
-      .eq("tenancy_id", tenancyId)
-      .eq("kind", "initial"),
+    inspectionOnThisRound
+      ? supabase
+          .from("rs_inspections")
+          .update({ status: "signed", signed_at: now, updated_at: now })
+          .eq("tenancy_id", tenancyId)
+          .eq("kind", "initial")
+      : Promise.resolve(),
   ]);
 
   for (const document of event.documents) {
     const kind = documentKind(document.name);
     if (!kind) continue;
+    if (kind === "inspection" && !inspectionOnThisRound) continue;
 
     const path = await storeSealed(tenancyId, event.roundId, document.id, document.name);
 
@@ -254,6 +276,67 @@ export async function handleRoundCompleted(
   return { handled: true, alreadyDone: false };
 }
 
+
+/**
+ * Alkukatselmuksen pöytäkirjan oma kierros on valmis (Jukan päätös 10.10.2026).
+ *
+ * Vuokrasuhde on jo voimassa sopimuksen allekirjoituksesta, joten tila ei
+ * muutu eikä vuokrakausia luoda. Pöytäkirja tallennetaan ja merkitään
+ * allekirjoitetuksi, ja allekirjoittajien henkilöllisyys todennetuksi.
+ *
+ * Idempotentti: `signed_at` katselmuksella kertoo, että työ on tehty.
+ */
+export async function handleInspectionRoundCompleted(
+  event: WebhookEvent,
+  tenancyId: string,
+): Promise<CompletionOutcome> {
+  const supabase = getServiceClient();
+
+  const { data: inspection } = await supabase
+    .from("rs_inspections")
+    .select("id, signed_at, esinetti_round_id")
+    .eq("tenancy_id", tenancyId)
+    .eq("kind", "initial")
+    .maybeSingle();
+
+  const row = inspection as {
+    id: string;
+    signed_at: string | null;
+    esinetti_round_id: string | null;
+  } | null;
+  if (!row) return { handled: false, reason: "Alkukatselmusta ei löytynyt." };
+  if (row.signed_at) return { handled: true, alreadyDone: true };
+  // Vanha tai vieras kierros: rivillä on toinen tunniste. Ei arvata.
+  if (row.esinetti_round_id !== event.roundId) {
+    return { handled: false, reason: "Kierros ei kuulu tähän pöytäkirjaan." };
+  }
+
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("rs_inspections")
+    .update({ status: "signed", signed_at: now, updated_at: now })
+    .eq("id", row.id);
+
+  for (const document of event.documents) {
+    if (documentKind(document.name) !== "inspection") continue;
+    const path = await storeSealed(tenancyId, event.roundId, document.id, document.name);
+
+    await supabase
+      .from("rs_inspections")
+      .update({
+        esinetti_document_id: document.id,
+        sealed_sha256: document.sealedSha256,
+        sealed_path: path,
+        updated_at: now,
+      })
+      .eq("id", row.id);
+  }
+
+  await markIdentityVerified(tenancyId, event.signers);
+
+  return { handled: true, alreadyDone: false };
+}
 
 /**
  * Loppukatselmuksen kierros on valmis (CLAUDE.md 5.8).

@@ -6,6 +6,7 @@ import { getTenancy, getTenancyProperty } from "@/lib/db/tenancies";
 import { getInspectionOverview } from "@/lib/db/inspections";
 import { inspectionRooms, mergeRooms, PHOTO_GUIDANCE, roomSlug } from "@/lib/inspection/rooms";
 import { lockAvailableAt } from "@/lib/inspection/lock";
+import { formatFinnishDate, inspectionDeadlineView } from "@/lib/inspection/deadline";
 import { AppShell } from "@/components/AppShell";
 import { InspectionControls } from "@/components/InspectionControls";
 import { fi } from "@/i18n/fi";
@@ -54,6 +55,12 @@ export default async function InspectionPage({ params }: { params: Promise<{ id:
 
   const locked = overview.inspection.status !== "open";
   const waitUntil = lockAvailableAt(overview.lockState);
+  // Määräaika 14 päivää vuokrasuhteen alkamisesta (Jukan päätös 10.10.2026).
+  const deadline = inspectionDeadlineView(
+    tenancy.startDate,
+    overview.inspection.status,
+    new Date().toISOString().slice(0, 10),
+  );
 
   return (
     <AppShell>
@@ -67,12 +74,27 @@ export default async function InspectionPage({ params }: { params: Promise<{ id:
             Kuvia ei voi enää lisätä. Uudet havainnot kirjataan huoltokirjaan, jossa ne pysyvät
             erillään siitä, millainen asunto oli vuokrasuhteen alkaessa.
           </p>
-          <Link
-            href={`/vuokrasuhteet/${id}/katselmus/poytakirja`}
-            className="mt-4 inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
-          >
-            Avaa pöytäkirja
-          </Link>
+          <p className="mt-2 text-sm text-ink/70">
+            {overview.inspection.status === "signed"
+              ? "Pöytäkirja on allekirjoitettu."
+              : "Pöytäkirja allekirjoitetaan pankkitunnuksilla. Tilanteen näet Allekirjoitus-sivulta."}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href={`/vuokrasuhteet/${id}/katselmus/poytakirja`}
+              className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+            >
+              Avaa pöytäkirja
+            </Link>
+            {overview.inspection.status === "signed" ? null : (
+              <Link
+                href={`/vuokrasuhteet/${id}/allekirjoitus`}
+                className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+              >
+                {fi.nav.signing}
+              </Link>
+            )}
+          </div>
         </div>
       ) : (
         <div className="mt-6 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
@@ -82,6 +104,13 @@ export default async function InspectionPage({ params }: { params: Promise<{ id:
             jälkeenpäin kumpikaan — se on se, mikä tekee pöytäkirjasta käyttökelpoisen, jos
             asunnon kunnosta tulee myöhemmin erimielisyyttä.
           </p>
+          {deadline.phase === "open" && deadline.deadline ? (
+            <p className={"mt-3 text-sm " + (deadline.overdue ? "text-coral" : "text-ink/70")}>
+              {deadline.overdue
+                ? `Määräaika oli ${formatFinnishDate(deadline.deadline)}. Tehkää katselmus silti mahdollisimman pian.`
+                : `Tehkää katselmus viimeistään ${formatFinnishDate(deadline.deadline)}, eli 14 päivän kuluessa vuokrasuhteen alkamisesta.`}
+            </p>
+          ) : null}
         </div>
       )}
 

@@ -4,8 +4,16 @@ import { createProperty } from "@/lib/db/properties";
 import { createTenancy, getTenancy } from "@/lib/db/tenancies";
 import { getOrCreateInspection } from "@/lib/db/inspections";
 import { savePartyDetails, listPartyDetails } from "@/lib/tenancy/party-details";
-import { sendForSigning, signingReadiness } from "@/lib/tenancy/signing";
-import { handleRoundCompleted } from "@/lib/tenancy/round-completed";
+import {
+  inspectionSigningReadiness,
+  sendForSigning,
+  sendInspectionForSigning,
+  signingReadiness,
+} from "@/lib/tenancy/signing";
+import {
+  handleInspectionRoundCompleted,
+  handleRoundCompleted,
+} from "@/lib/tenancy/round-completed";
 import { generateEncryptionKey } from "@/lib/identity/crypto";
 import { getEsinettiClient, resetEsinettiClientForTests } from "@/lib/esinetti";
 import type { WebhookEvent } from "@/lib/esinetti";
@@ -141,13 +149,17 @@ async function markPaidDirectly(tenancyId: string) {
     .eq("id", tenancyId);
 }
 
-function completedEvent(roundId: string, tenancyId: string): WebhookEvent {
+function completedEvent(
+  roundId: string,
+  tenancyId: string,
+  phase: "alku" | "katselmus" = "alku",
+): WebhookEvent {
   return {
     id: `evt_${roundId}`,
     event: "round.completed",
     createdAt: new Date().toISOString(),
     roundId,
-    externalRef: `tenancy:${tenancyId}:alku`,
+    externalRef: `tenancy:${tenancyId}:${phase}`,
     status: "completed",
     signers: [
       {
@@ -181,18 +193,16 @@ afterAll(async () => {
 });
 
 describe.skipIf(!RUN)("allekirjoituskierroksen ehdot", () => {
-  it("estyy ennen katselmuksen lukitusta", async () => {
+  it("ei odota katselmusta (Jukan päätös 10.10.2026)", async () => {
     /*
-      Sopimus ja pöytäkirja allekirjoitetaan yhdessä. Jos kierroksen voisi
-      lähettää ennen lukitusta, pöytäkirjaa ei olisi olemassa — ja
-      allekirjoitus koskisi vain sopimusta.
+      Sopimus tehdään yleensä ennen muuttoa, ja katselmus muuton yhteydessä.
+      Sopimuksen voi lähettää heti, kun tiedot ovat valmiit ja maksu tehty.
     */
     const { landlord, tenancyId } = await setup();
     await fillParties(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
 
-    const valmius = await signingReadiness(landlord, tenancyId);
-    expect(valmius.ready).toBe(false);
-    if (!valmius.ready) expect(valmius.reason).toBe("inspection_not_locked");
+    expect(await signingReadiness(landlord, tenancyId)).toEqual({ ready: true });
   }, 30_000);
 
   it("estyy jos osapuolten tiedot ovat kesken", async () => {
@@ -266,6 +276,17 @@ describe.skipIf(!RUN)("kierroksen lähetys", () => {
     ]);
 
     // Vuokrasuhde siirtyy allekirjoitustilaan.
+    expect((await getTenancy(landlord, tenancyId))?.status).toBe("signing");
+  }, 60_000);
+
+  it("ilman lukittua katselmusta lähtee vain sopimus", async () => {
+    const { landlord, tenancyId } = await setup();
+    await fillParties(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
+
+    const result = await sendForSigning(landlord, tenancyId);
+    expect(result.message ?? "ei virhettä").toBe("ei virhettä");
+    expect(result.round?.documents.map((doc) => doc.name)).toEqual(["Vuokrasopimus.pdf"]);
     expect((await getTenancy(landlord, tenancyId))?.status).toBe("signing");
   }, 60_000);
 
@@ -369,6 +390,67 @@ describe.skipIf(!RUN)("valmiin kierroksen käsittely", () => {
     );
     expect(outcome.handled).toBe(false);
   }, 30_000);
+});
+
+describe.skipIf(!RUN)("pöytäkirja omana kierroksenaan (10.10.2026)", () => {
+  it("ei ennen sopimusta: silloin pöytäkirja lähtisi sopimuksen mukana", async () => {
+    const { landlord, tenancyId } = await setup();
+    await fillParties(landlord, tenancyId);
+    await lockInspectionDirectly(landlord, tenancyId);
+
+    const valmius = await inspectionSigningReadiness(landlord, tenancyId);
+    expect(valmius.ready).toBe(false);
+    if (!valmius.ready) expect(valmius.reason).toBe("contract_not_sent");
+  }, 30_000);
+
+  it("sopimus ensin, katselmus muuton jälkeen", async () => {
+    const { landlord, tenancyId } = await setup();
+    await fillParties(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
+
+    // 1. Sopimus lähtee ja allekirjoitetaan ilman katselmusta.
+    const contract = await sendForSigning(landlord, tenancyId);
+    expect(contract.ok).toBe(true);
+    await handleRoundCompleted(completedEvent(contract.round!.id, tenancyId), tenancyId);
+    expect((await getTenancy(landlord, tenancyId))?.status).toBe("active");
+
+    // Sopimuksen allekirjoitus ei merkitse katselmusta allekirjoitetuksi.
+    const ennen = await getOrCreateInspection(landlord, tenancyId);
+    expect(ennen.status).toBe("open");
+    expect(ennen.signedAt).toBeNull();
+
+    // 2. Katselmus odottaa lukitusta.
+    const kesken = await inspectionSigningReadiness(landlord, tenancyId);
+    expect(kesken.ready).toBe(false);
+    if (!kesken.ready) expect(kesken.reason).toBe("inspection_not_locked");
+
+    // 3. Lukituksen jälkeen pöytäkirja lähtee omana kierroksenaan.
+    await lockInspectionDirectly(landlord, tenancyId);
+    expect(await inspectionSigningReadiness(landlord, tenancyId)).toEqual({ ready: true });
+
+    const sent = await sendInspectionForSigning(landlord, tenancyId);
+    expect(sent.message ?? "ei virhettä").toBe("ei virhettä");
+    expect(sent.round?.documents.map((doc) => doc.name)).toEqual(["Alkukatselmus.pdf"]);
+    expect(sent.round?.id).not.toBe(contract.round!.id);
+
+    const toinen = await inspectionSigningReadiness(landlord, tenancyId);
+    if (!toinen.ready) expect(toinen.reason).toBe("already_sent");
+
+    // 4. Valmis kierros merkitsee pöytäkirjan, ei muuta vuokrasuhdetta.
+    const event = completedEvent(sent.round!.id, tenancyId, "katselmus");
+    expect(await handleInspectionRoundCompleted(event, tenancyId)).toEqual({
+      handled: true,
+      alreadyDone: false,
+    });
+    expect(await handleInspectionRoundCompleted(event, tenancyId)).toEqual({
+      handled: true,
+      alreadyDone: true,
+    });
+
+    const jalkeen = await getOrCreateInspection(landlord, tenancyId);
+    expect(jalkeen.status).toBe("signed");
+    expect((await getTenancy(landlord, tenancyId))?.status).toBe("active");
+  }, 90_000);
 });
 
 describe.skipIf(!RUN)("mock on käytössä ilman avainta", () => {

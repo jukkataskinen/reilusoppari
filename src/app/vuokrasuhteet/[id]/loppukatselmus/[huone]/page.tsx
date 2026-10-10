@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy, getTenancyProperty } from "@/lib/db/tenancies";
-import { getInspectionOverview, photoUrl } from "@/lib/db/inspections";
+import { getInspectionOverview, initialPhotosForComparison, photoUrl } from "@/lib/db/inspections";
 import {
   findRoomBySlug,
   inspectionRooms,
@@ -50,7 +50,7 @@ export default async function FinalRoomPage({
 
   const [final, initial, property] = await Promise.all([
     getInspectionOverview(user.id, id, "final"),
-    getInspectionOverview(user.id, id, "initial"),
+    initialPhotosForComparison(user.id, id),
     getTenancyProperty(user.id, id),
   ]);
 

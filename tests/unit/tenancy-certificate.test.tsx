@@ -87,6 +87,19 @@ describe("tilastorivit", () => {
     const rows = buildStatRows({ ...DATA, stats: { months: 12 } });
     expect(rows.map((r) => r.label)).toEqual(["Vuokrasuhde"]);
   });
+
+  it("kertoo, jos alkukatselmusta ei tehty (10.10.2026)", () => {
+    // Sopimus ei enää odota katselmusta, joten se voi jäädä tekemättä.
+    const ilman = buildStatRows({ ...DATA, stats: { months: 12, initialInspectionDone: false } });
+    expect(ilman.find((r) => r.label === "Alkukatselmus")).toEqual({
+      label: "Alkukatselmus",
+      value: "Ei tehty",
+      detail: "Loppukatselmuksessa ei ollut vertailukuvia",
+    });
+
+    const kanssa = buildStatRows({ ...DATA, stats: { months: 12, initialInspectionDone: true } });
+    expect(kanssa.find((r) => r.label === "Alkukatselmus")?.value).toBe("Tehty vuokrasuhteen alussa");
+  });
 });
 
 describe("todistus mahtuu yhdelle sivulle", () => {

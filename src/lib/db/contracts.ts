@@ -36,6 +36,8 @@ export interface Contract {
   templateKey: string;
   templateVersion: number;
   terms: ContractTerms;
+  /** Sopimuksen allekirjoituskierros. Pöytäkirjalla voi olla oma (10.10.2026). */
+  esinettiRoundId: string | null;
   signedAt: string | null;
   sealedSha256: string | null;
 }
@@ -46,12 +48,13 @@ interface ContractRow {
   template_key: string;
   template_version: number;
   template_data: unknown;
+  esinetti_round_id: string | null;
   signed_at: string | null;
   sealed_sha256: string | null;
 }
 
 const COLUMNS =
-  "id, tenancy_id, template_key, template_version, template_data, signed_at, sealed_sha256";
+  "id, tenancy_id, template_key, template_version, template_data, esinetti_round_id, signed_at, sealed_sha256";
 
 /**
  * Tallennettu data luetaan zodilla takaisin.
@@ -76,6 +79,7 @@ function fromRow(row: ContractRow): Contract {
     templateKey: row.template_key,
     templateVersion: row.template_version,
     terms: parseTerms(row.template_data),
+    esinettiRoundId: row.esinetti_round_id,
     signedAt: row.signed_at,
     sealedSha256: row.sealed_sha256,
   };
@@ -116,8 +120,15 @@ export async function saveContractTerms(
 
   const supabase = getServiceClient();
 
+  /*
+    Lähetetty sopimus on lukittu, vaikka sitä ei olisi vielä allekirjoitettu.
+
+    Sopimus lähtee nyt allekirjoitettavaksi heti, kun tiedot ovat valmiit, ja
+    allekirjoitus voi kestää päiviä. Jos ehtoja voisi muuttaa sillä välin,
+    sovelluksessa näkyisi eri sopimus kuin se, jota allekirjoitetaan.
+  */
   const existing = await getContract(userId, tenancyId);
-  if (existing?.signedAt) return null;
+  if (existing?.signedAt || existing?.esinettiRoundId) return null;
 
   const { data, error } = await supabase
     .from("rs_contracts")

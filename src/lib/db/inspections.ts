@@ -458,6 +458,30 @@ export async function getInspectionOverview(
 }
 
 /**
+ * Alkukatselmuksen kuvat loppukatselmuksen vertailuun (Jukan päätös 10.10.2026).
+ *
+ * Kuvat ovat vertailukuvia vain, jos alkukatselmus lukittiin. Sopimus ei enää
+ * odota katselmusta, joten katselmus voi jäädä kesken koko vuokrasuhteen
+ * ajaksi. Lukitsemattomassa katselmuksessa kuvia on voitu lisätä milloin
+ * tahansa, eikä niitä voi esittää kuvina siitä, millainen asunto oli alussa.
+ *
+ * Ei luo alkukatselmusta, jos sitä ei ole: loppukatselmuksen avaaminen ei saa
+ * aloittaa alkukatselmusta.
+ */
+export async function initialPhotosForComparison(
+  userId: string,
+  tenancyId: string,
+): Promise<{ available: boolean; photos: InspectionPhotoRow[] }> {
+  const inspection = await findInspection(userId, tenancyId, "initial");
+  if (!inspection || inspection.status === "open") return { available: false, photos: [] };
+
+  return {
+    available: true,
+    photos: await listInspectionPhotos(userId, tenancyId, inspection.id),
+  };
+}
+
+/**
  * Lukitsee katselmuksen.
  *
  * Sääntö tarkistetaan tässä uudelleen eikä luoteta siihen, että

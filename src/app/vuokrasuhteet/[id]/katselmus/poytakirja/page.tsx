@@ -54,7 +54,7 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
     <AppShell>
       <h1 className="text-2xl">Katselmuspöytäkirja</h1>
       <p className="mt-2 text-ink/70">
-        Tämä on sama asiakirja, joka allekirjoitetaan sopimuksen kanssa.
+        Tämä on sama asiakirja, joka allekirjoitetaan pankkitunnuksilla.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">

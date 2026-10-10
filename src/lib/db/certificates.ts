@@ -48,6 +48,8 @@ export interface CertificateStatsData {
   defectsReported: number;
   defectsResolved: number;
   depositReturnedFull?: boolean;
+  /** Lukittiinko alkukatselmus (10.10.2026). */
+  initialInspectionDone?: boolean;
 }
 
 export interface CertificateRow {
@@ -295,7 +297,7 @@ export async function addReply(
 export async function collectStats(tenancyId: string): Promise<CertificateStatsData> {
   const supabase = getServiceClient();
 
-  const [{ data: tenancyRow }, { data: periods }, { data: entries }] = await Promise.all([
+  const [{ data: tenancyRow }, { data: periods }, { data: entries }, { data: initialRow }] = await Promise.all([
     supabase
       .from("rs_tenancies")
       .select("start_date, notice_ends_at, end_date, deposit_amount, deposit_returned_amount")
@@ -306,6 +308,12 @@ export async function collectStats(tenancyId: string): Promise<CertificateStatsD
       .from("rs_maintenance_entries")
       .select("id, kind, resolved_at, cancelled_at")
       .eq("tenancy_id", tenancyId),
+    supabase
+      .from("rs_inspections")
+      .select("status")
+      .eq("tenancy_id", tenancyId)
+      .eq("kind", "initial")
+      .maybeSingle(),
   ]);
 
   const periodRows = (periods ?? []) as Array<{ id: string; due_date: string }>;
@@ -373,6 +381,8 @@ export async function collectStats(tenancyId: string): Promise<CertificateStatsD
     // palautettu: tyhjä tieto on rehellisempi kuin arvaus.
     depositReturnedFull:
       deposit === null || returned === null ? undefined : returned >= deposit,
+    // Lukittu tai allekirjoitettu = tehty. Avoin tai puuttuva = ei tehty.
+    initialInspectionDone: ((initialRow as { status: string } | null)?.status ?? "open") !== "open",
   };
 }
 

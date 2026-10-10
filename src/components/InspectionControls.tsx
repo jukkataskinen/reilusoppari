@@ -92,7 +92,7 @@ export function InspectionControls({
           <p className="mt-2 text-sm text-ink/70">
             {kind === "final"
               ? "Lukitus tekee kuvista pöytäkirjan, joka allekirjoitetaan. Sen jälkeen kuvia ei voi lisätä, ja vuorossa ovat arviot ja todistukset."
-              : "Lukitus tekee kuvista pöytäkirjan, joka allekirjoitetaan sopimuksen kanssa. Sen jälkeen kuvia ei voi lisätä."}
+              : "Lukitus tekee kuvista pöytäkirjan, joka allekirjoitetaan pankkitunnuksilla. Sen jälkeen kuvia ei voi lisätä."}
           </p>
 
           {lockMessage ? (

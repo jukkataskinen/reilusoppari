@@ -10,6 +10,8 @@ import {
   tenancyDeletionBlocker,
 } from "@/lib/tenancy/invite-management";
 import { formatAddress } from "@/lib/property/schema";
+import { findInspection } from "@/lib/db/inspections";
+import { formatFinnishDate, inspectionDeadlineView } from "@/lib/inspection/deadline";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { InviteRow } from "./InviteRow";
 import { DeleteTenancy } from "./DeleteTenancy";
@@ -33,13 +35,28 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [parties, property, deletionFacts] = await Promise.all([
+  const [parties, property, deletionFacts, initialInspection] = await Promise.all([
     listParties(user.id, id),
     // Vuokralainen ei omista asuntoa, joten hänelle tämä on `null`.
     getProperty(user.id, tenancy.propertyId),
     // Poisto koskee vain vuokranantajaa; vuokralaiselle sitä ei edes kysytä.
     isLandlord ? getTenancyDeletionFacts(user.id, id) : Promise.resolve(null),
+    // Ei luo katselmusta: sivun avaaminen ei saa aloittaa mitään.
+    findInspection(user.id, id, "initial"),
   ]);
+
+  /*
+    Alkukatselmuksen tila ja määräaika näkyvät vuokrasuhteen sivulla (Jukan
+    päätös 10.10.2026). Sopimus ei enää odota katselmusta, joten ilman tätä
+    katselmus voisi unohtua kokonaan. Päättymisen jälkeen sillä ei ole enää
+    merkitystä.
+  */
+  const showInspectionState = ["draft", "inspection", "signing", "active"].includes(tenancy.status);
+  const inspectionState = inspectionDeadlineView(
+    tenancy.startDate,
+    initialInspection?.status ?? null,
+    new Date().toISOString().slice(0, 10),
+  );
 
   const deletionBlocker = deletionFacts ? tenancyDeletionBlocker(deletionFacts) : null;
   // Sähköpostin korjaus ja kutsun poisto vain ennen allekirjoitusta: sama
@@ -78,6 +95,28 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
           <dd className="mt-0.5">{tenancy.depositAmount} €</dd>
         </div>
       </dl>
+
+      {showInspectionState ? (
+        <div
+          className={
+            "mt-6 rounded-[var(--radius-panel)] border bg-paper p-5 " +
+            (inspectionState.phase === "open" && inspectionState.overdue ? "border-coral" : "border-line")
+          }
+        >
+          <p className="font-medium">Alkukatselmus</p>
+          <p className="mt-2 text-sm text-ink/70">
+            {inspectionState.phase === "signed"
+              ? "Alkukatselmuksen pöytäkirja on allekirjoitettu."
+              : inspectionState.phase === "locked"
+                ? "Alkukatselmus on lukittu. Pöytäkirja allekirjoitetaan Allekirjoitus-sivulla."
+                : !inspectionState.deadline
+                  ? "Alkukatselmus on vielä tekemättä. Kuvatkaa asunto muuton yhteydessä."
+                  : inspectionState.overdue
+                    ? `Alkukatselmuksen määräaika oli ${formatFinnishDate(inspectionState.deadline)}. Tehkää katselmus silti mahdollisimman pian.`
+                    : `Tehkää alkukatselmus viimeistään ${formatFinnishDate(inspectionState.deadline)}, eli 14 päivän kuluessa vuokrasuhteen alkamisesta.`}
+          </p>
+        </div>
+      ) : null}
 
       <Link
         href={`/vuokrasuhteet/${tenancy.id}/sopimus`}

@@ -179,7 +179,7 @@ rs_audit_log (id, tenancy_id fk null, actor_user_id fk null, action, target_type
 Passwordless-kirjautuminen → "Lisää asunto" (osoite, tyyppi, huoneet) → oletus-checkpointit generoidaan (kohta 5.3) → "Uusi vuokrasuhde": vuokralaisen nimi ja sähköposti, alkupäivä, vuokra, eräpäivä, vakuus → näkymässä kerrotaan selkeästi, että vuokrasuhteen päättyessä kumpikin antaa toisestaan arvion ja saa oman todistuksensa (sama teksti näytetään vuokralaiselle kohdassa 5.2, ja se toistetaan sopimuksen esikatselussa) → sopimuslomake (`vuokrasopimus_asuinhuoneisto`-schema: määräaikainen/toistaiseksi, irtisanomisaika, vuokrankorotusehto, vakuus, avaimet, tupakointi, lemmikit, vesi/sähkö, muut ehdot vapaatekstinä) → esikatselu PDF:nä (eSinetti `/documents/render`) → maksu tai ilmainen ensimmäinen → kutsu lähtee vuokralaiselle. Tila `inspection`.
 
 ### 5.2 Vuokralaisen liittyminen
-Kutsulinkki → passwordless-kirjautuminen samalla sähköpostilla → näkee sopimusluonnoksen ja asunnon checkpointit → **näkee myös saman ilmoituksen loppuarvioista kuin vuokranantaja (kohta 5.1)** → voi kuvata heti. Vuokralainen voi ehdottaa muutosta sopimukseen kommenttina; vuokranantaja muokkaa ja esikatselu päivittyy. Kumpikaan ei allekirjoita ennen kuin alkukatselmus on lukittu.
+Kutsulinkki → passwordless-kirjautuminen samalla sähköpostilla → näkee sopimusluonnoksen ja asunnon checkpointit → **näkee myös saman ilmoituksen loppuarvioista kuin vuokranantaja (kohta 5.1)** → voi kuvata heti. Vuokralainen voi ehdottaa muutosta sopimukseen kommenttina; vuokranantaja muokkaa ja esikatselu päivittyy. Sopimuksen voi lähettää allekirjoitettavaksi heti, kun osapuolten tiedot ovat valmiit; alkukatselmuksen pöytäkirja allekirjoitetaan erikseen (Jukan päätös 10.10.2026).
 
 ### 5.3 Alkukatselmus
 
@@ -237,7 +237,7 @@ sivullaan. **Pöytäkirjassa ei ole tyhjiä kohtia** — se kertoo mitä kuvatti
 ei sitä mitä jäi kuvaamatta. Kuvaton tila jätetään pois kokonaan.
 
 ### 5.4 Allekirjoitus
-`POST /rounds` eSinettiin: kaksi asiakirjaa (sopimus, alkukatselmus), 2–3 allekirjoittajaa (vuokranantaja + vuokralaiset), `expected_birthdate` jos tiedossa. Allekirjoittajat saavat eSinetin linkit; Reilusoppari näyttää tilan. Webhook `round.completed` → tallennetaan sinetöidyt PDF:t ja tiivisteet, `rs_users.identity_verified_at` päivitetään eSinetin palauttamasta nimestä/syntymäajasta, tenancy → `active`, `rs_rent_periods` generoidaan sopimuksen mukaan.
+`POST /rounds` eSinettiin: sopimus, ja alkukatselmus samalla kierroksella vain jos se on jo lukittu (muuten oma kierros lukituksen jälkeen, `external_ref` `tenancy:<id>:katselmus`), 2–3 allekirjoittajaa (vuokranantaja + vuokralaiset), `expected_birthdate` jos tiedossa. Allekirjoittajat saavat eSinetin linkit; Reilusoppari näyttää tilan. Webhook `round.completed` → tallennetaan sinetöidyt PDF:t ja tiivisteet, `rs_users.identity_verified_at` päivitetään eSinetin palauttamasta nimestä/syntymäajasta, tenancy → `active`, `rs_rent_periods` generoidaan sopimuksen mukaan.
 
 ### 5.5 Kuittaus
 Cron päivittäin: eräpäivänä push/sähköposti vuokranantajalle "Maksoiko {etunimi} {summa} € eräpäivään {pvm} mennessä?" napeilla Kyllä · Ei vielä · Osittain (push-toiminnot tai linkki). Kuittaus → vuokralaiselle ilmoitus "Vuokra {kuukausi} kuitattu". "Ei vielä" → vuokralaiselle neutraali ilmoitus ja kommenttimahdollisuus; muistutus vuokranantajalle 3 pv päästä. Historia näkyy molemmille taulukkona. Kuittausta voi muuttaa 30 päivän ajan (muutoshistoria lokiin), ei sen jälkeen.
