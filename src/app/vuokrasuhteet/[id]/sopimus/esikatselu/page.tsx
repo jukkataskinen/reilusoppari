@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy } from "@/lib/db/tenancies";
 import { AppShell } from "@/components/AppShell";
+import { listSignedDocuments } from "@/lib/tenancy/signed-documents";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -34,13 +35,25 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   if (!(await getTenancy(user.id, id))) notFound();
 
-  const pdf = `/vuokrasuhteet/${id}/sopimus/esikatselu/pdf`;
+  /*
+    Allekirjoitetun sopimuksen kohdalla näytetään sinetöity asiakirja eikä
+    luonnosta (Jukka 10.10.2026: "Tallenna PDF näyttää vain luonnoksia").
+    Luonnos voisi poiketa allekirjoitetusta, jos pohja on sittemmin muuttunut.
+  */
+  const signed = (await listSignedDocuments(user.id, id)).find(
+    (document) => document.kind === "sopimus" && document.available,
+  );
+  const pdf = signed
+    ? `/vuokrasuhteet/${id}/asiakirjat/sopimus`
+    : `/vuokrasuhteet/${id}/sopimus/esikatselu/pdf`;
 
   return (
     <AppShell>
-      <h1 className="text-2xl">Sopimuksen esikatselu</h1>
+      <h1 className="text-2xl">{signed ? "Allekirjoitettu sopimus" : "Sopimuksen esikatselu"}</h1>
       <p className="mt-2 text-ink/70">
-        Tämä on sama asiakirja, joka allekirjoitetaan. Luonnos muuttuu, jos ehtoja vielä muokataan.
+        {signed
+          ? "Tämä on sinetöity, allekirjoitettu vuokrasopimus."
+          : "Tämä on sama asiakirja, joka allekirjoitetaan. Luonnos muuttuu, jos ehtoja vielä muokataan."}
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">
@@ -62,7 +75,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
         */}
         <a
           href={pdf}
-          download="vuokrasopimus-luonnos.pdf"
+          download={signed ? "vuokrasopimus-allekirjoitettu.pdf" : "vuokrasopimus-luonnos.pdf"}
           target="_blank"
           rel="noopener"
           className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"

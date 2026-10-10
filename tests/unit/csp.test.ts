@@ -43,10 +43,16 @@ describe("CSP tuotannossa", () => {
     expect(directives["script-src"]).toContain("'strict-dynamic'");
   });
 
-  it("estää upottamisen, base-tagin ja pluginit", () => {
+  it("estää upottamisen ja base-tagin, pluginit vain omasta osoitteesta", () => {
     expect(directives["frame-ancestors"]).toEqual(["'none'"]);
     expect(directives["base-uri"]).toEqual(["'none'"]);
-    expect(directives["object-src"]).toEqual(["'none'"]);
+    // PDF-esikatselu (`object`) omasta reitistä, Jukka 10.10.2026.
+    expect(directives["object-src"]).toEqual(["'self'"]);
+  });
+
+  it("PDF-vastaus saa näkyä vain oman sivun sisällä", () => {
+    const pdf = parse(buildContentSecurityPolicy("TESTINONCE", false, { pdfResponse: true }));
+    expect(pdf["frame-ancestors"]).toEqual(["'self'"]);
   });
 
   it("rajaa lomakelähetykset omaan alkuperään", () => {
