@@ -68,7 +68,10 @@ export class StripeHttpClient implements BillingClient {
     } else {
       fields.customer_email = input.email;
       // Asiakas luodaan maksun yhteydessä, jotta portaali toimii myöhemmin.
-      fields.customer_creation = recurring ? "always" : "always";
+      // Vain kertamaksussa: tilauksessa Stripe luo asiakkaan aina itse ja
+      // hylkää koko pyynnön, jos `customer_creation` on mukana (Plus-maksu
+      // kaatui 10.10.2026 "Maksusivua ei voitu avata").
+      if (!recurring) fields.customer_creation = "always";
     }
 
     /*
