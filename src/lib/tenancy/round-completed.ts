@@ -404,3 +404,60 @@ export async function handleFinalRoundCompleted(
 
   return { handled: true, alreadyDone: false };
 }
+
+/**
+ * Täydentää puuttuvat sinetöidyt asiakirjat valmiilta kierrokselta
+ * ("Hae allekirjoitetut asiakirjat", 10.10.2026).
+ *
+ * Käsittelijät ovat idempotentteja `signed_at`-leiman perusteella. Jos
+ * webhook merkitsi allekirjoituksen mutta tiedoston lataus epäonnistui, ne
+ * eivät yritä uudelleen. Tämä tekee vain sen puuttuvan osan: lataa tiedoston
+ * riville, jolla on tämän kierroksen tunniste ja allekirjoitus mutta ei
+ * tiedostoa. Valmiita rivejä ei kosketa.
+ */
+export async function storeMissingSealedDocuments(
+  event: WebhookEvent,
+  tenancyId: string,
+): Promise<number> {
+  const supabase = getServiceClient();
+  let stored = 0;
+
+  for (const document of event.documents) {
+    const lower = document.name.toLowerCase();
+    const target = lower.startsWith("vuokrasopimus")
+      ? { table: "rs_contracts", kind: null }
+      : lower.startsWith("alkukatselmus")
+        ? { table: "rs_inspections", kind: "initial" }
+        : lower.startsWith("loppukatselmus")
+          ? { table: "rs_inspections", kind: "final" }
+          : null;
+    if (!target) continue;
+
+    let query = supabase
+      .from(target.table)
+      .select("id")
+      .eq("tenancy_id", tenancyId)
+      .eq("esinetti_round_id", event.roundId)
+      .not("signed_at", "is", null)
+      .is("sealed_path", null);
+    if (target.kind) query = query.eq("kind", target.kind);
+    const { data: row } = await query.maybeSingle();
+    if (!row) continue;
+
+    const path = await storeSealed(tenancyId, event.roundId, document.id, document.name);
+    if (!path) continue;
+
+    await supabase
+      .from(target.table)
+      .update({
+        esinetti_document_id: document.id,
+        sealed_sha256: document.sealedSha256,
+        sealed_path: path,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", (row as { id: string }).id);
+    stored += 1;
+  }
+
+  return stored;
+}

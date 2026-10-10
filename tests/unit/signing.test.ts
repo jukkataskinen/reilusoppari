@@ -16,6 +16,8 @@ import {
 } from "@/lib/tenancy/round-completed";
 import { generateEncryptionKey } from "@/lib/identity/crypto";
 import { getEsinettiClient, resetEsinettiClientForTests } from "@/lib/esinetti";
+import { completeMockRound } from "@/lib/esinetti/mock";
+import { fetchMissingSignedDocuments, listSignedDocuments } from "@/lib/tenancy/signed-documents";
 import type { WebhookEvent } from "@/lib/esinetti";
 import { hasInspectionRooms } from "../migration-probe";
 
@@ -52,6 +54,7 @@ if (hasSupabaseCredentials() && !RUN) {
 const PREFIX = `testi-allek-${Date.now()}`;
 
 const created = { users: [] as string[], properties: [] as string[], tenancies: [] as string[] };
+const storedDocuments: string[] = [];
 let seuraava = 0;
 
 async function createUser(label: string): Promise<string> {
@@ -187,6 +190,7 @@ beforeEach(() => {
 afterAll(async () => {
   if (!RUN) return;
   const db = getServiceClient();
+  if (storedDocuments.length > 0) await db.storage.from("documents").remove(storedDocuments);
   for (const id of created.tenancies) await db.from("rs_tenancies").delete().eq("id", id);
   for (const id of created.properties) await db.from("rs_properties").delete().eq("id", id);
   for (const id of created.users) await db.from("rs_users").delete().eq("id", id);
@@ -451,6 +455,45 @@ describe.skipIf(!RUN)("pöytäkirja omana kierroksenaan (10.10.2026)", () => {
     expect(jalkeen.status).toBe("signed");
     expect((await getTenancy(landlord, tenancyId))?.status).toBe("active");
   }, 90_000);
+});
+
+describe.skipIf(!RUN)("allekirjoitetut asiakirjat ilman webhookia (10.10.2026)", () => {
+  it("vuokranantaja hakee valmiin kierroksen asiakirjat eSinetiltä", async () => {
+    const { landlord, tenancyId } = await setup();
+    await fillParties(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
+
+    const sent = await sendForSigning(landlord, tenancyId);
+    expect(sent.ok).toBe(true);
+    // Kaikki allekirjoittavat, mutta webhook ei tule perille.
+    completeMockRound(sent.round!.id);
+    expect(await listSignedDocuments(landlord, tenancyId)).toEqual([]);
+
+    const result = await fetchMissingSignedDocuments(landlord, tenancyId);
+    expect(result).toEqual({ ok: true, message: "Allekirjoitetut asiakirjat on haettu." });
+    storedDocuments.push(`${tenancyId}/${sent.round!.id}/Vuokrasopimus.pdf`);
+
+    const docs = await listSignedDocuments(landlord, tenancyId);
+    expect(docs.map((doc) => [doc.kind, doc.available])).toEqual([["sopimus", true]]);
+    expect((await getTenancy(landlord, tenancyId))?.status).toBe("active");
+
+    // Toinen painallus ei tee mitään.
+    expect(await fetchMissingSignedDocuments(landlord, tenancyId)).toEqual({
+      ok: true,
+      message: "Asiakirjat on jo haettu.",
+    });
+  }, 90_000);
+
+  it("keskeneräistä kierrosta ei käsitellä", async () => {
+    const { landlord, tenancyId } = await setup();
+    await fillParties(landlord, tenancyId);
+    await markPaidDirectly(tenancyId);
+    expect((await sendForSigning(landlord, tenancyId)).ok).toBe(true);
+
+    const result = await fetchMissingSignedDocuments(landlord, tenancyId);
+    expect(result.ok).toBe(false);
+    expect((await getTenancy(landlord, tenancyId))?.status).toBe("signing");
+  }, 60_000);
 });
 
 describe.skipIf(!RUN)("mock on käytössä ilman avainta", () => {

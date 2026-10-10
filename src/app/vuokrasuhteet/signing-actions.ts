@@ -9,6 +9,7 @@ import {
   sendInspectionForSigning,
 } from "@/lib/tenancy/signing";
 import { landlordSigningUrl, SIGN_NOW_FALLBACK_MESSAGE } from "@/lib/tenancy/sign-now";
+import { fetchMissingSignedDocuments } from "@/lib/tenancy/signed-documents";
 
 /**
  * Asiakirjojen lähetys allekirjoitettavaksi (CLAUDE.md 5.4).
@@ -130,4 +131,30 @@ export async function signNowAction(tenancyId: string, document: string): Promis
   } catch {
     return { message: SIGN_NOW_FALLBACK_MESSAGE };
   }
+}
+
+/**
+ * "Hae allekirjoitetut asiakirjat" (10.10.2026): valmiin kierroksen
+ * asiakirjat eSinetiltä, jos webhook ei tuonut niitä. Sama käsittely kuin
+ * webhookissa, idempotentti.
+ */
+export async function fetchSignedDocumentsAction(
+  _previous: SigningActionState,
+  formData: FormData,
+): Promise<SigningActionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const tenancyId = String(formData.get("tenancyId") ?? "");
+
+  let result: { ok: boolean; message: string };
+  try {
+    result = await fetchMissingSignedDocuments(user.id, tenancyId);
+  } catch {
+    return { message: "Haku ei onnistunut. Yritä hetken kuluttua uudelleen." };
+  }
+
+  revalidatePath(`/vuokrasuhteet/${tenancyId}`);
+  revalidatePath(`/vuokrasuhteet/${tenancyId}/allekirjoitus`);
+  return result.ok ? { sent: true, message: result.message } : { message: result.message };
 }

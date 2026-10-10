@@ -260,6 +260,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Kohdassa Alkukatselmus näet, onko katselmus tehty ja mihin päivään mennessä se pitää tehdä.",
           "Painikkeista pääset sopimukseen, osapuolten tietoihin, katselmukseen, allekirjoitukseen, vuokranmaksuun, huoltokirjaan ja päättymiseen.",
           "Kulut näkyvät vain vuokranantajalle.",
+          "Kohdassa Allekirjoitetut asiakirjat ovat allekirjoitettu sopimus ja pöytäkirjat. Avaa ne valinnalla Avaa PDF.",
           "Vuokralaisesta näet, onko hän jo liittynyt. Jos ei ole, voit lähettää kutsun uudelleen, korjata sähköpostin tai poistaa kutsun.",
         ],
       },
@@ -522,6 +523,15 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Kun alkukatselmus on lukittu, vuokranantaja valitsee Lähetä pöytäkirja allekirjoitettavaksi.",
           "Pöytäkirja allekirjoitetaan samalla tavalla kuin sopimus. Siitä ei makseta erikseen.",
           "Jos katselmus oli lukittu jo sopimusta lähetettäessä, pöytäkirja lähti sopimuksen mukana, eikä sitä tarvitse lähettää uudelleen.",
+        ],
+      },
+      {
+        title: "Allekirjoitetut asiakirjat",
+        steps: [
+          "Kun kaikki ovat allekirjoittaneet, asiakirjat tulevat Reilusopparin kohtaan Allekirjoitetut asiakirjat. Kohta on vuokrasuhteen sivulla ja Allekirjoitus-sivulla.",
+          "Valitse asiakirjan kohdalta Avaa PDF. Asiakirja avautuu omaan ikkunaansa.",
+          "eSinettiin ei tarvitse mennä. Sama asiakirja näkyy sekä vuokranantajalle että vuokralaiselle.",
+          "Jos asiakirja ei ole tullut, vuokranantaja näkee napin Hae allekirjoitetut asiakirjat. Paina sitä, niin asiakirjat haetaan.",
         ],
       },
       {

@@ -22,6 +22,12 @@ import { AppShell } from "@/components/AppShell";
 import { InspectionSigning } from "@/components/InspectionSigning";
 import { SendForSigning } from "@/components/SendForSigning";
 import { SignNow } from "@/components/SignNow";
+import { SignedDocuments } from "@/components/SignedDocuments";
+import {
+  loadSignedDocumentFacts,
+  shouldOfferFetch,
+  signedDocumentList,
+} from "@/lib/tenancy/signed-documents";
 import { TenancyPayment } from "@/components/TenancyPayment";
 import { fi } from "@/i18n/fi";
 
@@ -112,6 +118,11 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
   ]);
   const origin = esinettiOrigin();
 
+  // Valmiit asiakirjat avataan täältä, ei eSinetistä (10.10.2026).
+  const documentFacts = await loadSignedDocumentFacts(user.id, id);
+  const offerFetch = await shouldOfferFetch(user.id, id, documentFacts);
+  const contractSigned = Boolean(documentFacts.find((row) => row.kind === "sopimus")?.signedAt);
+
   return (
     <AppShell>
       <h1 className="text-2xl">Allekirjoitus</h1>
@@ -128,6 +139,12 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
           ei allekirjoita mitään oikeasti.
         </p>
       ) : null}
+
+      <SignedDocuments
+        tenancyId={id}
+        documents={signedDocumentList(documentFacts)}
+        showFetch={offerFetch}
+      />
 
       <h2 className="mt-8 text-lg">Vuokrasopimus</h2>
 
@@ -151,13 +168,18 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
       {round ? (
         <div className="mt-4 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <p className="font-medium">
-            {combined
-              ? "Sopimus ja alkukatselmuksen pöytäkirja on lähetetty allekirjoitettavaksi"
-              : "Sopimus on lähetetty allekirjoitettavaksi"}
+            {contractSigned
+              ? combined
+                ? "Sopimus ja alkukatselmuksen pöytäkirja on allekirjoitettu"
+                : "Sopimus on allekirjoitettu"
+              : combined
+                ? "Sopimus ja alkukatselmuksen pöytäkirja on lähetetty allekirjoitettavaksi"
+                : "Sopimus on lähetetty allekirjoitettavaksi"}
           </p>
           <p className="mt-2 text-sm text-ink/70">
-            Jokainen allekirjoittaja on saanut oman linkkinsä sähköpostiinsa. Kun kaikki ovat
-            allekirjoittaneet, vuokrasuhde alkaa ja vuokrakaudet syntyvät automaattisesti.
+            {contractSigned
+              ? "Allekirjoitettu asiakirja on ylempänä kohdassa Allekirjoitetut asiakirjat."
+              : "Jokainen allekirjoittaja on saanut oman linkkinsä sähköpostiinsa. Kun kaikki ovat allekirjoittaneet, vuokrasuhde alkaa ja vuokrakaudet syntyvät automaattisesti."}
           </p>
           {signNowContract ? <SignNow tenancyId={id} kind="sopimus" esinettiOrigin={origin} /> : null}
           <SignerList round={round} />
