@@ -12,11 +12,16 @@ export const metadata: Metadata = { title: fi.nav.tenancies };
 
 const STATUS_LABEL = fi.tenancyStatus;
 
-export default async function TenanciesPage() {
+export default async function TenanciesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ poistettu?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
 
   const tenancies = await listTenancies(user.id);
+  const deleted = (await searchParams).poistettu === "1";
 
   /*
     Osoite haetaan jokaiselle erikseen `getProperty`llä, joka rajaa
@@ -33,6 +38,12 @@ export default async function TenanciesPage() {
   return (
     <AppShell>
       <h1 className="text-2xl">{fi.nav.tenancies}</h1>
+
+      {deleted ? (
+        <p role="status" className="mt-4 rounded-[10px] bg-cloud p-3 text-sm">
+          Vuokrasuhde poistettu.
+        </p>
+      ) : null}
 
       {rows.length === 0 ? (
         <div className="mt-8 rounded-[var(--radius-panel)] border border-line bg-paper p-6">

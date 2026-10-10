@@ -10,6 +10,9 @@ import {
   listParties,
   listTenancies,
   reissueInvite,
+  changeInviteEmail,
+  removeInvite,
+  deleteTenancy,
 } from "@/lib/db/tenancies";
 import type { TenancyInput } from "@/lib/tenancy/schema";
 
@@ -317,5 +320,75 @@ describe.skipIf(!RUN)("kutsun uudelleenlähetys", () => {
 
     expect(await reissueInvite(landlord, tenancy.id, tenantParty.id)).toBeNull();
     expect(await getTenancy(tenant, tenancy.id)).not.toBeNull();
+  });
+});
+
+describe.skipIf(!RUN)("kutsun korjaus ja vuokrasuhteen poisto (integraatio, live Supabase)", () => {
+  async function setup(label: string) {
+    const landlord = await createUser(`k-${label}`);
+    const propertyId = await createTestProperty(landlord);
+    const { tenancy, invites } = await createTenancy(landlord, input(propertyId));
+    created.tenancies.push(tenancy.id);
+    const parties = await listParties(landlord, tenancy.id);
+    const tenantParty = parties.find((p) => p.role === "tenant")!;
+    return { landlord, tenancy, invites, tenantParty };
+  }
+
+  it("sähköpostin korjaus mitätöi vanhan linkin ja vaihtaa osoitteen", async () => {
+    const { landlord, tenancy, invites, tenantParty } = await setup("c1");
+    const uusiOsoite = `${PREFIX}-oikea@example.invalid`;
+
+    const result = await changeInviteEmail(landlord, tenancy.id, tenantParty.id, uusiOsoite);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(await findTenancyByInvite(invites[0].token)).toBeNull();
+    const preview = await findTenancyByInvite(result.invite.token);
+    expect(preview?.inviteEmail).toBe(uusiOsoite);
+  });
+
+  it("ulkopuolinen ei voi korjata osoitetta", async () => {
+    const { tenancy, tenantParty } = await setup("c2");
+    const outsider = await createUser("x-c2");
+    const result = await changeInviteEmail(
+      outsider,
+      tenancy.id,
+      tenantParty.id,
+      `${PREFIX}-hyokkaaja@example.invalid`,
+    );
+    expect(result).toEqual({ ok: false, reason: "not_found" });
+  });
+
+  it("liittyneen osoitetta ei voi korjata eikä häntä poistaa", async () => {
+    const { landlord, tenancy, invites, tenantParty } = await setup("c3");
+    const tenant = await createUser("t-c3");
+    await acceptInvite(invites[0].token, tenant, TENANT_EMAIL);
+
+    expect(
+      await changeInviteEmail(landlord, tenancy.id, tenantParty.id, `${PREFIX}-x@example.invalid`),
+    ).toEqual({ ok: false, reason: "joined" });
+    expect(await removeInvite(landlord, tenancy.id, tenantParty.id)).toEqual({
+      ok: false,
+      reason: "joined",
+    });
+    expect(await deleteTenancy(landlord, tenancy.id)).toEqual({ ok: false, reason: "joined" });
+    expect(await getTenancy(tenant, tenancy.id)).not.toBeNull();
+  });
+
+  it("kutsun poisto vie osapuolen ja linkin", async () => {
+    const { landlord, tenancy, invites, tenantParty } = await setup("c4");
+    expect(await removeInvite(landlord, tenancy.id, tenantParty.id)).toEqual({ ok: true });
+    expect(await findTenancyByInvite(invites[0].token)).toBeNull();
+    const parties = await listParties(landlord, tenancy.id);
+    expect(parties.filter((p) => p.role === "tenant")).toHaveLength(0);
+  });
+
+  it("luonnoksen voi poistaa, mutta vain vuokranantaja", async () => {
+    const { landlord, tenancy } = await setup("c5");
+    const outsider = await createUser("x-c5");
+    expect(await deleteTenancy(outsider, tenancy.id)).toEqual({ ok: false, reason: "not_found" });
+
+    expect(await deleteTenancy(landlord, tenancy.id)).toEqual({ ok: true });
+    expect(await getTenancy(landlord, tenancy.id)).toBeNull();
   });
 });

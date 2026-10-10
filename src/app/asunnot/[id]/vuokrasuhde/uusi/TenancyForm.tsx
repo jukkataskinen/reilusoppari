@@ -207,8 +207,9 @@ function CreatedView({ state }: { state: NonNullable<TenancyFormState["created"]
       <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
         <p className="font-medium">Vuokrasuhde luotu</p>
         <p className="mt-2 text-sm text-ink/70">
-          Lähetä kutsulinkki vuokralaiselle. <strong>Linkki näytetään vain nyt</strong> — sitä ei
-          voi hakea myöhemmin, mutta uuden voi luoda vuokrasuhteen sivulla.
+          Kutsu lähetetään vuokralaiselle sähköpostilla. Voit lähettää alla olevan linkin myös
+          itse. <strong>Linkki näytetään vain nyt</strong> — sitä ei voi hakea myöhemmin, mutta
+          kutsun voi lähettää uudelleen vuokrasuhteen sivulla.
         </p>
       </div>
 
@@ -219,6 +220,11 @@ function CreatedView({ state }: { state: NonNullable<TenancyFormState["created"]
         >
           <p className="text-sm text-ink/60">{invite.email}</p>
           <p className="mt-0.5 font-medium">{invite.name}</p>
+          <p className="mt-2 text-sm">
+            {invite.emailSent
+              ? `Kutsu lähetetty osoitteeseen ${invite.email}.`
+              : "Sähköpostia ei voitu lähettää. Lähetä linkki vuokralaiselle itse."}
+          </p>
           <p className="mt-3 break-all rounded-[10px] bg-cloud p-3 font-mono text-sm">
             {invite.url}
           </p>

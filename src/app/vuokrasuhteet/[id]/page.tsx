@@ -3,10 +3,15 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getProperty } from "@/lib/db/properties";
-import { getTenancy, listParties } from "@/lib/db/tenancies";
+import { getTenancy, getTenancyDeletionFacts, listParties } from "@/lib/db/tenancies";
+import {
+  TENANCY_DELETION_MESSAGES,
+  tenancyDeletionBlocker,
+} from "@/lib/tenancy/invite-management";
 import { formatAddress } from "@/lib/property/schema";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { InviteRow } from "./InviteRow";
+import { DeleteTenancy } from "./DeleteTenancy";
 import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
 
@@ -27,11 +32,18 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [parties, property] = await Promise.all([
+  const [parties, property, deletionFacts] = await Promise.all([
     listParties(user.id, id),
     // Vuokralainen ei omista asuntoa, joten hänelle tämä on `null`.
     getProperty(user.id, tenancy.propertyId),
+    // Poisto koskee vain vuokranantajaa; vuokralaiselle sitä ei edes kysytä.
+    isLandlord ? getTenancyDeletionFacts(user.id, id) : Promise.resolve(null),
   ]);
+
+  const deletionBlocker = deletionFacts ? tenancyDeletionBlocker(deletionFacts) : null;
+  // Sähköpostin korjaus ja kutsun poisto vain ennen allekirjoitusta: sama
+  // sääntö kuin palvelimella (`invite-management.ts`).
+  const invitesEditable = tenancy.status === "draft" || tenancy.status === "inspection";
 
   const tenants = parties.filter((party) => party.role === "tenant");
 
@@ -141,6 +153,7 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
                 partyId={party.id}
                 email={party.inviteEmail ?? ""}
                 joined={Boolean(party.joinedAt)}
+                editable={invitesEditable}
               />
             ) : (
               <div
@@ -160,6 +173,13 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
       <div className="mt-10">
         <EndOfTenancyNotice />
       </div>
+
+      {deletionFacts ? (
+        <DeleteTenancy
+          tenancyId={tenancy.id}
+          blockedReason={deletionBlocker ? TENANCY_DELETION_MESSAGES[deletionBlocker] : null}
+        />
+      ) : null}
 
       <p className="mt-10 text-sm">
         <Link href="/vuokrasuhteet" className="underline underline-offset-4">

@@ -39,6 +39,14 @@ import {
   DEFAULT_CONTRACT_TERMS,
 } from "../tenancy/contract-schema";
 import type { TenancyInput } from "../tenancy/schema";
+import {
+  pendingPartyBlocker,
+  tenancyDeletionBlocker,
+  type PendingPartyAction,
+  type PendingPartyBlocker,
+  type TenancyDeletionBlocker,
+  type TenancyDeletionFacts,
+} from "../tenancy/invite-management";
 import type { PropertyType } from "../property/default-checkpoints";
 
 export type TenancyStatus =
@@ -602,8 +610,93 @@ export async function createRentPeriods(tenancyId: string, tenancy: Tenancy): Pr
   return periods.length;
 }
 
+/** Kutsutoiminnon tulos. Syy kerrotaan käyttäjälle (`PENDING_PARTY_MESSAGES`). */
+export type InviteChangeResult =
+  | { ok: true; invite: IssuedInvite }
+  | { ok: false; reason: PendingPartyBlocker | "duplicate" | "failed" };
+
+interface PendingPartyRow {
+  id: string;
+  role: "landlord" | "tenant";
+  invite_email: string | null;
+  party_name: string | null;
+  user_id: string | null;
+  joined_at: string | null;
+  position: number;
+}
+
 /**
- * Luo uuden kutsun samalle osapuolelle.
+ * Hakee kutsun ja kysyy säännöiltä (`invite-management.ts`), saako
+ * käyttäjä tehdä toiminnon.
+ *
+ * Omistajuus tarkistetaan tässä palvelinkoodissa eikä luoteta siihen, että
+ * nappi näkyi vain vuokranantajalle: palvelintoiminto on julkinen
+ * päätepiste, ja kuka tahansa kirjautunut voi lähettää sille minkä
+ * tunnisteen tahansa.
+ */
+async function loadPendingParty(
+  userId: string,
+  tenancyId: string,
+  partyId: string,
+  action: PendingPartyAction,
+): Promise<
+  { ok: true; party: PendingPartyRow } | { ok: false; reason: PendingPartyBlocker | "failed" }
+> {
+  const tenancy = await getTenancy(userId, tenancyId);
+
+  let party: PendingPartyRow | null = null;
+  if (tenancy) {
+    const { data, error } = await getServiceClient()
+      .from("rs_tenancy_parties")
+      .select("id, role, invite_email, party_name, user_id, joined_at, position")
+      .eq("id", partyId)
+      .eq("tenancy_id", tenancyId)
+      .maybeSingle();
+    if (error) {
+      console.error("[tenancies] kutsun haku epäonnistui:", error.message);
+      return { ok: false, reason: "failed" };
+    }
+    party = (data as PendingPartyRow | null) ?? null;
+  }
+
+  const blocker = pendingPartyBlocker(
+    {
+      userId,
+      tenancy: tenancy ? { landlordUserId: tenancy.landlordUserId, status: tenancy.status } : null,
+      party: party ? { role: party.role, userId: party.user_id, joinedAt: party.joined_at } : null,
+    },
+    action,
+  );
+  if (blocker || !party) return { ok: false, reason: blocker ?? "not_found" };
+  return { ok: true, party };
+}
+
+/** Lokimerkintä. Ei sähköposteja eikä tunnisteita lisätietoihin. */
+async function audit(
+  userId: string,
+  tenancyId: string | null,
+  action: string,
+  targetType: string,
+  targetId: string,
+): Promise<void> {
+  const { error } = await getServiceClient().from("rs_audit_log").insert({
+    tenancy_id: tenancyId,
+    actor_user_id: userId,
+    action,
+    target_type: targetType,
+    target_id: targetId,
+    details: {},
+  });
+  if (error) console.error("[tenancies] lokimerkintä epäonnistui:", error.message);
+}
+
+/** Kirjoitus osui nollaan riviin: joku ehti väliin (esim. vuokralainen liittyi). */
+function touched(data: unknown): boolean {
+  return Array.isArray(data) && data.length > 0;
+}
+
+/**
+ * Luo uuden kutsun samalle osapuolelle samaan osoitteeseen.
  *
  * ===========================================================================
  * MIKSI TÄMÄ ON PAKKO OLLA
@@ -622,39 +715,16 @@ export async function createRentPeriods(tenancyId: string, tenancy: Tenancy): Pr
  * Vain vuokranantaja voi lähettää kutsun uudelleen, eikä jo liittyneelle
  * osapuolelle luoda uutta kutsua: se poistaisi häneltä pääsyn.
  */
-export async function reissueInvite(
+export async function resendInvite(
   userId: string,
   tenancyId: string,
   partyId: string,
-): Promise<IssuedInvite | null> {
-  const tenancy = await getTenancy(userId, tenancyId);
-  if (!tenancy || tenancy.landlordUserId !== userId) return null;
-
-  const supabase = getServiceClient();
-
-  const { data, error } = await supabase
-    .from("rs_tenancy_parties")
-    .select("id, role, invite_email, user_id")
-    .eq("id", partyId)
-    .eq("tenancy_id", tenancyId)
-    .maybeSingle();
-
-  if (error || !data) return null;
-
-  const party = data as {
-    id: string;
-    role: string;
-    invite_email: string | null;
-    user_id: string | null;
-  };
-
-  // Jo liittynyt osapuoli ei tarvitse kutsua, ja uusi kutsu ei saa syrjäyttää
-  // häntä.
-  if (party.role !== "tenant" || party.user_id) return null;
+): Promise<InviteChangeResult> {
+  const loaded = await loadPendingParty(userId, tenancyId, partyId, "resend");
+  if (!loaded.ok) return loaded;
 
   const invite = createInvite();
-
-  const { error: updateError } = await supabase
+  const { data, error } = await getServiceClient()
     .from("rs_tenancy_parties")
     .update({
       invite_token_hash: invite.tokenHash,
@@ -662,14 +732,301 @@ export async function reissueInvite(
       updated_at: new Date().toISOString(),
     })
     .eq("id", partyId)
-    .is("user_id", null);
+    // Ehto uudelleen kirjoituksessa: jos vuokralainen liittyi juuri
+    // tarkistuksen ja kirjoituksen välissä, häntä ei syrjäytetä.
+    .is("user_id", null)
+    .select("id");
 
-  if (updateError) {
-    console.error("[tenancies] kutsun uudelleenluonti epäonnistui:", updateError.message);
-    return null;
+  if (error) {
+    console.error("[tenancies] kutsun uudelleenluonti epäonnistui:", error.message);
+    return { ok: false, reason: "failed" };
+  }
+  if (!touched(data)) return { ok: false, reason: "joined" };
+
+  await audit(userId, tenancyId, "tenancy.invite.reissued", "tenancy_party", partyId);
+
+  return {
+    ok: true,
+    invite: {
+      email: loaded.party.invite_email ?? "",
+      name: loaded.party.party_name ?? "",
+      token: invite.token,
+    },
+  };
+}
+
+/** Uusi kutsu tai `null`. Vanha rajapinta; uusi koodi käyttää `resendInvite`a. */
+export async function reissueInvite(
+  userId: string,
+  tenancyId: string,
+  partyId: string,
+): Promise<IssuedInvite | null> {
+  const result = await resendInvite(userId, tenancyId, partyId);
+  return result.ok ? result.invite : null;
+}
+
+/**
+ * Vaihtaa kutsutun sähköpostin ja luo uuden kutsun.
+ *
+ * ===========================================================================
+ * VANHA LINKKI KUOLEE SAMALLA
+ *
+ * Väärään osoitteeseen mennyt linkki on vieraan ihmisen hallussa. Liittyä
+ * hän ei voisi, koska sähköpostin on täsmättävä kirjautumiseen, mutta hän
+ * näkisi asunnon osoitteen ja vuokran. Siksi tiiviste vaihtuu samassa
+ * päivityksessä kuin osoite.
+ *
+ * Myös sopimukseen tulostuva sähköposti (`contact_email`) vaihtuu: se
+ * kirjoitettiin luonnissa samasta kentästä, ja väärä osoite sopimuksessa
+ * olisi sama virhe toisessa paikassa.
+ * ===========================================================================
+ */
+export async function changeInviteEmail(
+  userId: string,
+  tenancyId: string,
+  partyId: string,
+  email: string,
+): Promise<InviteChangeResult> {
+  const loaded = await loadPendingParty(userId, tenancyId, partyId, "change_email");
+  if (!loaded.ok) return loaded;
+
+  const supabase = getServiceClient();
+  const normalized = email.trim().toLowerCase();
+
+  // Kaksi vuokralaista samalla osoitteella: toinen kutsu menisi hukkaan
+  // (sama sääntö kuin luonnissa, `tenancy/schema.ts`).
+  const { data: others, error: othersError } = await supabase
+    .from("rs_tenancy_parties")
+    .select("id, invite_email")
+    .eq("tenancy_id", tenancyId)
+    .eq("role", "tenant")
+    .neq("id", partyId);
+  if (othersError) {
+    console.error("[tenancies] osapuolten haku epäonnistui:", othersError.message);
+    return { ok: false, reason: "failed" };
+  }
+  const taken = ((others ?? []) as Array<{ invite_email: string | null }>).some(
+    (row) => (row.invite_email ?? "").toLowerCase() === normalized,
+  );
+  if (taken) return { ok: false, reason: "duplicate" };
+
+  const invite = createInvite();
+  const { data, error } = await supabase
+    .from("rs_tenancy_parties")
+    .update({
+      invite_email: normalized,
+      contact_email: normalized,
+      invite_token_hash: invite.tokenHash,
+      invite_expires_at: invite.expiresAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", partyId)
+    .is("user_id", null)
+    .select("id");
+
+  if (error) {
+    console.error("[tenancies] sähköpostin vaihto epäonnistui:", error.message);
+    return { ok: false, reason: "failed" };
+  }
+  if (!touched(data)) return { ok: false, reason: "joined" };
+
+  await audit(userId, tenancyId, "tenancy.invite.email_changed", "tenancy_party", partyId);
+
+  return {
+    ok: true,
+    invite: { email: normalized, name: loaded.party.party_name ?? "", token: invite.token },
+  };
+}
+
+/**
+ * Poistaa kutsun vuokralaiselta, joka ei ole liittynyt.
+ *
+ * Rivi poistetaan kokonaan eikä merkitä perutuksi: liittymätön kutsu on
+ * vain vuokranantajan kirjoittama nimi ja osoite, eikä sen säilyttäminen
+ * palvele ketään. Poistosta jää lokimerkintä ilman henkilötietoja.
+ *
+ * Jos poistettu oli ensimmäinen kahdesta, jäljelle jäänyt siirtyy
+ * ensimmäiseksi: sopimus luettelee vuokralaiset järjestyksessä, eikä
+ * "toinen vuokralainen" ilman ensimmäistä ole järkevä.
+ */
+export async function removeInvite(
+  userId: string,
+  tenancyId: string,
+  partyId: string,
+): Promise<{ ok: true } | { ok: false; reason: PendingPartyBlocker | "failed" }> {
+  const loaded = await loadPendingParty(userId, tenancyId, partyId, "remove");
+  if (!loaded.ok) return loaded;
+
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("rs_tenancy_parties")
+    .delete()
+    .eq("id", partyId)
+    .eq("role", "tenant")
+    .is("user_id", null)
+    .select("id");
+
+  if (error) {
+    console.error("[tenancies] kutsun poisto epäonnistui:", error.message);
+    return { ok: false, reason: "failed" };
+  }
+  if (!touched(data)) return { ok: false, reason: "joined" };
+
+  const { error: shiftError } = await supabase
+    .from("rs_tenancy_parties")
+    .update({ position: loaded.party.position, updated_at: new Date().toISOString() })
+    .eq("tenancy_id", tenancyId)
+    .eq("role", "tenant")
+    .eq("position", loaded.party.position + 1);
+  if (shiftError) {
+    console.error("[tenancies] järjestyksen korjaus epäonnistui:", shiftError.message);
   }
 
-  return { email: party.invite_email ?? "", name: "", token: invite.token };
+  await audit(userId, tenancyId, "tenancy.invite.removed", "tenancy_party", partyId);
+  return { ok: true };
+}
+
+/**
+ * Faktat vuokrasuhteen poiston päätökseen (`tenancyDeletionBlocker`).
+ * `null`, jos käyttäjä ei ole vuokrasuhteen osapuoli.
+ */
+export async function getTenancyDeletionFacts(
+  userId: string,
+  tenancyId: string,
+): Promise<TenancyDeletionFacts | null> {
+  const tenancy = await getTenancy(userId, tenancyId);
+  if (!tenancy) return null;
+
+  const supabase = getServiceClient();
+  const [tenancyRow, parties, contract, inspections, certificates, expenses] = await Promise.all([
+    supabase
+      .from("rs_tenancies")
+      .select("paid_via, paid_at, signing_started_at, stripe_payment_id")
+      .eq("id", tenancyId)
+      .maybeSingle(),
+    supabase
+      .from("rs_tenancy_parties")
+      .select("user_id")
+      .eq("tenancy_id", tenancyId)
+      .eq("role", "tenant"),
+    supabase
+      .from("rs_contracts")
+      .select("esinetti_round_id, signed_at")
+      .eq("tenancy_id", tenancyId)
+      .maybeSingle(),
+    supabase
+      .from("rs_inspections")
+      .select("esinetti_round_id, signed_at")
+      .eq("tenancy_id", tenancyId),
+    supabase.from("rs_certificates").select("id").eq("tenancy_id", tenancyId),
+    supabase.from("rs_expenses").select("id").eq("tenancy_id", tenancyId),
+  ]);
+
+  const failed = [tenancyRow, parties, contract, inspections, certificates, expenses].find(
+    (r) => r.error,
+  );
+  if (failed?.error) {
+    console.error("[tenancies] poiston tarkistus epäonnistui:", failed.error.message);
+    throw new Error("Vuokrasuhteen tarkistus epäonnistui.");
+  }
+
+  const billing = tenancyRow.data as {
+    paid_via: string | null;
+    paid_at: string | null;
+    signing_started_at: string | null;
+    stripe_payment_id: string | null;
+  } | null;
+  const contractRow = contract.data as {
+    esinetti_round_id: string | null;
+    signed_at: string | null;
+  } | null;
+  const inspectionRows = (inspections.data ?? []) as Array<{
+    esinetti_round_id: string | null;
+    signed_at: string | null;
+  }>;
+  const tenantRows = (parties.data ?? []) as Array<{ user_id: string | null }>;
+
+  return {
+    isLandlord: tenancy.landlordUserId === userId,
+    status: tenancy.status,
+    joinedTenants: tenantRows.filter((row) => row.user_id).length,
+    signingStarted:
+      Boolean(billing?.signing_started_at) ||
+      Boolean(contractRow?.esinetti_round_id || contractRow?.signed_at) ||
+      inspectionRows.some((row) => row.esinetti_round_id || row.signed_at),
+    paid: Boolean(billing?.paid_via || billing?.paid_at || billing?.stripe_payment_id),
+    certificates: ((certificates.data ?? []) as unknown[]).length,
+    expenses: ((expenses.data ?? []) as unknown[]).length,
+  };
+}
+
+export type DeleteTenancyResult =
+  | { ok: true }
+  | { ok: false; reason: TenancyDeletionBlocker | "not_found" | "failed" };
+
+/**
+ * Poistaa vuokrasuhdeluonnoksen kokonaan (ks. `tenancyDeletionBlocker`).
+ *
+ * Tietokanta poistaa vuokrasuhteen mukana sen osapuolet, sopimusluonnoksen,
+ * katselmukset, kuvarivit, huoltokirjan ja kommentit (`on delete cascade`).
+ * Aiemmat lokimerkinnät jäävät: niiden vuokrasuhdeviite tyhjenee
+ * (`on delete set null`), mutta `target_id` kertoo yhä, mitä tehtiin ja kuka.
+ *
+ * Kuvatiedostot poistetaan Storagesta erikseen, koska tietokanta ei ulotu
+ * sinne. Poisto tehdään vasta rivien jälkeen ja parhaalla yrityksellä:
+ * jäljelle jäänyt tiedosto on huono, mutta rivi joka osoittaa poistettuun
+ * tiedostoon olisi pahempi.
+ */
+export async function deleteTenancy(
+  userId: string,
+  tenancyId: string,
+): Promise<DeleteTenancyResult> {
+  const facts = await getTenancyDeletionFacts(userId, tenancyId);
+  if (!facts) return { ok: false, reason: "not_found" };
+
+  const blocker = tenancyDeletionBlocker(facts);
+  if (blocker) return { ok: false, reason: blocker };
+
+  const supabase = getServiceClient();
+
+  const { data: photos } = await supabase
+    .from("rs_photos")
+    .select("storage_path")
+    .eq("tenancy_id", tenancyId);
+  const paths = ((photos ?? []) as Array<{ storage_path: string | null }>)
+    .map((row) => row.storage_path)
+    .filter((path): path is string => Boolean(path));
+
+  const { data, error } = await supabase
+    .from("rs_tenancies")
+    .delete()
+    .eq("id", tenancyId)
+    .eq("landlord_user_id", userId)
+    // Ehdot uudelleen poistossa: jos allekirjoitus tai maksu alkoi
+    // tarkistuksen jälkeen, mitään ei poisteta.
+    .in("status", ["draft", "inspection"])
+    .is("signing_started_at", null)
+    .is("paid_at", null)
+    .select("id");
+
+  if (error) {
+    console.error("[tenancies] vuokrasuhteen poisto epäonnistui:", error.message);
+    return { ok: false, reason: "failed" };
+  }
+  if (!touched(data)) return { ok: false, reason: "failed" };
+
+  // Merkintä vasta onnistuneen poiston jälkeen, eikä vuokrasuhdeviitettä:
+  // rivi on jo poissa. `target_id` kertoo, mikä vuokrasuhde poistettiin.
+  await audit(userId, null, "tenancy.deleted", "tenancy", tenancyId);
+
+  if (paths.length > 0) {
+    const { error: storageError } = await supabase.storage.from("photos").remove(paths);
+    if (storageError) {
+      console.error("[tenancies] kuvatiedostojen poisto epäonnistui:", storageError.message);
+    }
+  }
+
+  return { ok: true };
 }
 
 /**

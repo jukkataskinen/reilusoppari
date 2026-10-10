@@ -355,6 +355,17 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
       selaimen tarkistus ohitetaan. Harkitse palvelimelle oma "puuttuu"-viesti
       (vaatii testin `contract.test.ts` päivityksen)
 
+## Kutsun korjaus — Jukan havainto 2026-10-10
+
+- [x] Liittymättömän vuokralaisen sähköpostin korjaus: uusi kutsu lähtee
+      uuteen osoitteeseen, vanha linkki lakkaa toimimasta
+- [x] Lähetä kutsu uudelleen (sähköpostilla, raja 10/h), kutsu lähtee
+      sähköpostilla myös vuokrasuhdetta luotaessa
+- [x] Poista kutsu (vahvistus), poista vuokrasuhdeluonnos (vahvistus; syy
+      näkyy, jos poisto ei ole mahdollinen), ks. DECISIONS.md 2026-10-10
+- [ ] Vuokralaisen lisääminen jälkikäteen (esim. kutsun poiston jälkeen).
+      Nyt vuokrasuhteen voi poistaa ja luoda uudelleen.
+
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
 **Muutettu 2026-09-11:** Jukan korjaus — vaatimus ei ole sovelluskauppa vaan
