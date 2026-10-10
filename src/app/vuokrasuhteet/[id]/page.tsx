@@ -11,6 +11,12 @@ import {
 } from "@/lib/tenancy/invite-management";
 import { formatAddress } from "@/lib/property/schema";
 import { findInspection } from "@/lib/db/inspections";
+import {
+  loadSignedDocumentFacts,
+  shouldOfferFetch,
+  signedDocumentList,
+} from "@/lib/tenancy/signed-documents";
+import { SignedDocuments } from "@/components/SignedDocuments";
 import { formatFinnishDate, inspectionDeadlineView } from "@/lib/inspection/deadline";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { InviteRow } from "./InviteRow";
@@ -35,7 +41,7 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [parties, property, deletionFacts, initialInspection] = await Promise.all([
+  const [parties, property, deletionFacts, initialInspection, documentFacts] = await Promise.all([
     listParties(user.id, id),
     // Vuokralainen ei omista asuntoa, joten hänelle tämä on `null`.
     getProperty(user.id, tenancy.propertyId),
@@ -43,7 +49,9 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
     isLandlord ? getTenancyDeletionFacts(user.id, id) : Promise.resolve(null),
     // Ei luo katselmusta: sivun avaaminen ei saa aloittaa mitään.
     findInspection(user.id, id, "initial"),
+    loadSignedDocumentFacts(user.id, id),
   ]);
+  const offerFetch = await shouldOfferFetch(user.id, id, documentFacts);
 
   /*
     Alkukatselmuksen tila ja määräaika näkyvät vuokrasuhteen sivulla (Jukan
@@ -212,6 +220,12 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </section>
+
+      <SignedDocuments
+        tenancyId={tenancy.id}
+        documents={signedDocumentList(documentFacts)}
+        showFetch={offerFetch}
+      />
 
       <div className="mt-10">
         <EndOfTenancyNotice />

@@ -2201,3 +2201,8 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 - **Linkki ei jää mihinkään.** Haetaan napin painalluksesta palvelintoiminnolla, ei sivun latauksessa; ei tallenneta, ei lokiteta, ei osoiteriville. Avattava osoite tarkistetaan: eSinetin origin ja polku `/sign/<token>`.
 - **Laajuus.** Sopimuksen ja alkukatselmuksen pöytäkirjan kierrokset Allekirjoitus-sivulla. Loppukatselmus jää myöhemmäksi.
 
+## 2026-10-10 — Allekirjoitetut asiakirjat näytetään Reilusopparissa (Jukka)
+
+- **eSinetti on taustapalvelu.** Kumpikaan osapuoli ei käy eSinetissä. Sinetöidyt asiakirjat (`sealed_path`) listataan kohdassa "Allekirjoitetut asiakirjat" vuokrasuhteen sivulla ja Allekirjoitus-sivulla molemmille osapuolille. Lataus reitistä `/vuokrasuhteet/[id]/asiakirjat/[laji]`, joka tarkistaa osapuolen ja striimaa tiedoston; Storage-osoitetta ei anneta. Linkki avautuu omaan ikkunaansa (PDF-linkit 10.10.2026).
+- **Puuttuva asiakirja haetaan napilla.** Jos kierros on eSinetissä valmis mutta meillä ei ole tiedostoa (webhook ei tullut tai tallennus epäonnistui), vuokranantaja näkee napin "Hae allekirjoitetut asiakirjat". Kierros luetaan eSinetiltä, muunnetaan webhookin muotoon ja ajetaan samat käsittelijät; lisäksi `storeMissingSealedDocuments` täydentää rivit, joilla on allekirjoitus mutta ei tiedostoa, koska käsittelijät eivät yritä latausta uudelleen. Keskeneräistä kierrosta ei käsitellä. Valmiiksi tarkistamattomat kierrokset kysytään eSinetiltä sivua ladattaessa vain vuokranantajalle.
+
