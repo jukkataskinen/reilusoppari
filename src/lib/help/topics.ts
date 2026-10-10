@@ -78,7 +78,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         steps: [
           "Lisää asunto.",
           "Luo asunnolle vuokrasuhde ja anna vuokralaisen sähköposti.",
-          "Lähetä kutsulinkki vuokralaiselle.",
+          "Kutsu lähtee vuokralaiselle sähköpostilla.",
           "Täytä sopimus ja tee alkukatselmus yhdessä vuokralaisen kanssa.",
           "Lähetä sopimus allekirjoitettavaksi.",
         ],
@@ -163,7 +163,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     group: "Asunto ja vuokrasuhde",
     title: "Vuokrasuhde ja kutsu",
     summary: "Vuokrasuhde kokoaa sopimuksen, katselmuksen, vuokranmaksut ja huollot yhteen paikkaan.",
-    highlights: ["Yksi tai kaksi vuokralaista", "Kutsulinkki vuokralaiselle", "Ensimmäinen vuokrasuhde on ilmainen"],
+    highlights: ["Yksi tai kaksi vuokralaista", "Kutsu vuokralaiselle sähköpostilla", "Ensimmäinen vuokrasuhde on ilmainen"],
     roles: "both",
     appPath: "/vuokrasuhteet",
     appLabel: "Vuokrasuhteet",
@@ -180,12 +180,50 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
-        title: "Kutsulinkki",
+        title: "Kutsu",
         steps: [
-          "Kun vuokrasuhde on luotu, näet jokaisen vuokralaisen kutsulinkin.",
-          "Kopioi linkki ja lähetä se vuokralaiselle itse, esimerkiksi sähköpostilla tai viestillä. Sovellus ei lähetä kutsua.",
-          "Linkki näytetään vain kerran. Jos se katoaa, avaa vuokrasuhde ja valitse Luo uusi kutsulinkki.",
-          "Uusi linkki mitätöi vanhan. Vanha linkki ei enää toimi.",
+          "Kun vuokrasuhde on luotu, kutsu lähtee jokaiselle vuokralaiselle sähköpostilla.",
+          "Näet myös kutsulinkin. Voit lähettää sen itse, esimerkiksi viestillä.",
+          "Linkki näytetään vain kerran. Jos se katoaa, avaa vuokrasuhde ja valitse Lähetä kutsu uudelleen.",
+          "Uusi kutsu mitätöi vanhan. Vanha linkki ei enää toimi.",
+        ],
+      },
+      {
+        title: "Jos kirjoitit väärän sähköpostin",
+        steps: [
+          "Avaa vuokrasuhde.",
+          "Valitse vuokralaisen kohdalta Korjaa sähköposti.",
+          "Kirjoita oikea osoite ja valitse Tallenna ja lähetä kutsu.",
+          "Kutsu lähtee uuteen osoitteeseen. Väärään osoitteeseen mennyt linkki lakkaa toimimasta.",
+        ],
+        bullets: [
+          "Osoitteen voi korjata vain, jos vuokralainen ei ole vielä liittynyt. Liittynyt vuokralainen hallitsee itse omaa sähköpostiaan.",
+          "Kun sopimus on lähetetty allekirjoitettavaksi, osoitetta ei voi enää korjata.",
+        ],
+      },
+      {
+        title: "Kutsun poisto",
+        steps: [
+          "Avaa vuokrasuhde.",
+          "Valitse vuokralaisen kohdalta Poista kutsu.",
+          "Valitse Kyllä, poista kutsu.",
+        ],
+        bullets: [
+          "Kutsun voi poistaa vain vuokralaiselta, joka ei ole vielä liittynyt.",
+          "Vuokrasuhde jää, vaikka siinä ei olisi yhtään vuokralaista.",
+        ],
+      },
+      {
+        title: "Vuokrasuhteen poisto",
+        steps: [
+          "Avaa vuokrasuhde.",
+          "Valitse sivun alalaidasta Poista vuokrasuhde.",
+          "Valitse Kyllä, poista vuokrasuhde.",
+        ],
+        bullets: [
+          "Poisto onnistuu vain, jos kukaan ei ole liittynyt, mitään ei ole allekirjoitettu eikä maksettu, eikä vuokrasuhteeseen ole kirjattu kuluja.",
+          "Muuten sivulla lukee, miksi poisto ei onnistu. Voimassa olevan vuokrasuhteen voit päättää.",
+          "Poisto on lopullinen. Asunto säilyy.",
         ],
       },
       {
@@ -194,7 +232,7 @@ export const HELP_TOPICS: HelpTopic[] = [
           "Ylhäällä näkyvät alkupäivä, kesto, vuokra, eräpäivä ja vakuus.",
           "Painikkeista pääset sopimukseen, osapuolten tietoihin, katselmukseen, allekirjoitukseen, vuokranmaksuun, huoltokirjaan ja päättymiseen.",
           "Kulut näkyvät vain vuokranantajalle.",
-          "Vuokralaisesta näet, onko hän jo liittynyt.",
+          "Vuokralaisesta näet, onko hän jo liittynyt. Jos ei ole, voit lähettää kutsun uudelleen, korjata sähköpostin tai poistaa kutsun.",
         ],
       },
       {
@@ -233,7 +271,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       {
         title: "Jos linkki ei toimi",
         bullets: [
-          "Kutsu ei ole voimassa: linkki on vanhentunut tai vuokranantaja on tehnyt uuden. Pyydä vuokranantajalta uusi linkki.",
+          "Kutsu ei ole voimassa: linkki on vanhentunut tai vuokranantaja on lähettänyt uuden. Katso, onko sähköpostiisi tullut uudempi kutsu, tai pyydä vuokranantajaa lähettämään kutsu uudelleen.",
           "Kutsu on toiselle osoitteelle: olet kirjautunut eri sähköpostilla. Valitse Kirjaudu ulos ja yritä toisella osoitteella.",
           "Odota hetki: linkkiä on avattu monta kertaa lyhyessä ajassa. Yritä hetken päästä uudelleen.",
         ],

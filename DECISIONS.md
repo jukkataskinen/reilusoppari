@@ -2116,3 +2116,45 @@ BLOCKERS.md ja PLAN.md korjattu vastaamaan todellisuutta. Opetus: kun
 tehtävä merkitään "odottaa avainta", kannattaisi tarkistaa Vercelistä eikä
 vain BLOCKERS.md:stä, ennen kuin vetää saman johtopäätöksen seuraavalla
 kerralla.
+
+
+## 2026-10-10 — Kutsun korjaus, uudelleenlähetys ja vuokrasuhteen poisto
+
+Jukka kirjoitti testivuokrasuhteeseen väärän sähköpostin eikä voinut
+korjata sitä, lähettää kutsua uudelleen eikä poistaa mitään.
+
+**Kutsu lähtee nyt sähköpostilla** (luonnissa, uudelleenlähetyksessä ja
+osoitteen korjauksessa) olemassa olevan `sendEmail`in kautta. Aiemmin
+sovellus vain näytti linkin. "Lähetä uudelleen" ilman ensimmäistä lähetystä
+olisi ollut harhaanjohtava, ja CLAUDE.md 5.1 sanoo kutsun lähtevän
+vuokralaiselle. Linkki näytetään edelleen kerran, jotta sen voi lähettää
+itse, jos viesti ei mene perille. Ilman `RESEND_API_KEY`:tä mitään ei lähde,
+ja näkymä kertoo sen.
+
+**Raja 10 kutsusähköpostia tunnissa per vuokranantaja** (`rs_kasvata_kutsuraja`,
+sama mekanismi kuin kuvissa). Viesti lähtee Reilusopparin nimissä vieraalle
+osoitteelle, joten rajaton lähetys olisi postituslista. Raja tarkistetaan
+ennen uutta linkkiä, ettei rajan yli mennyt painallus mitätöi edellistä.
+
+**Osoitteen korjaus ja kutsun poisto vain liittymättömälle ja vain ennen
+allekirjoitusta (`draft`, `inspection`).** Liittynyt vuokralainen omistaa
+tilinsä. Allekirjoituskierroksen jälkeen allekirjoittajat on lukittu
+kierrokseen. Uudelleenlähetys samaan osoitteeseen on sallittu aina ennen
+liittymistä.
+
+**Vuokrasuhteen poisto on oikea poisto, ei peruutusmerkintä**, ja se
+sallitaan vain luonnokselle: kukaan ei ole liittynyt, mitään ei ole
+allekirjoitettu tai lähetetty allekirjoitettavaksi, ei maksua, ei
+todistuksia eikä kuluja. Säilytyssääntö (3 vuotta päättymisestä) koskee
+vuokrasuhdetta, joka on ollut kahden ihmisen välillä; luonnoksen
+säilyttäminen säilyttäisi vain kutsutun sähköpostin ilman syytä. Kulut
+estävät poiston, koska kuitin kuva on vuokrasuhteen rivi ja lähtisi mukana.
+Lokiin jää merkintä (`tenancy.deleted`, `target_id`), ei henkilötietoja.
+Muissa tapauksissa sivu kertoo syyn, eikä poistonappia näytetä.
+
+**Oikeudet tarkistetaan palvelimella** (`db/tenancies.ts` → puhtaat säännöt
+`tenancy/invite-management.ts`), kuten muuallakin tässä repossa: kanta
+kirjoitetaan palveluroolilla, joten RLS ei ole tässä suoja. Kirjoituksissa
+ehto toistetaan (`user_id is null`, tila), jotta väliin ehtinyt liittyminen
+tai allekirjoitus ei jää alle.
+

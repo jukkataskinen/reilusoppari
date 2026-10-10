@@ -31,9 +31,18 @@ export interface EmailMessage {
   to: string;
   title: string;
   body: string;
-  /** Polku sovelluksessa, esimerkiksi `/vuokrasuhteet/…/vuokrat`. */
+  /** Polku sovelluksessa, esimerkiksi `/vuokrasuhteet/…/vuokrat`, tai koko osoite. */
   path: string;
+  /** Napin teksti. Oletus "Avaa Reilusoppari". */
+  buttonLabel?: string;
+  /**
+   * Alarivi: miksi viesti tuli. Oletus koskee ilmoituksia; kutsuviesti
+   * kertoo oman syynsä, koska vastaanottajalla ei ole vielä tiliä.
+   */
+  footer?: string;
 }
+
+const DEFAULT_FOOTER = "Tämä viesti tuli, koska ilmoituksia ei ole otettu käyttöön puhelimessasi.";
 
 function appUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.reilusoppari.fi";
@@ -48,6 +57,8 @@ function appUrl(path: string): string {
  */
 function render(message: EmailMessage): { text: string; html: string } {
   const link = appUrl(message.path);
+  const footer = message.footer ?? DEFAULT_FOOTER;
+  const button = message.buttonLabel ?? "Avaa Reilusoppari";
 
   const text = [
     message.title,
@@ -57,7 +68,7 @@ function render(message: EmailMessage): { text: string; html: string } {
     link,
     "",
     "— Reilusoppari",
-    "Tämä viesti tuli, koska ilmoituksia ei ole otettu käyttöön puhelimessasi.",
+    footer,
   ].join("\n");
 
   /*
@@ -67,8 +78,8 @@ function render(message: EmailMessage): { text: string; html: string } {
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1c2430;line-height:1.5">
   <p style="font-size:17px;font-weight:600;margin:0 0 12px">${escapeHtml(message.title)}</p>
   <p style="margin:0 0 20px">${escapeHtml(message.body)}</p>
-  <p style="margin:0 0 24px"><a href="${link}" style="display:inline-block;background:#1c2430;color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none">Avaa Reilusoppari</a></p>
-  <p style="font-size:13px;color:#6b7683;margin:0">Tämä viesti tuli, koska ilmoituksia ei ole otettu käyttöön puhelimessasi.</p>
+  <p style="margin:0 0 24px"><a href="${escapeHtml(link)}" style="display:inline-block;background:#1c2430;color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none">${escapeHtml(button)}</a></p>
+  <p style="font-size:13px;color:#6b7683;margin:0">${escapeHtml(footer)}</p>
 </div>`;
 
   return { text, html };

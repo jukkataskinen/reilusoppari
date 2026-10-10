@@ -21,7 +21,14 @@ vi.mock("@/lib/auth/session", () => ({
 vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/db/properties", () => ({ createProperty }));
-vi.mock("@/lib/db/tenancies", () => ({ createTenancy, reissueInvite: vi.fn() }));
+vi.mock("@/lib/db/tenancies", () => ({
+  createTenancy,
+  getTenancyProperty: vi.fn(async () => null),
+}));
+vi.mock("@/lib/notifications/invite-email", () => ({ sendInviteEmail: vi.fn(async () => false) }));
+vi.mock("@/lib/security/rate-limit", () => ({
+  checkRateLimit: vi.fn(async () => ({ allowed: true, count: 1 })),
+}));
 
 const { createPropertyAction } = await import("@/app/asunnot/actions");
 const { createTenancyAction } = await import("@/app/vuokrasuhteet/actions");
