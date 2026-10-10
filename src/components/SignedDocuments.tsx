@@ -21,20 +21,30 @@ export function SignedDocuments({
   tenancyId,
   documents,
   showFetch,
+  inline = false,
 }: {
   tenancyId: string;
   documents: SignedDocument[];
   /** Vuokranantajalle, kun valmiin kierroksen asiakirja puuttuu meiltä. */
   showFetch: boolean;
+  /**
+   * Vuokrasuhteen sivulla lista on osa ryhmää "Sopimus ja asiakirjat"
+   * (10.10.2026), joten otsikko on ryhmän alaotsikko eikä oma osionsa.
+   */
+  inline?: boolean;
 }) {
   if (documents.length === 0 && !showFetch) return null;
 
+  const Heading = inline ? "h3" : "h2";
+
   return (
-    <section className="mt-10">
-      <h2 className="text-lg">Allekirjoitetut asiakirjat</h2>
+    <section className={inline ? "mt-4" : "mt-10"}>
+      <Heading className={inline ? "text-sm font-medium text-ink/70" : "text-lg"}>
+        Allekirjoitetut asiakirjat
+      </Heading>
 
       {documents.length > 0 ? (
-        <ul className="mt-4 flex flex-col gap-3">
+        <ul className={(inline ? "mt-2" : "mt-4") + " flex flex-col gap-3"}>
           {documents.map((document) => (
             <li
               key={document.kind}

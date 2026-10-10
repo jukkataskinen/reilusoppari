@@ -434,3 +434,29 @@ export async function getMaintenanceEntry(
   const entries = await listMaintenanceEntries(userId, tenancyId);
   return entries.find((entry) => entry.id === entryId) ?? null;
 }
+
+/**
+ * Avointen vikojen määrä vuokrasuhteen sivulle.
+ *
+ * Oma kevyt kysely eikä `listMaintenanceEntries`: sivu tarvitsee vain luvun,
+ * ei kuvia eikä kommentteja. Avoin = vika, jota ei ole korjattu eikä peruttu,
+ * sama sääntö kuin huoltokirjan sivulla.
+ */
+export async function countOpenDefects(userId: string, tenancyId: string): Promise<number> {
+  await requireTenancyParty(userId, tenancyId);
+
+  const { count, error } = await getServiceClient()
+    .from("rs_maintenance_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("tenancy_id", tenancyId)
+    .eq("kind", "defect")
+    .is("resolved_at", null)
+    .is("cancelled_at", null);
+
+  if (error) {
+    console.error("[huoltokirja] avointen vikojen laskenta epäonnistui:", error.message);
+    throw new Error("Huoltokirjan haku epäonnistui.");
+  }
+
+  return count ?? 0;
+}

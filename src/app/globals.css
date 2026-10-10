@@ -16,6 +16,9 @@
   --color-paper: #ffffff;
   --color-cloud: #f3f6fa;
   --color-moss: #2e9e6b;
+  /* Odottaa toista osapuolta (vuokrasuhteen vaiheet 10.10.2026). Vain merkkinä
+     tekstin rinnalla, ei tekstin värinä: kontrasti ei riitä pieneen tekstiin. */
+  --color-amber: #e0a526;
   --color-line: #dfe6f0;
 
   --font-sans: var(--font-sans-local), ui-sans-serif, system-ui, sans-serif;
