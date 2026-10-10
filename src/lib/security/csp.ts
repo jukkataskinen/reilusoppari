@@ -39,7 +39,11 @@ function supabaseOrigin(): string | null {
  * Kehityksessä sallitaan `'unsafe-eval'`, koska Next.js:n nopea päivitys
  * tarvitsee sitä. Tuotannossa ei — se on juuri se, mitä ei haluta.
  */
-export function buildContentSecurityPolicy(nonce: string, isDev: boolean): string {
+export function buildContentSecurityPolicy(
+  nonce: string,
+  isDev: boolean,
+  options: { pdfResponse?: boolean } = {},
+): string {
   const storage = supabaseOrigin();
   // Sentryn vastaanotto vain, kun virheseuranta on käytössä (DECISIONS.md
   // 2026-10-04). Ilman DSN:ää policy on sama kuin ennen.
@@ -70,13 +74,17 @@ export function buildContentSecurityPolicy(nonce: string, isDev: boolean): strin
     "media-src": ["'self'", "blob:"],
     "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],
-    // Sovellusta ei upoteta mihinkään — toisin kuin eSinetin /embed.
-    "frame-ancestors": ["'none'"],
+    // Sovellusta ei upoteta mihinkään — toisin kuin eSinetin /embed. Poikkeus:
+    // oma PDF-vastaus saa näkyä oman sivun sisällä (esikatselu, Jukka
+    // 10.10.2026: "Selain ei näytä asiakirjaa tässä"), ei muualla.
+    "frame-ancestors": options.pdfResponse ? ["'self'"] : ["'none'"],
     // Lomake ei saa lähettää mihinkään muualle. Auth0-kirjautuminen on
     // uudelleenohjaus, ei lomakelähetys, joten tämä ei estä sitä.
     "form-action": ["'self'"],
     "base-uri": ["'none'"],
-    "object-src": ["'none'"],
+    // PDF-esikatselu käyttää `object`-elementtiä, jotta varateksti näkyy, jos
+    // selain ei osaa näyttää PDF:ää. Vain omasta osoitteesta.
+    "object-src": ["'self'"],
   };
 
   const parts = Object.entries(directives).map(([key, values]) => key + " " + values.join(" "));

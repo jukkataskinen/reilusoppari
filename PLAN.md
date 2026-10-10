@@ -378,6 +378,12 @@ Ensimmäinen oikea allekirjoitus 10.10.2026 onnistui, mutta vuokranantaja, joka 
 - [x] **Allekirjoitetut asiakirjat Reilusopparissa (Jukka 10.10.2026).** eSinetti on taustapalvelu: sinetöity sopimus ja pöytäkirjat näkyvät vuokrasuhteen sivulla ja Allekirjoitus-sivulla (Avaa PDF), lataus osapuolille palvelimen kautta. Vuokranantajan nappi "Hae allekirjoitetut asiakirjat", jos webhook ei tuonut niitä. Ks. DECISIONS.md 2026-10-10.
 - [ ] **Kutsun sähköposti ei lähtenyt 10.10.2026.** Selvitä syy: `src/lib/notifications/email.ts` palauttaa false ilman syytä käyttäjälle. Lisää lokiin Resendin virhekoodi ja virheen nimi (ei vastaanottajaa). reilusoppari.fi on vahvistettu Resendissä (eu-west-1, DNS tarkistettu 10.10.2026), joten todennäköinen syy on Vercelin `RESEND_API_KEY` (rajattu toiseen verkkotunnukseen) tai `EMAIL_FROM`. Jukka tarkistaa Resendin lokin (Resend → Logs, 10.10.2026 klo 9–10) ja Vercelin muuttujat; kirjaa BLOCKERSiin klikkauspolku.
 
+## PDF:t puhelimen kotinäytön sovelluksessa — Jukan havainnot 11.9. ja 10.10.2026
+
+Kotinäytön sovelluksessa (iPhone) sekä `target="_blank"` (11.9.: näkymä ilman sulkemisnappia) että samaan ikkunaan avautuva lataus (10.10.: ei paluuta) johtavat umpikujaan. Esikatselu sivun sisällä toimii 10.10.2026 alkaen (CSP `object-src 'self'`, PDF-reiteille `frame-ancestors 'self'`).
+
+- [ ] Tallennus ilman siirtymää: puhelimessa "Tallenna PDF" hakee tiedoston (`fetch` → `Blob` → `File`) ja avaa jakovalikon `navigator.share({ files })` (iPhonessa "Tallenna tiedostoihin"), muuten tavallinen lataus. Ei uutta ikkunaa eikä siirtymää kotinäytön sovelluksessa (`display-mode: standalone`). Koskee kaikkia PDF-linkkejä (esikatselut, pöytäkirjat, todistukset, Allekirjoitetut asiakirjat, verolaskelma); yksi yhteinen komponentti. Testi `tests/unit/pdf-linkit.test.ts` päivitetään vaatimaan komponentin käyttöä. Ohje.
+
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
 **Muutettu 2026-09-11:** Jukan korjaus — vaatimus ei ole sovelluskauppa vaan

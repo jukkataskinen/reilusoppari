@@ -32,7 +32,12 @@ export async function middleware(request: NextRequest) {
   }
 
   const nonce = createNonce();
-  const csp = buildContentSecurityPolicy(nonce, process.env.NODE_ENV !== "production");
+  // PDF-reitit (`.../pdf` ja allekirjoitetut asiakirjat) saavat näkyä oman
+  // sivun esikatselussa; muu sovellus ei ole upotettavissa.
+  const pdfResponse = /\/pdf$|\/asiakirjat\/[^/]+$/.test(request.nextUrl.pathname);
+  const csp = buildContentSecurityPolicy(nonce, process.env.NODE_ENV !== "production", {
+    pdfResponse,
+  });
 
   // CSP asetetaan myös PYYNNÖN otsikoihin: Next.js lukee noncen sieltä ja
   // lisää sen omiin skriptitageihinsa. Ilman tätä sivu latautuisi ilman
@@ -50,6 +55,9 @@ export async function middleware(request: NextRequest) {
   }
 
   response.headers.set("content-security-policy", csp);
+  // X-Frame-Options DENY (next.config.ts) estäisi oman esikatselun vanhoissa
+  // selaimissa; PDF-vastauksille sama sivusto sallitaan.
+  if (pdfResponse) response.headers.set("x-frame-options", "SAMEORIGIN");
 
   return response;
 }
