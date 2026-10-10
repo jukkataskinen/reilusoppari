@@ -1,5 +1,9 @@
 # BLOCKERS — reilusoppari (sovellus)
 
+## Todennettu 10.10.2026: allekirjoitus ja sinetöinti tuotannossa (Jukka)
+
+Kaksi oikeaa allekirjoitusta tuotannossa: (1) Yhdystie 4, sopimus ja alkukatselmus samassa kierroksessa (eSinetti: Valmis 2/2), (2) toinen testivuokrasuhde uudella kululla: sopimus erikseen, vuokranantaja "Allekirjoita nyt" -napista (eSinetin upotuslinkki, migraatio 0021 ajettu eSinettiin 10.10.2026), vuokralainen sähköpostin linkistä. Maksu ohitettiin suositteluedulla, koska Stripeä ei ole (5 etua Jukan tunnukselle SQL:llä 10.10.2026, testikäyttöön). Lanseerauksen edellytyksistä jäljellä: Stripe-tili ja avaimet (maksut), PDF:n tallennus puhelimessa jakovalikolla (PLAN).
+
 ## Tila 2026-09-26: avoimet esteet lyhyesti
 
 Repo on GitHubissa (<https://github.com/jukkataskinen/reilusoppari>), tuotanto
