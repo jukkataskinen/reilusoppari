@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
+import { fieldErrors } from "@/lib/forms/schema";
 import { createExpense, createPropertyExpense } from "@/lib/db/expenses";
-import { isExpenseCategory, type ExpenseCategory } from "@/lib/expenses/categories";
+import { expenseSchema } from "@/lib/expenses/schema";
 
 /**
  * Kulun kirjaus (CLAUDE.md 5.7).
@@ -14,6 +15,7 @@ import { isExpenseCategory, type ExpenseCategory } from "@/lib/expenses/categori
  */
 
 export interface ExpenseActionState {
+  errors: Record<string, string>;
   message?: string;
   savedId?: string;
 }
@@ -41,17 +43,23 @@ export async function createExpenseAction(
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
   const propertyId = String(formData.get("propertyId") ?? "");
-  const rawCategory = String(formData.get("category") ?? "");
-  if (!isExpenseCategory(rawCategory)) return { message: "Valitse kululuokka." };
 
-  if (!tenancyId && !propertyId) return { message: "Kohde puuttuu." };
+  const parsed = expenseSchema.safeParse({
+    category: String(formData.get("category") ?? ""),
+    date: String(formData.get("date") ?? ""),
+    amount: String(formData.get("amount") ?? ""),
+    km: String(formData.get("km") ?? ""),
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+
+  if (!tenancyId && !propertyId) return { errors: {}, message: "Kohde puuttuu." };
 
   const entryId = String(formData.get("maintenanceEntryId") ?? "") || null;
 
   const input = {
-    date: String(formData.get("date") ?? ""),
+    date: parsed.data.date,
     amount: number(formData.get("amount")),
-    category: rawCategory as ExpenseCategory,
+    category: parsed.data.category,
     description: String(formData.get("description") ?? ""),
     km: number(formData.get("km")),
     vatIncluded: formData.get("vatIncluded") === "on",
@@ -63,7 +71,7 @@ export async function createExpenseAction(
       ? await createExpense(user.id, tenancyId, input)
       : await createPropertyExpense(user.id, propertyId, input);
 
-    if (!result.ok) return { message: result.message };
+    if (!result.ok) return { errors: {}, message: result.message };
 
     if (tenancyId) {
       revalidatePath(`/vuokrasuhteet/${tenancyId}/kulut`);
@@ -73,8 +81,8 @@ export async function createExpenseAction(
       revalidatePath(`/asunnot/${propertyId}/verolaskelma`);
     }
 
-    return { savedId: result.id };
+    return { errors: {}, savedId: result.id };
   } catch {
-    return { message: "Tallennus ei onnistunut. Yritä hetken kuluttua uudelleen." };
+    return { errors: {}, message: "Tallennus ei onnistunut. Yritä hetken kuluttua uudelleen." };
   }
 }

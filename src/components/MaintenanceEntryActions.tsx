@@ -9,7 +9,7 @@ import {
 } from "@/app/vuokrasuhteet/maintenance-actions";
 import { Form } from "@/components/Form";
 
-const initialState: MaintenanceActionState = {};
+const initialState: MaintenanceActionState = { errors: {} };
 
 /**
  * Merkinnän kommentointi, korjatuksi merkintä ja peruminen.
@@ -65,12 +65,23 @@ export function MaintenanceEntryActions({
           required
           rows={3}
           maxLength={300}
+          aria-invalid={commentState.errors.body ? true : undefined}
+          aria-describedby={commentState.errors.body ? "huolto-kommentti-virhe" : undefined}
           placeholder="esim. huoltomies käy torstaina"
-          className="mt-2 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
+          className={
+            "mt-2 w-full rounded-[10px] border bg-paper p-3 text-base " +
+            (commentState.errors.body ? "border-coral" : "border-line")
+          }
         />
         <p className="mt-1.5 text-sm text-ink/60">
           Enintään 300 merkkiä. Kommentti näkyy toiselle osapuolelle, eikä sitä voi poistaa.
         </p>
+
+        {commentState.errors.body ? (
+          <p id="huolto-kommentti-virhe" className="mt-1.5 text-sm text-coral">
+            {commentState.errors.body}
+          </p>
+        ) : null}
 
         {commentState.message ? (
           <p role="alert" className="mt-2 text-sm text-coral">
@@ -138,9 +149,19 @@ export function MaintenanceEntryActions({
                 id="perumisen-syy"
                 name="reason"
                 maxLength={300}
+                aria-invalid={cancelState.errors.reason ? true : undefined}
+                aria-describedby={cancelState.errors.reason ? "perumisen-syy-virhe" : undefined}
                 placeholder="esim. kirjasin vahingossa väärään vuokrasuhteeseen"
-                className="mt-3 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
+                className={
+                  "mt-3 min-h-[var(--size-touch)] w-full rounded-[10px] border bg-paper px-3 text-base " +
+                  (cancelState.errors.reason ? "border-coral" : "border-line")
+                }
               />
+              {cancelState.errors.reason ? (
+                <p id="perumisen-syy-virhe" className="mt-1.5 text-sm text-coral">
+                  {cancelState.errors.reason}
+                </p>
+              ) : null}
 
               {cancelState.message ? (
                 <p role="alert" className="mt-2 text-sm text-coral">

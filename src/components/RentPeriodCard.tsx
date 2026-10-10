@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useActionState } from "react";
 import {
   commentOnRentAction,
@@ -17,7 +17,7 @@ import {
 import type { RentPeriodRow } from "@/lib/db/rent";
 import { Form } from "@/components/Form";
 
-const initialState: RentActionState = {};
+const initialState: RentActionState = { errors: {} };
 
 function euro(amount: number): string {
   const rounded = Math.round(amount * 100) / 100;
@@ -64,6 +64,7 @@ export function RentPeriodCard({
     commentOnRentAction,
     initialState,
   );
+  const prefix = useId();
 
   const confirmation = period.confirmation;
   const canConfirm = isLandlord && period.editable;
@@ -130,6 +131,11 @@ export function RentPeriodCard({
                 </label>
               ))}
             </div>
+            {confirmState.errors.status ? (
+              <p role="alert" className="mt-2 text-sm text-coral">
+                {confirmState.errors.status}
+              </p>
+            ) : null}
           </fieldset>
 
           {status === "partial" ? (
@@ -141,14 +147,26 @@ export function RentPeriodCard({
                 id={`summa-${period.id}`}
                 name="amountPaid"
                 inputMode="decimal"
+                aria-invalid={confirmState.errors.amountPaid ? true : undefined}
+                aria-describedby={
+                  confirmState.errors.amountPaid ? `${prefix}-amountPaid-virhe` : undefined
+                }
                 defaultValue={
                   confirmation?.amountPaid !== null && confirmation?.amountPaid !== undefined
                     ? String(confirmation.amountPaid)
                     : ""
                 }
                 placeholder="esim. 400"
-                className="mt-1.5 min-h-[var(--size-touch)] w-[10rem] rounded-[10px] border border-line bg-paper px-3 text-base"
+                className={
+                  "mt-1.5 min-h-[var(--size-touch)] w-[10rem] rounded-[10px] border bg-paper px-3 text-base " +
+                  (confirmState.errors.amountPaid ? "border-coral" : "border-line")
+                }
               />
+              {confirmState.errors.amountPaid ? (
+                <p id={`${prefix}-amountPaid-virhe`} className="mt-1.5 text-sm text-coral">
+                  {confirmState.errors.amountPaid}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -202,9 +220,20 @@ export function RentPeriodCard({
             required
             rows={2}
             maxLength={300}
+            aria-invalid={commentState.errors.comment ? true : undefined}
+            aria-describedby={commentState.errors.comment ? `${prefix}-comment-virhe` : undefined}
             placeholder="esim. maksoin 4. päivä, viite saattoi puuttua"
-            className="mt-1.5 w-full rounded-[10px] border border-line bg-paper p-3 text-base"
+            className={
+              "mt-1.5 w-full rounded-[10px] border bg-paper p-3 text-base " +
+              (commentState.errors.comment ? "border-coral" : "border-line")
+            }
           />
+
+          {commentState.errors.comment ? (
+            <p id={`${prefix}-comment-virhe`} className="mt-1.5 text-sm text-coral">
+              {commentState.errors.comment}
+            </p>
+          ) : null}
 
           {commentState.message ? (
             <p role="alert" className="mt-2 text-sm text-coral">

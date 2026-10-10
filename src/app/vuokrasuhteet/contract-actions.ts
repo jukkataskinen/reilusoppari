@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { addContractComment, saveContractTerms } from "@/lib/db/contracts";
 import { fieldErrors } from "@/lib/forms/schema";
-import { contractFormToInput, contractTermsSchema } from "@/lib/tenancy/contract-schema";
+import {
+  contractCommentSchema,
+  contractFormToInput,
+  contractTermsSchema,
+} from "@/lib/tenancy/contract-schema";
 
 /**
  * Sopimuksen ehtojen tallennus (CLAUDE.md 5.1).
@@ -52,6 +56,7 @@ export async function saveContractAction(
 }
 
 export interface CommentActionState {
+  errors: Record<string, string>;
   message?: string;
   sent?: boolean;
 }
@@ -70,15 +75,19 @@ export async function addContractCommentAction(
   if (!user) redirect("/auth/login");
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
-  const body = String(formData.get("body") ?? "");
+
+  const parsed = contractCommentSchema.safeParse({ body: String(formData.get("body") ?? "") });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   try {
-    const result = await addContractComment(user.id, tenancyId, body);
-    if (!result.ok) return { message: "Kirjoita kommentti ennen lähettämistä." };
+    const result = await addContractComment(user.id, tenancyId, parsed.data.body);
+    if (!result.ok) {
+      return { errors: { body: "Kirjoita kommentti ennen lähettämistä." } };
+    }
   } catch {
-    return { message: "Lähetys ei onnistunut. Yritä hetken kuluttua uudelleen." };
+    return { errors: {}, message: "Lähetys ei onnistunut. Yritä hetken kuluttua uudelleen." };
   }
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/sopimus`);
-  return { sent: true };
+  return { errors: {}, sent: true };
 }

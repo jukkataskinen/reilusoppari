@@ -5,7 +5,7 @@ import { addContractCommentAction, type CommentActionState } from "@/app/vuokras
 import type { ContractComment } from "@/lib/db/contracts";
 import { Form } from "@/components/Form";
 
-const initialState: CommentActionState = {};
+const initialState: CommentActionState = { errors: {} };
 
 function formatMoment(iso: string): string {
   return new Date(iso).toLocaleString("fi-FI", {
@@ -81,12 +81,23 @@ export function ContractComments({
           required
           rows={3}
           maxLength={300}
+          aria-invalid={state.errors.body ? true : undefined}
+          aria-describedby={state.errors.body ? "sopimuskommentti-virhe" : undefined}
           placeholder={
             isLandlord ? "Vastaa vuokralaiselle" : "esim. voisiko lemmikit sallia?"
           }
-          className="w-full rounded-[10px] border border-line bg-paper p-3 text-base"
+          className={
+            "w-full rounded-[10px] border bg-paper p-3 text-base " +
+            (state.errors.body ? "border-coral" : "border-line")
+          }
         />
         <p className="mt-1.5 text-sm text-ink/60">Enintään 300 merkkiä. Kommenttia ei voi poistaa.</p>
+
+        {state.errors.body ? (
+          <p id="sopimuskommentti-virhe" className="mt-1.5 text-sm text-coral">
+            {state.errors.body}
+          </p>
+        ) : null}
 
         {state.message ? (
           <p role="alert" className="mt-2 text-sm text-coral">

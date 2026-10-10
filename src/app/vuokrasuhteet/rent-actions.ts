@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
+import { fieldErrors } from "@/lib/forms/schema";
 import { commentOnConfirmation, confirmRent } from "@/lib/db/rent";
-import type { ConfirmationStatus } from "@/lib/rent/confirmation";
+import { confirmRentSchema, rentCommentSchema } from "@/lib/rent/confirmation";
 import { dispatchForPeriod, loadPeriodState } from "@/lib/rent/dispatch";
 
 /**
@@ -15,11 +16,10 @@ import { dispatchForPeriod, loadPeriodState } from "@/lib/rent/dispatch";
  */
 
 export interface RentActionState {
+  errors: Record<string, string>;
   message?: string;
   done?: boolean;
 }
-
-const STATUSES: ConfirmationStatus[] = ["paid", "not_yet", "partial"];
 
 export async function confirmRentAction(
   _previous: RentActionState,
@@ -30,14 +30,15 @@ export async function confirmRentAction(
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
   const periodId = String(formData.get("periodId") ?? "");
-  const raw = String(formData.get("status") ?? "");
 
-  if (!STATUSES.includes(raw as ConfirmationStatus)) {
-    return { message: "Valitse Kyllä, Ei vielä tai Osittain." };
-  }
+  const parsed = confirmRentSchema.safeParse({
+    status: String(formData.get("status") ?? ""),
+    amountPaid: String(formData.get("amountPaid") ?? ""),
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   // Pilkku desimaalierottimena: suomalainen näppäimistö tarjoaa sen.
-  const amountText = String(formData.get("amountPaid") ?? "").trim().replace(",", ".");
+  const amountText = parsed.data.amountPaid.trim().replace(",", ".");
   const amountPaid = amountText === "" ? null : Number(amountText);
 
   try {
@@ -45,12 +46,12 @@ export async function confirmRentAction(
       user.id,
       tenancyId,
       periodId,
-      raw as ConfirmationStatus,
+      parsed.data.status,
       amountPaid,
     );
-    if (!result.ok) return { message: result.message };
+    if (!result.ok) return { errors: {}, message: result.message };
   } catch {
-    return { message: "Kuittaus ei onnistunut. Yritä hetken kuluttua uudelleen." };
+    return { errors: {}, message: "Kuittaus ei onnistunut. Yritä hetken kuluttua uudelleen." };
   }
 
   /*
@@ -71,7 +72,7 @@ export async function confirmRentAction(
   }
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/vuokrat`);
-  return { done: true };
+  return { errors: {}, done: true };
 }
 
 export async function commentOnRentAction(
@@ -83,15 +84,17 @@ export async function commentOnRentAction(
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
   const periodId = String(formData.get("periodId") ?? "");
-  const comment = String(formData.get("comment") ?? "");
+
+  const parsed = rentCommentSchema.safeParse({ comment: String(formData.get("comment") ?? "") });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   try {
-    const result = await commentOnConfirmation(user.id, tenancyId, periodId, comment);
-    if (!result.ok) return { message: result.message };
+    const result = await commentOnConfirmation(user.id, tenancyId, periodId, parsed.data.comment);
+    if (!result.ok) return { errors: {}, message: result.message };
   } catch {
-    return { message: "Kommentin lähetys ei onnistunut." };
+    return { errors: {}, message: "Kommentin lähetys ei onnistunut." };
   }
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/vuokrat`);
-  return { done: true };
+  return { errors: {}, done: true };
 }

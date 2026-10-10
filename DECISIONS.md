@@ -5,6 +5,59 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Pienten lomakkeiden kenttäkohtaiset virheet (2026-10-10, yötyö)
+
+PLAN.md:n rivi ("Lomakkeet säilyttävät tiedot" -luku) toteutettu: kuittauksen,
+sen kommentin, huoltokirjan merkinnän/kommentin/peruutuksen, kulun kirjauksen
+ja sopimuskommentin palvelinvirheet näkyvät nyt oikean kentän vierellä samalla
+`field()`/`FieldError`-mallilla kuin isommissa lomakkeissa (vuokrasuhteen
+luonti, sopimuksen ehdot) — ei muutoksia `Form.tsx`:ään, koska malli oli
+jo olemassa, sitä ei vain oltu toistettu näissä neljässä.
+
+**Validointi on action-tasolla zodilla, datakerros pysyy ennallaan.**
+`lib/db/*.ts`-funktiot ovat yhä se paikka, missä liiketoimintasäännöt
+(omistajuus, tilakone, kuittauksen 30 pv -ikkuna, summan suhde vuokraan)
+tarkistetaan — niitä ei kaksinnettu. Action-tason zod kattaa vain sen, mikä
+tiedetään jo lomakkeen kentistä (pakollisuus, muoto): jos db-kerros silti
+hylkää (esim. "Vain vuokranantaja voi kuitata vuokran."), virhe näkyy yhä
+bannerina, koska se ei kohdistu mihinkään kenttään.
+
+**Skeemat eivät voi asua `"use server"`-tiedostoissa.** Next.js vaatii, että
+tällainen tiedosto vie ainoastaan async-funktioita — kokeilin viedä `const`-
+muotoisen zod-skeeman suoraan `rent-actions.ts`:stä ja `npm run build` kaatui
+("Server Actions must be async functions"), vaikka `npm test` ja
+`typecheck` eivät huomanneet mitään. Skeemat siirrettiin omiin
+tiedostoihinsa: `lib/rent/confirmation.ts` (kuittaus + sen kommentti, jo
+olemassa oleva sääntötiedosto), uusi `lib/maintenance/schema.ts` (merkintä,
+kommentti, peruutus), uusi `lib/expenses/schema.ts` (kulu) ja
+`lib/tenancy/contract-schema.ts` (sopimuskommentti, jo olemassa
+`contractTermsSchema`:n vierellä). Tämä on sama syy, jonka takia
+`contractTermsSchema` oli alunperinkin omassa tiedostossaan eikä
+`contract-actions.ts`:ssä — opittiin se nyt kolme kertaa lisää.
+
+**Kommentti-, otsikko- ja syy-kentillä ei ole `.max()`-rajaa skeemassa**,
+vaikka ne näyttävät virheen puuttuessa. `lib/db/*.ts` katkaisee ylipitkän
+tekstin (300 tai 120 merkkiin) eikä hylkää sitä — testi
+`contract-comments.test.ts` ("pitkä kommentti katkaistaan eikä hylätä")
+vahtii juuri tätä. Action-tason `.max()`-hylkäys olisi muuttanut käytöksen
+rikkomatta mitään testiä (testi koskee vain datakerrosta), mutta hukannut
+kirjoitetun tekstin rajan ylittyessä — vastoin samaa periaatetta, jonka takia
+`<Form>` ylipäätään rakennettiin (DECISIONS.md "Lomakkeet eivät tyhjene
+virheen jälkeen").
+
+**Vuokran kuittauksen tila- ja summavirhe eivät olleet UI:ssa käytännössä
+saavutettavissa** (tila on radionappi jolla `required`, lähetysnappi on pois
+päältä kunnes tila on valittu), mutta summa ("osittain" ilman summaa) on: sille
+ei ole `required`-attribuuttia, koska kenttä piilotetaan muilla tiloilla.
+Siksi juuri tämä virhe oli käytännössä se, jonka joku oikeasti näkisi, ja se
+saa nyt kenttäkohtaisen paikan.
+
+16 uutta yksikkötestiä (`tests/unit/small-form-field-errors.test.ts`)
+testaavat skeemat suoraan — ei koko server actionia, koska se vaatisi
+kirjautumisen ja kannan testiympäristössä, joita yötyössä ei ole.
+
+---
+
 ## Kehitystoiveen kuvakaappaus (2026-10-09, yötyö)
 
 PLAN.md:n rivi "Valinnainen kuvakaappaus lomakkeelle" (ei toteutettu

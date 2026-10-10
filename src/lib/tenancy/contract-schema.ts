@@ -186,3 +186,15 @@ export function contractFormToInput(form: FormData): Record<string, unknown> {
     otherTerms: text("otherTerms"),
   };
 }
+
+/**
+ * Sopimusluonnoksen kommentti (CLAUDE.md 5.2). `contract-actions.ts` on
+ * `"use server"`-tiedosto, joten skeema ei voi asua siellä: Next sallii
+ * sellaisessa tiedostossa vain async-funktioiden viennin.
+ *
+ * Ei pituusrajaa tässä: `addContractComment` katkaisee ylipitkän tekstin
+ * 300 merkkiin eikä hylkää sitä, jotta kirjoitettu teksti ei katoa.
+ */
+export const contractCommentSchema = z.object({
+  body: z.string().trim().min(1, "Kirjoita kommentti ennen lähettämistä."),
+});
