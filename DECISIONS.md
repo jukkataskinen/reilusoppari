@@ -2233,3 +2233,8 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 - **Stripessä voimassa oleva Plus kirjataan meille Sinetöi-painalluksessa** (haku metadatan `propertyId`:llä, sama käyttäjä). Tieto tulee Stripeltä omalla avaimella, joten siihen voi luottaa; korjaa myös tilaukset, joiden webhook jäi kirjaamatta.
 - **Webhook:** Plus kirjataan jo `checkout.session.completed`-tapahtumasta (tilausmuoto, maksettu), `customer.subscription.created` käsitellään kuten `updated`, ja tilausolion tila ratkaisee (`incomplete` ei anna oikeutta, `past_due` kirjataan erääntyneeksi). Aiemmin kaikki kirjattiin `active`ksi ja vain `updated`ista.
 - **Vuokrasuhteen maksun paluu Allekirjoitus-sivulle**, jossa maksu aloitettiin. Vanhat paluuosoitteet ohjataan sinne.
+
+## 2026-10-10 — Sähköpostin epäonnistumisen lokitus kertoo Resendin virheen nimen
+
+- **Vain virhekoodi ja Resendin `name`-kenttä, ei viestiä eikä vastaanottajaa.** `src/lib/notifications/email.ts` lokitti ennen vain HTTP-statuksen (BLOCKERS.md, Jukan havainto 10.10.2026: kutsun sähköposti ei lähtenyt eikä syytä näkynyt mistään). Resendin virheviesti (`message`) voi toistaa pyynnön kentän arvon, joten se jätetään lokittamatta; `name` (esim. `"validation_error"`) riittää syyn päättelyyn ilman riskiä. Vastaanottajaa ei lokiteta kuten ennenkään.
+- **Itse syytä ei voitu selvittää tästä ympäristöstä** — se vaatii Resendin ja Vercelin hallintapaneelit, jotka ovat Jukan tehtävä (BLOCKERS.md). Tämä PR tekee vain sen, että seuraava epäonnistuminen näkyy Vercelin lokissa suoraan virheen nimellä.
