@@ -40,7 +40,10 @@ import {
 } from "../tenancy/contract-schema";
 import type { TenancyInput } from "../tenancy/schema";
 import {
+  acceptInviteBlocker,
+  isSelfJoined,
   pendingPartyBlocker,
+  type AcceptInviteBlocker,
   tenancyDeletionBlocker,
   type PendingPartyAction,
   type PendingPartyBlocker,
@@ -505,7 +508,7 @@ export async function findTenancyByInvite(token: string): Promise<InvitePreview 
 /** Miksi kutsun hyväksyntä epäonnistui. Käyttöliittymä kertoo eri viestin. */
 export type AcceptInviteResult =
   | { ok: true; tenancyId: string }
-  | { ok: false; reason: "invalid" | "wrong_account" };
+  | { ok: false; reason: "invalid" | AcceptInviteBlocker };
 
 /**
  * Liittää kirjautuneen käyttäjän kutsuttuun osapuoleen.
@@ -522,6 +525,15 @@ export type AcceptInviteResult =
  * varten.
  * ===========================================================================
  *
+ * OMAAN VUOKRASUHTEESEEN EI LIITYTÄ VUOKRALAISENA
+ *
+ * Jos vuokranantaja kirjoittaa kutsuun vahingossa oman osoitteensa ja avaa
+ * linkin, hän olisi sekä vuokranantaja että vuokralainen. Vuokralaisen
+ * vaiheet (esim. katselmuksen valmiiksi merkintä) jäisivät tekemättä, eikä
+ * oikea vuokralainen pääsisi mukaan (Jukan havainto 10.10.2026). Kutsu ei
+ * kulu: vuokranantaja korjaa osoitteen, ja kutsu lähtee oikealle.
+ * ===========================================================================
+ *
  * Idempotentti: jo liittynyt kutsu ei tee mitään eikä heitä. Käyttäjä voi
  * avata saman linkin uudelleen, eikä sen pidä näyttää virheeltä.
  */
@@ -533,11 +545,27 @@ export async function acceptInvite(
   const preview = await findTenancyByInvite(token);
   if (!preview) return { ok: false, reason: "invalid" };
 
-  if (preview.inviteEmail.toLowerCase() !== userEmail.trim().toLowerCase()) {
-    return { ok: false, reason: "wrong_account" };
+  const supabase = getServiceClient();
+
+  const { data: tenancyRow, error: tenancyError } = await supabase
+    .from("rs_tenancies")
+    .select("landlord_user_id")
+    .eq("id", preview.tenancyId)
+    .maybeSingle();
+  if (tenancyError || !tenancyRow) {
+    if (tenancyError) {
+      console.error("[tenancies] kutsun hyväksyntä epäonnistui:", tenancyError.message);
+    }
+    return { ok: false, reason: "invalid" };
   }
 
-  const supabase = getServiceClient();
+  const blocker = acceptInviteBlocker({
+    userId,
+    userEmail,
+    inviteEmail: preview.inviteEmail,
+    landlordUserId: (tenancyRow as { landlord_user_id: string }).landlord_user_id,
+  });
+  if (blocker) return { ok: false, reason: blocker };
 
   const { data, error } = await supabase
     .from("rs_tenancy_parties")
@@ -690,6 +718,22 @@ async function audit(
   if (error) console.error("[tenancies] lokimerkintä epäonnistui:", error.message);
 }
 
+/**
+ * Vuokranantajan itse vuokralaisen paikalla (`isSelfJoined`) jättämät jäljet.
+ *
+ * Kun paikka vapautetaan oikealle vuokralaiselle, myös katselmuksen
+ * vuokralaisen leimat tyhjennetään: vuokranantaja ei voi olla merkinnyt
+ * katselmusta valmiiksi vuokralaisen puolesta. Muokkaus on sallittu vain
+ * ennen allekirjoitusta (`pendingPartyBlocker`), joten loppukatselmuksen
+ * leimoja ei vielä ole.
+ */
+const SELF_JOIN_RESET = {
+  user_id: null,
+  joined_at: null,
+  first_seen_inspection_at: null,
+  inspection_ready_at: null,
+} as const;
+
 /** Kirjoitus osui nollaan riviin: joku ehti väliin (esim. vuokralainen liittyi). */
 function touched(data: unknown): boolean {
   return Array.isArray(data) && data.length > 0;
@@ -723,19 +767,23 @@ export async function resendInvite(
   const loaded = await loadPendingParty(userId, tenancyId, partyId, "resend");
   if (!loaded.ok) return loaded;
 
+  const selfJoined = isSelfJoined(userId, loaded.party.user_id);
   const invite = createInvite();
-  const { data, error } = await getServiceClient()
+  const update = getServiceClient()
     .from("rs_tenancy_parties")
     .update({
+      ...(selfJoined ? SELF_JOIN_RESET : {}),
       invite_token_hash: invite.tokenHash,
       invite_expires_at: invite.expiresAt,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", partyId)
-    // Ehto uudelleen kirjoituksessa: jos vuokralainen liittyi juuri
-    // tarkistuksen ja kirjoituksen välissä, häntä ei syrjäytetä.
-    .is("user_id", null)
-    .select("id");
+    .eq("id", partyId);
+  // Ehto uudelleen kirjoituksessa: jos vuokralainen liittyi juuri
+  // tarkistuksen ja kirjoituksen välissä, häntä ei syrjäytetä.
+  const { data, error } = await (selfJoined
+    ? update.eq("user_id", userId)
+    : update.is("user_id", null)
+  ).select("id");
 
   if (error) {
     console.error("[tenancies] kutsun uudelleenluonti epäonnistui:", error.message);
@@ -744,6 +792,9 @@ export async function resendInvite(
   if (!touched(data)) return { ok: false, reason: "joined" };
 
   await audit(userId, tenancyId, "tenancy.invite.reissued", "tenancy_party", partyId);
+  if (selfJoined) {
+    await audit(userId, tenancyId, "tenancy.invite.self_join_cleared", "tenancy_party", partyId);
+  }
 
   return {
     ok: true,
@@ -810,19 +861,23 @@ export async function changeInviteEmail(
   );
   if (taken) return { ok: false, reason: "duplicate" };
 
+  const selfJoined = isSelfJoined(userId, loaded.party.user_id);
   const invite = createInvite();
-  const { data, error } = await supabase
+  const update = supabase
     .from("rs_tenancy_parties")
     .update({
+      ...(selfJoined ? SELF_JOIN_RESET : {}),
       invite_email: normalized,
       contact_email: normalized,
       invite_token_hash: invite.tokenHash,
       invite_expires_at: invite.expiresAt,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", partyId)
-    .is("user_id", null)
-    .select("id");
+    .eq("id", partyId);
+  const { data, error } = await (selfJoined
+    ? update.eq("user_id", userId)
+    : update.is("user_id", null)
+  ).select("id");
 
   if (error) {
     console.error("[tenancies] sähköpostin vaihto epäonnistui:", error.message);
@@ -831,6 +886,9 @@ export async function changeInviteEmail(
   if (!touched(data)) return { ok: false, reason: "joined" };
 
   await audit(userId, tenancyId, "tenancy.invite.email_changed", "tenancy_party", partyId);
+  if (selfJoined) {
+    await audit(userId, tenancyId, "tenancy.invite.self_join_cleared", "tenancy_party", partyId);
+  }
 
   return {
     ok: true,
@@ -857,14 +915,17 @@ export async function removeInvite(
   const loaded = await loadPendingParty(userId, tenancyId, partyId, "remove");
   if (!loaded.ok) return loaded;
 
+  const selfJoined = isSelfJoined(userId, loaded.party.user_id);
   const supabase = getServiceClient();
-  const { data, error } = await supabase
+  const removal = supabase
     .from("rs_tenancy_parties")
     .delete()
     .eq("id", partyId)
-    .eq("role", "tenant")
-    .is("user_id", null)
-    .select("id");
+    .eq("role", "tenant");
+  const { data, error } = await (selfJoined
+    ? removal.eq("user_id", userId)
+    : removal.is("user_id", null)
+  ).select("id");
 
   if (error) {
     console.error("[tenancies] kutsun poisto epäonnistui:", error.message);
@@ -883,6 +944,9 @@ export async function removeInvite(
   }
 
   await audit(userId, tenancyId, "tenancy.invite.removed", "tenancy_party", partyId);
+  if (selfJoined) {
+    await audit(userId, tenancyId, "tenancy.invite.self_join_cleared", "tenancy_party", partyId);
+  }
   return { ok: true };
 }
 
@@ -949,7 +1013,11 @@ export async function getTenancyDeletionFacts(
   return {
     isLandlord: tenancy.landlordUserId === userId,
     status: tenancy.status,
-    joinedTenants: tenantRows.filter((row) => row.user_id).length,
+    // Vuokranantaja itse vuokralaisen paikalla ei tee vuokrasuhteesta
+    // yhteistä (`isSelfJoined`).
+    joinedTenants: tenantRows.filter(
+      (row) => row.user_id && !isSelfJoined(tenancy.landlordUserId, row.user_id),
+    ).length,
     signingStarted:
       Boolean(billing?.signing_started_at) ||
       Boolean(contractRow?.esinetti_round_id || contractRow?.signed_at) ||

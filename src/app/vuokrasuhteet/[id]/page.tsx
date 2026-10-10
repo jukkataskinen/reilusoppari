@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getProperty } from "@/lib/db/properties";
 import { getTenancy, getTenancyDeletionFacts, listParties } from "@/lib/db/tenancies";
 import {
+  isSelfJoined,
   TENANCY_DELETION_MESSAGES,
   tenancyDeletionBlocker,
 } from "@/lib/tenancy/invite-management";
@@ -152,7 +153,10 @@ export default async function TenancyPage({ params }: { params: Promise<{ id: st
                 tenancyId={tenancy.id}
                 partyId={party.id}
                 email={party.inviteEmail ?? ""}
-                joined={Boolean(party.joinedAt)}
+                // Vuokranantaja itse vuokralaisen paikalla ei ole liittynyt
+                // vuokralainen, vaan korjattava virhe (`isSelfJoined`).
+                joined={Boolean(party.joinedAt) && !isSelfJoined(tenancy.landlordUserId, party.userId)}
+                selfJoined={isSelfJoined(tenancy.landlordUserId, party.userId)}
                 editable={invitesEditable}
               />
             ) : (

@@ -83,6 +83,14 @@ export function pendingPartyBlocker(
   if (!tenancy || tenancy.landlordUserId !== facts.userId) return "not_found";
   if (!party || party.role !== "tenant") return "not_found";
 
+  // Vuokranantaja itse vuokralaisen paikalla (Jukan havainto 10.10.2026:
+  // kutsu omaan osoitteeseen ja liittyminen omalla tilillä). Paikka on
+  // käytännössä tyhjä, joten sen saa korjata — mutta vain ennen
+  // allekirjoitusta, koska sen jälkeen allekirjoittajat on lukittu.
+  if (isSelfJoined(tenancy.landlordUserId, party.userId)) {
+    return EDITABLE_STATUSES.includes(tenancy.status) ? null : "status";
+  }
+
   // Liittynyt osapuoli omistaa tilinsä. Uusi kutsu syrjäyttäisi hänet, ja
   // poisto veisi häneltä pääsyn yhteiseen vuokrasuhteeseen.
   if (party.userId || party.joinedAt) return "joined";
@@ -94,13 +102,64 @@ export function pendingPartyBlocker(
   return null;
 }
 
-export const PENDING_PARTY_MESSAGES: Record<PendingPartyBlocker | "duplicate" | "failed", string> = {
+/**
+ * Onko vuokralaisen paikalle liittynyt vuokranantaja itse?
+ *
+ * Tämä on virhetila, ei oikea liittyminen: vuokranantaja ei voi olla oman
+ * vuokrasuhteensa vuokralainen. Katselmuksen vuokralaisen vaiheet (avaus ja
+ * valmiiksi merkintä, `inspection/lock.ts`) jäisivät tekemättä, koska
+ * oikeaa vuokralaista ei ole.
+ */
+export function isSelfJoined(landlordUserId: string, partyUserId: string | null): boolean {
+  return partyUserId !== null && partyUserId === landlordUserId;
+}
+
+/** Vertailtava muoto: sama osoite eri kirjainkoolla on sama osoite. */
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+/** Onko kutsuttavan osoite käyttäjän oma osoite? */
+export function isOwnEmail(inviteEmail: string, ownEmail: string): boolean {
+  const own = normalizeEmail(ownEmail);
+  return own !== "" && normalizeEmail(inviteEmail) === own;
+}
+
+export const OWN_EMAIL_MESSAGE = "Tämä on oma sähköpostiosoitteesi. Anna vuokralaisen osoite.";
+
+export type AcceptInviteBlocker = "own_tenancy" | "wrong_account";
+
+/**
+ * Saako kirjautunut käyttäjä lunastaa kutsun? `null` = saa.
+ *
+ * Oma vuokrasuhde tarkistetaan ensin: vuokranantaja, joka avaa kutsun
+ * omalla tilillään, ei saa liittyä — riippumatta siitä, onko kutsu
+ * osoitettu hänen omaan osoitteeseensa vahingossa vai ei.
+ */
+export function acceptInviteBlocker(facts: {
+  userId: string;
+  userEmail: string;
+  inviteEmail: string;
+  landlordUserId: string;
+}): AcceptInviteBlocker | null {
+  if (facts.userId === facts.landlordUserId) return "own_tenancy";
+  if (normalizeEmail(facts.inviteEmail) !== normalizeEmail(facts.userEmail)) {
+    return "wrong_account";
+  }
+  return null;
+}
+
+export const PENDING_PARTY_MESSAGES: Record<
+  PendingPartyBlocker | "duplicate" | "own_email" | "failed",
+  string
+> = {
   not_found: "Kutsua ei löytynyt. Päivitä sivu ja yritä uudelleen.",
   joined:
     "Vuokralainen on jo liittynyt. Hän hallitsee omaa sähköpostiaan, eikä häntä voi poistaa täältä.",
   status:
     "Sopimus on jo lähetetty allekirjoitettavaksi, joten vuokralaista ei voi enää vaihtaa tai poistaa.",
   duplicate: "Toisella vuokralaisella on jo tämä sähköpostiosoite.",
+  own_email: OWN_EMAIL_MESSAGE,
   failed: "Toiminto ei onnistunut. Yritä hetken kuluttua uudelleen.",
 };
 
