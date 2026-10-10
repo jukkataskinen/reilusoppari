@@ -25,6 +25,8 @@
  * ===========================================================================
  */
 
+import { z } from "zod";
+
 export type ConfirmationStatus = "paid" | "not_yet" | "partial";
 
 export const EDIT_WINDOW_DAYS = 30;
@@ -97,6 +99,39 @@ export function validateConfirmation(
 
   return { ok: true, amountPaid };
 }
+
+/*
+  Lomakkeen kenttäkohtaiset virheet (CLAUDE.md:n "Lomakkeet säilyttävät
+  tiedot" -tehtävä). `rent-actions.ts` on `"use server"`-tiedosto, joten
+  skeemat eivät voi asua siellä: Next sallii sellaisessa tiedostossa vain
+  async-funktioiden viennin.
+*/
+const STATUSES: ConfirmationStatus[] = ["paid", "not_yet", "partial"];
+
+/**
+ * Tilan ja summan läsnäolo tarkistetaan tässä, jotta virhe näkyy oikean
+ * kentän vieressä. Summan suhde vuokraan (ei liian pieni, ei koko vuokra)
+ * tarkistetaan yhä `validateConfirmation`:lla, koska se vaatii vuokrakauden
+ * summan kannasta eikä sitä voi tietää lomakkeen kentistä.
+ */
+export const confirmRentSchema = z
+  .object({
+    status: z.enum(STATUSES, "Valitse Kyllä, Ei vielä tai Osittain."),
+    amountPaid: z.string(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.status === "partial" && value.amountPaid.trim() === "") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["amountPaid"],
+        message: "Kerro, paljonko vuokrasta tuli.",
+      });
+    }
+  });
+
+export const rentCommentSchema = z.object({
+  comment: z.string().trim().min(1, "Kirjoita kommentti ennen lähettämistä."),
+});
 
 /** Kuukausi luettavana tekstinä: `2026-09-01` → `syyskuu 2026`. */
 const MONTHS = [

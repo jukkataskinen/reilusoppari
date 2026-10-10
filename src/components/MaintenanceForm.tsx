@@ -8,7 +8,7 @@ import {
 import type { MaintenanceKind } from "@/lib/db/maintenance";
 import { Form } from "@/components/Form";
 
-const initialState: MaintenanceActionState = {};
+const initialState: MaintenanceActionState = { errors: {} };
 
 const KINDS: Array<{ value: MaintenanceKind; label: string; hint: string }> = [
   { value: "defect", label: "Vika", hint: "Jokin on rikki tai ei toimi." },
@@ -83,9 +83,19 @@ export function MaintenanceForm({ tenancyId }: { tenancyId: string }) {
           name="title"
           maxLength={120}
           required
+          aria-invalid={state.errors.title ? true : undefined}
+          aria-describedby={state.errors.title ? "merkinta-otsikko-virhe" : undefined}
           placeholder="esim. keittiön hana vuotaa"
-          className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
+          className={
+            "mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border bg-paper px-3 text-base " +
+            (state.errors.title ? "border-coral" : "border-line")
+          }
         />
+        {state.errors.title ? (
+          <p id="merkinta-otsikko-virhe" className="mt-1.5 text-sm text-coral">
+            {state.errors.title}
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-4">

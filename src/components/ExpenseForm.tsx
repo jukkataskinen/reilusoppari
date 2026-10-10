@@ -16,7 +16,7 @@ import {
 } from "@/lib/expenses/categories";
 import { Form } from "@/components/Form";
 
-const initialState: ExpenseActionState = {};
+const initialState: ExpenseActionState = { errors: {} };
 
 /**
  * Kulun kirjaus korjauksen yhteydessä (Jukan pyyntö 2026-09-12).
@@ -141,7 +141,12 @@ export function ExpenseForm({
           name="category"
           value={category}
           onChange={(event) => setCategory(event.target.value as ExpenseCategory)}
-          className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
+          aria-invalid={state.errors.category ? true : undefined}
+          aria-describedby={state.errors.category ? "kulu-luokka-virhe" : undefined}
+          className={
+            "mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border bg-paper px-3 text-base " +
+            (state.errors.category ? "border-coral" : "border-line")
+          }
         >
           {EXPENSE_CATEGORIES.map((option) => (
             <option key={option.value} value={option.value}>
@@ -149,6 +154,11 @@ export function ExpenseForm({
             </option>
           ))}
         </select>
+        {state.errors.category ? (
+          <p id="kulu-luokka-virhe" className="mt-1.5 text-sm text-coral">
+            {state.errors.category}
+          </p>
+        ) : null}
         <p className="mt-1.5 text-sm text-ink/60">{categoryInfo(category).hint}</p>
         {categoryInfo(category).deductibleAnnually ? null : (
           <p className="mt-1.5 text-sm text-ink/60">
@@ -168,8 +178,18 @@ export function ExpenseForm({
             name="date"
             type="date"
             defaultValue={defaultDate}
-            className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
+            aria-invalid={state.errors.date ? true : undefined}
+            aria-describedby={state.errors.date ? "kulu-paiva-virhe" : undefined}
+            className={
+              "mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border bg-paper px-3 text-base " +
+              (state.errors.date ? "border-coral" : "border-line")
+            }
           />
+          {state.errors.date ? (
+            <p id="kulu-paiva-virhe" className="mt-1.5 text-sm text-coral">
+              {state.errors.date}
+            </p>
+          ) : null}
         </div>
 
         {isTravel ? (
@@ -183,9 +203,19 @@ export function ExpenseForm({
               inputMode="decimal"
               value={km}
               onChange={(event) => setKm(event.target.value)}
+              aria-invalid={state.errors.km ? true : undefined}
+              aria-describedby={state.errors.km ? "kulu-km-virhe" : undefined}
               placeholder="esim. 24"
-              className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
+              className={
+                "mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border bg-paper px-3 text-base " +
+                (state.errors.km ? "border-coral" : "border-line")
+              }
             />
+            {state.errors.km ? (
+              <p id="kulu-km-virhe" className="mt-1.5 text-sm text-coral">
+                {state.errors.km}
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -197,9 +227,19 @@ export function ExpenseForm({
             id="kulu-summa"
             name="amount"
             inputMode="decimal"
+            aria-invalid={state.errors.amount ? true : undefined}
+            aria-describedby={state.errors.amount ? "kulu-summa-virhe" : undefined}
             placeholder={isTravel ? "lasketaan" : "esim. 129,90"}
-            className="mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border border-line bg-paper px-3 text-base"
+            className={
+              "mt-1.5 min-h-[var(--size-touch)] w-full rounded-[10px] border bg-paper px-3 text-base " +
+              (state.errors.amount ? "border-coral" : "border-line")
+            }
           />
+          {state.errors.amount ? (
+            <p id="kulu-summa-virhe" className="mt-1.5 text-sm text-coral">
+              {state.errors.amount}
+            </p>
+          ) : null}
         </div>
       </div>
 

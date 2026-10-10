@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
+import { fieldErrors } from "@/lib/forms/schema";
 import {
   addMaintenanceComment,
   cancelMaintenanceEntry,
@@ -10,6 +11,11 @@ import {
   resolveMaintenanceEntry,
   type MaintenanceKind,
 } from "@/lib/db/maintenance";
+import {
+  maintenanceCancelSchema,
+  maintenanceCommentSchema,
+  maintenanceEntrySchema,
+} from "@/lib/maintenance/schema";
 import { notifyOtherParty } from "@/lib/notifications/tenancy";
 
 /**
@@ -21,6 +27,7 @@ import { notifyOtherParty } from "@/lib/notifications/tenancy";
  */
 
 export interface MaintenanceActionState {
+  errors: Record<string, string>;
   message?: string;
   done?: boolean;
 }
@@ -37,23 +44,33 @@ export async function createEntryAction(
   const tenancyId = String(formData.get("tenancyId") ?? "");
   const raw = String(formData.get("kind") ?? "defect");
   const kind = (KINDS.includes(raw as MaintenanceKind) ? raw : "defect") as MaintenanceKind;
-  const title = String(formData.get("title") ?? "");
-  const body = String(formData.get("body") ?? "");
+
+  const parsed = maintenanceEntrySchema.safeParse({
+    title: String(formData.get("title") ?? ""),
+    body: String(formData.get("body") ?? ""),
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   let entryId: string;
   try {
-    const result = await createMaintenanceEntry(user.id, tenancyId, kind, title, body);
-    if (!result.ok) return { message: result.message };
+    const result = await createMaintenanceEntry(
+      user.id,
+      tenancyId,
+      kind,
+      parsed.data.title,
+      parsed.data.body,
+    );
+    if (!result.ok) return { errors: {}, message: result.message };
     entryId = result.id;
   } catch {
-    return { message: "Tallennus ei onnistunut. Yritä hetken kuluttua uudelleen." };
+    return { errors: {}, message: "Tallennus ei onnistunut. Yritä hetken kuluttua uudelleen." };
   }
 
   await notifyOtherParty(user.id, tenancyId, {
     kind: "maintenance.created",
     dedupeKey: `maintenance.created:${entryId}`,
     title: kind === "defect" ? "Uusi vikailmoitus" : "Uusi merkintä huoltokirjassa",
-    body: title.trim().slice(0, 120),
+    body: parsed.data.title.slice(0, 120),
     path: `/vuokrasuhteet/${tenancyId}/huoltokirja`,
   });
 
@@ -70,13 +87,15 @@ export async function commentAction(
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
   const entryId = String(formData.get("entryId") ?? "");
-  const body = String(formData.get("body") ?? "");
+
+  const parsed = maintenanceCommentSchema.safeParse({ body: String(formData.get("body") ?? "") });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
   try {
-    const result = await addMaintenanceComment(user.id, tenancyId, entryId, body);
-    if (!result.ok) return { message: result.message };
+    const result = await addMaintenanceComment(user.id, tenancyId, entryId, parsed.data.body);
+    if (!result.ok) return { errors: {}, message: result.message };
   } catch {
-    return { message: "Kommentin lähetys ei onnistunut." };
+    return { errors: {}, message: "Kommentin lähetys ei onnistunut." };
   }
 
   await notifyOtherParty(user.id, tenancyId, {
@@ -85,12 +104,12 @@ export async function commentAction(
     // ja jokainen on oma ilmoituksensa.
     dedupeKey: `maintenance.comment:${entryId}:${Date.now()}`,
     title: "Uusi kommentti huoltokirjassa",
-    body: body.trim().slice(0, 120),
+    body: parsed.data.body.slice(0, 120),
     path: `/vuokrasuhteet/${tenancyId}/huoltokirja/${entryId}`,
   });
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/huoltokirja/${entryId}`);
-  return { done: true };
+  return { errors: {}, done: true };
 }
 
 export async function resolveAction(
@@ -105,9 +124,9 @@ export async function resolveAction(
 
   try {
     const result = await resolveMaintenanceEntry(user.id, tenancyId, entryId);
-    if (!result.ok) return { message: result.message };
+    if (!result.ok) return { errors: {}, message: result.message };
   } catch {
-    return { message: "Merkintä ei onnistunut." };
+    return { errors: {}, message: "Merkintä ei onnistunut." };
   }
 
   await notifyOtherParty(user.id, tenancyId, {
@@ -119,7 +138,7 @@ export async function resolveAction(
   });
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/huoltokirja/${entryId}`);
-  return { done: true };
+  return { errors: {}, done: true };
 }
 
 export async function cancelAction(
@@ -131,15 +150,18 @@ export async function cancelAction(
 
   const tenancyId = String(formData.get("tenancyId") ?? "");
   const entryId = String(formData.get("entryId") ?? "");
-  const reason = String(formData.get("reason") ?? "");
+
+  const parsed = maintenanceCancelSchema.safeParse({ reason: String(formData.get("reason") ?? "") });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  const reason = parsed.data.reason;
 
   try {
     const result = await cancelMaintenanceEntry(user.id, tenancyId, entryId, reason);
-    if (!result.ok) return { message: result.message };
+    if (!result.ok) return { errors: {}, message: result.message };
   } catch {
-    return { message: "Peruminen ei onnistunut." };
+    return { errors: {}, message: "Peruminen ei onnistunut." };
   }
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}/huoltokirja/${entryId}`);
-  return { done: true };
+  return { errors: {}, done: true };
 }
