@@ -19,6 +19,10 @@ import { quoteTenancy } from "@/lib/billing/checkout";
 import { formatPrice, requiresPayment } from "@/lib/billing/pricing";
 import { getTenancyBillingState } from "@/lib/db/billing";
 import { AppShell } from "@/components/AppShell";
+import {
+  BILLING_UNAVAILABLE_MESSAGE,
+  billingUnavailableInProduction,
+} from "@/lib/billing/index";
 import { InspectionSigning } from "@/components/InspectionSigning";
 import { SendForSigning } from "@/components/SendForSigning";
 import { SignNow } from "@/components/SignNow";
@@ -48,10 +52,15 @@ function SignerList({ round }: { round: Round }) {
   return (
     <ul className="mt-5 flex flex-col gap-3">
       {round.signers.map((signer) => (
-        <li key={signer.id} className="flex items-baseline justify-between gap-4">
+        <li
+          key={signer.id}
+          className="flex items-baseline justify-between gap-4"
+        >
           <span>
             {signer.name}
-            {signer.roleLabel ? <span className="text-ink/60"> · {signer.roleLabel}</span> : null}
+            {signer.roleLabel ? (
+              <span className="text-ink/60"> · {signer.roleLabel}</span>
+            ) : null}
           </span>
           <span className="shrink-0 text-sm text-ink/60">
             {SIGNER_STATUS[signer.status] ?? signer.status}
@@ -80,7 +89,11 @@ function SignerList({ round }: { round: Round }) {
  * näyttäisi siltä, että allekirjoitettavaa on kaksi kertaa.
  * ===========================================================================
  */
-export default async function SigningPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SigningPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
 
@@ -89,15 +102,21 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
   if (!tenancy) notFound();
 
   const isLandlord = tenancy.landlordUserId === user.id;
-  const [readiness, round, billing, inspection, inspectionRound, inspectionReadiness] =
-    await Promise.all([
-      signingReadiness(user.id, id),
-      signingStatus(user.id, id),
-      getTenancyBillingState(id),
-      findInspection(user.id, id, "initial"),
-      inspectionSigningStatus(user.id, id),
-      inspectionSigningReadiness(user.id, id),
-    ]);
+  const [
+    readiness,
+    round,
+    billing,
+    inspection,
+    inspectionRound,
+    inspectionReadiness,
+  ] = await Promise.all([
+    signingReadiness(user.id, id),
+    signingStatus(user.id, id),
+    getTenancyBillingState(id),
+    findInspection(user.id, id, "initial"),
+    inspectionSigningStatus(user.id, id),
+    inspectionSigningReadiness(user.id, id),
+  ]);
 
   /*
     Hinta lasketaan vain, jos maksua ei ole vielä tehty ja kierros on vielä
@@ -105,7 +124,10 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
     hämmentävää — ja hinta voi muuttua, koska ilmainen ensimmäinen ja
     krediitit kuluvat.
   */
-  const quote = isLandlord && !billing?.paidVia && !round ? await quoteTenancy(user.id, id) : null;
+  const quote =
+    isLandlord && !billing?.paidVia && !round
+      ? await quoteTenancy(user.id, id)
+      : null;
 
   // Lähtikö pöytäkirja sopimuksen mukana? Silloin molemmilla on sama kierros.
   const combined = Boolean(round && inspection?.esinettiRoundId === round.id);
@@ -114,29 +136,33 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
   // "Allekirjoita nyt" vain vuokranantajalle, joka ei ole vielä allekirjoittanut.
   const [signNowContract, signNowInspection] = await Promise.all([
     round ? canSignNow(user.id, id, round) : Promise.resolve(false),
-    inspectionRound ? canSignNow(user.id, id, inspectionRound) : Promise.resolve(false),
+    inspectionRound
+      ? canSignNow(user.id, id, inspectionRound)
+      : Promise.resolve(false),
   ]);
   const origin = esinettiOrigin();
 
   // Valmiit asiakirjat avataan täältä, ei eSinetistä (10.10.2026).
   const documentFacts = await loadSignedDocumentFacts(user.id, id);
   const offerFetch = await shouldOfferFetch(user.id, id, documentFacts);
-  const contractSigned = Boolean(documentFacts.find((row) => row.kind === "sopimus")?.signedAt);
+  const contractSigned = Boolean(
+    documentFacts.find((row) => row.kind === "sopimus")?.signedAt,
+  );
 
   return (
     <AppShell>
       <h1 className="text-2xl">Allekirjoitus</h1>
       <p className="mt-2 text-ink/70">
-        Vuokrasopimus allekirjoitetaan heti, kun osapuolten tiedot ovat valmiit. Alkukatselmuksen
-        pöytäkirja allekirjoitetaan erikseen muuton yhteydessä, viimeistään 14 päivän kuluessa
-        vuokrasuhteen alkamisesta. Jos katselmus on jo lukittu, molemmat allekirjoitetaan
-        kerralla.
+        Vuokrasopimus allekirjoitetaan heti, kun osapuolten tiedot ovat valmiit.
+        Alkukatselmuksen pöytäkirja allekirjoitetaan erikseen muuton yhteydessä,
+        viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta. Jos katselmus
+        on jo lukittu, molemmat allekirjoitetaan kerralla.
       </p>
 
       {isUsingMockEsinetti() ? (
         <p className="mt-6 rounded-[var(--radius-panel)] border border-coral bg-paper p-5 text-sm">
-          eSinetti-yhteyttä ei ole määritetty, joten allekirjoitus on harjoittelutilassa. Kukaan
-          ei allekirjoita mitään oikeasti.
+          eSinetti-yhteyttä ei ole määritetty, joten allekirjoitus on
+          harjoittelutilassa. Kukaan ei allekirjoita mitään oikeasti.
         </p>
       ) : null}
 
@@ -152,14 +178,17 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
         <>
           {isUsingMockBilling() ? (
             <p className="mt-4 rounded-[var(--radius-panel)] border border-coral bg-paper p-5 text-sm">
-              Stripe-yhteyttä ei ole määritetty, joten maksaminen on harjoittelutilassa. Mitään
-              ei veloiteta.
+              {billingUnavailableInProduction()
+                ? BILLING_UNAVAILABLE_MESSAGE
+                : "Stripe-yhteyttä ei ole määritetty, joten maksaminen on harjoittelutilassa. Mitään ei veloiteta."}
             </p>
           ) : null}
 
           <TenancyPayment
             tenancyId={id}
-            price={requiresPayment(quote) ? formatPrice(quote.amountCents) : null}
+            price={
+              requiresPayment(quote) ? formatPrice(quote.amountCents) : null
+            }
             free={quote.reason}
           />
         </>
@@ -181,7 +210,9 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
               ? "Allekirjoitettu asiakirja on ylempänä kohdassa Allekirjoitetut asiakirjat."
               : "Jokainen allekirjoittaja on saanut oman linkkinsä sähköpostiinsa. Kun kaikki ovat allekirjoittaneet, vuokrasuhde alkaa ja vuokrakaudet syntyvät automaattisesti."}
           </p>
-          {signNowContract ? <SignNow tenancyId={id} kind="sopimus" esinettiOrigin={origin} /> : null}
+          {signNowContract ? (
+            <SignNow tenancyId={id} kind="sopimus" esinettiOrigin={origin} />
+          ) : null}
           <SignerList round={round} />
         </div>
       ) : isLandlord ? (
@@ -196,8 +227,8 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
         <div className="mt-4 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
           <p className="font-medium">Odottaa vuokranantajaa</p>
           <p className="mt-2 text-sm text-ink/70">
-            Vuokranantaja lähettää sopimuksen allekirjoitettavaksi. Saat oman linkkisi
-            sähköpostiisi.
+            Vuokranantaja lähettää sopimuksen allekirjoitettavaksi. Saat oman
+            linkkisi sähköpostiisi.
           </p>
         </div>
       )}
@@ -212,12 +243,19 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
             </div>
           ) : inspectionRound ? (
             <div className="mt-4 rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-              <p className="font-medium">Pöytäkirja on lähetetty allekirjoitettavaksi</p>
+              <p className="font-medium">
+                Pöytäkirja on lähetetty allekirjoitettavaksi
+              </p>
               <p className="mt-2 text-sm text-ink/70">
-                Jokainen allekirjoittaja on saanut oman linkkinsä sähköpostiinsa.
+                Jokainen allekirjoittaja on saanut oman linkkinsä
+                sähköpostiinsa.
               </p>
               {signNowInspection ? (
-                <SignNow tenancyId={id} kind="katselmus" esinettiOrigin={origin} />
+                <SignNow
+                  tenancyId={id}
+                  kind="katselmus"
+                  esinettiOrigin={origin}
+                />
               ) : null}
               <SignerList round={inspectionRound} />
             </div>
@@ -225,9 +263,12 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
             <InspectionSigning
               tenancyId={id}
               ready={inspectionReadiness.ready}
-              message={inspectionReadiness.ready ? null : inspectionReadiness.message}
+              message={
+                inspectionReadiness.ready ? null : inspectionReadiness.message
+              }
               showInspectionLink={
-                !inspectionReadiness.ready && inspectionReadiness.reason === "inspection_not_locked"
+                !inspectionReadiness.ready &&
+                inspectionReadiness.reason === "inspection_not_locked"
               }
             />
           ) : (
@@ -242,7 +283,10 @@ export default async function SigningPage({ params }: { params: Promise<{ id: st
       ) : null}
 
       <p className="mt-10 text-sm">
-        <Link href={`/vuokrasuhteet/${id}`} className="underline underline-offset-4">
+        <Link
+          href={`/vuokrasuhteet/${id}`}
+          className="underline underline-offset-4"
+        >
           {fi.common.back}
         </Link>
       </p>

@@ -3,13 +3,25 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getProperty } from "@/lib/db/properties";
-import { collectTaxReport, listStoredReports, taxYears } from "@/lib/db/tax-reports";
+import {
+  collectTaxReport,
+  listStoredReports,
+  taxYears,
+} from "@/lib/db/tax-reports";
 import { isUsingMockBilling } from "@/lib/billing";
 import { quotePlus } from "@/lib/billing/plus";
-import { CATEGORY_GUIDANCE, CLOSING_NOTE, DISCLAIMER } from "@content/tax-guidance.fi";
+import {
+  CATEGORY_GUIDANCE,
+  CLOSING_NOTE,
+  DISCLAIMER,
+} from "@content/tax-guidance.fi";
 import { describeLine } from "@/documents/TaxReport";
 import { isKmRateConfirmed, kmRate } from "@/lib/expenses/categories";
 import { AppShell } from "@/components/AppShell";
+import {
+  BILLING_UNAVAILABLE_MESSAGE,
+  billingUnavailableInProduction,
+} from "@/lib/billing/index";
 import { SealTaxReport } from "@/components/SealTaxReport";
 import { fi } from "@/i18n/fi";
 
@@ -58,7 +70,9 @@ export default async function TaxReportPage({
 
   const years = await taxYears(user.id, id);
   const wanted = Number((await searchParams).vuosi);
-  const year = years.includes(wanted) ? wanted : (years[0] ?? new Date().getFullYear());
+  const year = years.includes(wanted)
+    ? wanted
+    : (years[0] ?? new Date().getFullYear());
 
   const [report, stored, plusQuote] = await Promise.all([
     collectTaxReport(user.id, id, year),
@@ -87,7 +101,9 @@ export default async function TaxReportPage({
               href={`/asunnot/${id}/verolaskelma?vuosi=${value}`}
               className={
                 "inline-flex min-h-[var(--size-touch)] items-center rounded-full border px-4 text-sm " +
-                (value === year ? "border-ink bg-ink text-paper" : "border-line bg-paper")
+                (value === year
+                  ? "border-ink bg-ink text-paper"
+                  : "border-line bg-paper")
               }
             >
               {value}
@@ -114,7 +130,10 @@ export default async function TaxReportPage({
         */}
         <p className="mt-2 text-sm text-ink/60">
           Kuukausi, jota et ole kuitannut, on laskelmassa nolla.{" "}
-          <Link href={`/asunnot/${id}`} className="underline underline-offset-4">
+          <Link
+            href={`/asunnot/${id}`}
+            className="underline underline-offset-4"
+          >
             Tarkista kuittaukset
           </Link>{" "}
           jos luku näyttää väärältä.
@@ -132,7 +151,10 @@ export default async function TaxReportPage({
         */}
         <p className="mt-1 text-sm text-ink/60">
           Kuukausittain toistuvat kulut, kuten hoitovastike, kirjataan{" "}
-          <Link href={`/asunnot/${id}/toistuvat-kulut`} className="underline underline-offset-4">
+          <Link
+            href={`/asunnot/${id}/toistuvat-kulut`}
+            className="underline underline-offset-4"
+          >
             erikseen kerran
           </Link>
           , ja laskelma laskee vuosikulun niistä.
@@ -145,7 +167,10 @@ export default async function TaxReportPage({
         ) : (
           <ul className="mt-3 flex flex-col gap-3">
             {annual.map((line) => (
-              <li key={line.category} className="border-b border-line pb-3 last:border-0 last:pb-0">
+              <li
+                key={line.category}
+                className="border-b border-line pb-3 last:border-0 last:pb-0"
+              >
                 <div className="flex items-baseline justify-between gap-3">
                   <span>{line.label}</span>
                   <span className="font-medium">{euro(line.total)}</span>
@@ -165,7 +190,9 @@ export default async function TaxReportPage({
 
         <div className="mt-4 flex items-baseline justify-between border-t border-line pt-3">
           <span className="font-medium">Yhteensä</span>
-          <span className="text-lg font-medium">{euro(report.annualExpenses)}</span>
+          <span className="text-lg font-medium">
+            {euro(report.annualExpenses)}
+          </span>
         </div>
       </section>
 
@@ -181,7 +208,10 @@ export default async function TaxReportPage({
 
           <ul className="mt-3 flex flex-col gap-3">
             {other.map((line) => (
-              <li key={line.category} className="border-b border-line pb-3 last:border-0 last:pb-0">
+              <li
+                key={line.category}
+                className="border-b border-line pb-3 last:border-0 last:pb-0"
+              >
                 <div className="flex items-baseline justify-between gap-3">
                   <span>{line.label}</span>
                   <span className="font-medium">{euro(line.total)}</span>
@@ -200,7 +230,9 @@ export default async function TaxReportPage({
 
           <div className="mt-4 flex items-baseline justify-between border-t border-line pt-3">
             <span className="font-medium">Yhteensä</span>
-            <span className="text-lg font-medium">{euro(report.otherEntries)}</span>
+            <span className="text-lg font-medium">
+              {euro(report.otherEntries)}
+            </span>
           </div>
         </section>
       ) : null}
@@ -226,8 +258,9 @@ export default async function TaxReportPage({
       */}
       {travel && !isKmRateConfirmed(year) ? (
         <p className="mt-4 text-sm text-ink/70">
-          Matkakulut on laskettu arviolla {kmRate(year)} € / km. Verohallinnon {year}-taksaa ei
-          ole vielä vahvistettu tähän sovellukseen, joten luku voi vielä muuttua.
+          Matkakulut on laskettu arviolla {kmRate(year)} € / km. Verohallinnon{" "}
+          {year}-taksaa ei ole vielä vahvistettu tähän sovellukseen, joten luku
+          voi vielä muuttua.
         </p>
       ) : null}
 
@@ -235,8 +268,9 @@ export default async function TaxReportPage({
 
       {plusQuote && plusQuote.amountCents > 0 && isUsingMockBilling() ? (
         <p className="mt-6 rounded-[var(--radius-panel)] border border-coral bg-paper p-5 text-sm">
-          Stripe-yhteyttä ei ole määritetty, joten maksaminen on harjoittelutilassa. Mitään ei
-          veloiteta.
+          {billingUnavailableInProduction()
+            ? BILLING_UNAVAILABLE_MESSAGE
+            : "Stripe-yhteyttä ei ole määritetty, joten maksaminen on harjoittelutilassa. Mitään ei veloiteta."}
         </p>
       ) : null}
 

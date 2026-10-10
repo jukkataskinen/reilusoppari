@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { startTenancyCheckout } from "@/lib/billing/checkout";
+import {
+  BILLING_UNAVAILABLE_MESSAGE,
+  billingUnavailableInProduction,
+} from "@/lib/billing/index";
 
 /**
  * Vuokrasuhteen maksu (CLAUDE.md 5.1, vaihe 5).
@@ -40,14 +44,26 @@ export async function payTenancyAction(
   const tenancyId = String(formData.get("tenancyId") ?? "");
   if (!tenancyId) return { message: "Vuokrasuhde puuttuu." };
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.reilusoppari.fi";
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.reilusoppari.fi";
 
-  const result = await startTenancyCheckout({
-    userId: user.id,
-    tenancyId,
-    consentGiven: formData.get("consent") === "on",
-    appUrl,
-  });
+  /*
+    Ilmainen, salkku ja krediitti eivät tarvitse Stripeä, joten ne hoidetaan
+    aina. Vain oikea maksu estetään selkeällä viestillä, kun Stripe puuttuu.
+  */
+  let result: Awaited<ReturnType<typeof startTenancyCheckout>>;
+  try {
+    result = await startTenancyCheckout({
+      userId: user.id,
+      tenancyId,
+      consentGiven: formData.get("consent") === "on",
+      appUrl,
+    });
+  } catch (error) {
+    if (billingUnavailableInProduction())
+      return { message: BILLING_UNAVAILABLE_MESSAGE };
+    throw error;
+  }
 
   if (!result.ok) return { message: result.message };
 

@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { ensurePlusAccess } from "@/lib/billing/plus";
+import {
+  BILLING_UNAVAILABLE_MESSAGE,
+  billingUnavailableInProduction,
+} from "@/lib/billing/index";
 import { collectTaxReport } from "@/lib/db/tax-reports";
 import { isEmpty } from "@/lib/tax/report";
 import { sealTaxReport } from "@/lib/tax/seal";
@@ -56,7 +60,8 @@ export async function sealTaxReportAction(
   const propertyId = String(formData.get("propertyId") ?? "");
   const year = validYear(String(formData.get("year") ?? ""));
 
-  if (!propertyId || year === null) return { message: "Vuosi puuttuu tai on virheellinen." };
+  if (!propertyId || year === null)
+    return { message: "Vuosi puuttuu tai on virheellinen." };
 
   let numbers;
   try {
@@ -66,12 +71,24 @@ export async function sealTaxReportAction(
   }
 
   if (isEmpty(numbers)) {
-    return { message: "Vuodelle ei ole kirjattu tuloja eikä kuluja. Laskelmassa ei olisi mitään." };
+    return {
+      message:
+        "Vuodelle ei ole kirjattu tuloja eikä kuluja. Laskelmassa ei olisi mitään.",
+    };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.reilusoppari.fi";
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.reilusoppari.fi";
 
-  const access = await ensurePlusAccess({ userId: user.id, propertyId, appUrl });
+  let access: Awaited<ReturnType<typeof ensurePlusAccess>>;
+  try {
+    access = await ensurePlusAccess({ userId: user.id, propertyId, appUrl });
+  } catch (error) {
+    // Sama kuin vuokrasuhteen maksussa: puuttuva Stripe ei saa kaataa sivua.
+    if (billingUnavailableInProduction())
+      return { message: BILLING_UNAVAILABLE_MESSAGE };
+    throw error;
+  }
   if (!access.ok) {
     // Ei maksua vielä: käyttäjä ohjataan Stripen sivulle. `redirect` heittää,
     // joten mitään ei tule tämän jälkeen — ja se ei saa jäädä try/catchiin,
@@ -81,7 +98,12 @@ export async function sealTaxReportAction(
   }
 
   try {
-    const result = await sealTaxReport(user.id, propertyId, year, access.paidVia);
+    const result = await sealTaxReport(
+      user.id,
+      propertyId,
+      year,
+      access.paidVia,
+    );
     if (!result.ok) return { message: result.message };
   } catch (err) {
     // `assertRealEsinetti` heittää, jos eSinetti on vielä mock. Se on

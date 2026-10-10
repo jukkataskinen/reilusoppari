@@ -34,7 +34,9 @@ export function getBillingClient(): BillingClient {
   } else {
     cached = new BillingMockClient();
     cachedIsMock = true;
-    console.warn("[laskutus] STRIPE_SECRET_KEY puuttuu — käytössä on mock, ei oikea maksu.");
+    console.warn(
+      "[laskutus] STRIPE_SECRET_KEY puuttuu — käytössä on mock, ei oikea maksu.",
+    );
   }
 
   return cached;
@@ -53,7 +55,9 @@ export function isUsingMockBilling(): boolean {
  */
 export function assertRealBilling(): void {
   if (process.env.NODE_ENV === "production" && !hasBillingCredentials()) {
-    throw new Error("Stripe-yhteyttä ei ole määritetty. Maksua ei voi tehdä mockilla tuotannossa.");
+    throw new Error(
+      "Stripe-yhteyttä ei ole määritetty. Maksua ei voi tehdä mockilla tuotannossa.",
+    );
   }
 }
 
@@ -65,7 +69,10 @@ export function resetBillingClientForTests(): void {
 
 export { BillingMockClient } from "./mock";
 export { orderConfirmationEmail } from "./confirmation";
-export type { OrderConfirmationInput, OrderConfirmationMessage } from "./confirmation";
+export type {
+  OrderConfirmationInput,
+  OrderConfirmationMessage,
+} from "./confirmation";
 export {
   parseBillingEvent,
   TOLERANCE_SECONDS,
@@ -79,3 +86,16 @@ export type {
   CheckoutSession,
   PortalSession,
 } from "./types";
+
+/**
+ * Onko maksaminen estetty, koska tuotannosta puuttuu Stripe (Jukka 10.10.2026,
+ * Sentry REILUSOPPARI-1). Silloin maksulomake ei saa kaatua eikä väittää
+ * olevansa harjoittelutilassa: tuotannossa mock ei veloita eikä myöskään
+ * kelpaa maksuksi (`assertRealBilling`).
+ */
+export function billingUnavailableInProduction(): boolean {
+  return process.env.NODE_ENV === "production" && !hasBillingCredentials();
+}
+
+export const BILLING_UNAVAILABLE_MESSAGE =
+  "Maksaminen ei ole vielä käytössä. Ota yhteyttä tukeen, niin saat vuokrasuhteen käyttöön.";
