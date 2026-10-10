@@ -2215,3 +2215,12 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 - **Myöhässä oleva alkukatselmus menee vuokran kuittauksen edelle**, koska kuittauksen voi tehdä myöhemmin mutta myöhäinen kuva ei kerro alkutilasta. Vuokra on edellä avoimia vikoja.
 - **eSinettiä kysytään vain kesken olevista kierroksista** oman allekirjoituksen selvittämiseksi; jos eSinetti ei vastaa, näytetään "Odotetaan allekirjoituksia".
 - **Värit.** Lisätty `amber` (odottaa). Coral vain myöhässä olevalle. Väri on aina sanan rinnalla (valmis, kesken, myöhässä, tulossa, jäi tekemättä). Päättymisvaiheessa tekemätön alkukatselmus näytetään sanalla "jäi tekemättä" eikä myöhässä-värillä, koska sitä ei enää voi tehdä.
+
+## 2026-10-10 — Asuntojen tila ja vuokrasuhteiden värit (Jukka)
+
+- **Tila johdetaan, ei tallenneta.** `propertyStatus(tenancies)` (`src/lib/property/status.ts`) laskee asunnon tilan sen vuokrasuhteista: Vuokrattu (`active`), Irtisanottu (`ending`), Sopimus kesken (`draft`, `inspection`, `signing`), muuten Vapaa. Etusija voimassa > irtisanottu > kesken; saman tason sisällä uusin alkupäivän ja luontihetken mukaan. Kantamuutosta ei tehty.
+- **Kaksi vuokrasuhdetta samassa vaiheessa.** Merkki ja linkki koskevat uusinta, ja kortissa kerrotaan, että asunnolla on toinenkin samassa vaiheessa oleva vuokrasuhde. Toista ei piiloteta.
+- **"Vaatii toimenpiteitä" samalla `nextStep`illä kuin vuokrasuhteen sivulla**, jotta lista ja sivu ovat samaa mieltä. Listalle haetaan vain alkupäivä, alkukatselmuksen tila ja vuokralaisen valmiusleima, koska myöhässä-tila syntyy vain alkukatselmuksen määräajasta; eSinettiä ei kysytä listalla.
+- **Ei N+1-kyselyitä.** `src/lib/db/tenancy-summaries.ts` hakee listojen tiedot `in`-kyselyillä (asuntolista 3 kyselyä, vuokrasuhdelista 5). Vanha vuokrasuhdelista haki osoitteen jokaiselle riville erikseen.
+- **Värit.** Sana aina näkyvissä, väri pisteenä, vaaleana taustana ja kortin vasempana reunana (myös asuntolistan korteissa, Jukan lisäys). Teksti pysyy ink-tummana kontrastin vuoksi. Coral vain toimenpiteelle. Tilojen nimet ovat sovelluksen nykyiset (Voimassa, Päättymässä).
+- **Takaisin-linkki pois** Asunnot- ja Vuokrasuhteet-listoilta: ne ovat alanavigaation pääosioita.

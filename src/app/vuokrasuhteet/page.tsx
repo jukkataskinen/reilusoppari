@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
-import { listTenancies } from "@/lib/db/tenancies";
-import { getProperty } from "@/lib/db/properties";
-import { formatAddress } from "@/lib/property/schema";
+import { listTenancyRows } from "@/lib/db/tenancy-summaries";
+import { ACTION_REQUIRED_LABEL, TENANCY_GROUP_TONE, tenancyGroup } from "@/lib/property/status";
 import { AppShell } from "@/components/AppShell";
+import { CARD_ACCENT, StatusBadge } from "@/components/StatusBadge";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = { title: fi.nav.tenancies };
@@ -20,20 +20,13 @@ export default async function TenanciesPage({
   const user = await getCurrentUser();
   if (!user) redirect("/auth/login");
 
-  const tenancies = await listTenancies(user.id);
-  const deleted = (await searchParams).poistettu === "1";
-
   /*
-    Osoite haetaan jokaiselle erikseen `getProperty`llä, joka rajaa
-    omistajaan. Vuokralainen ei omista asuntoa, joten hänelle osoite jää
-    tässä näkymässä hakematta — se näkyy vuokrasuhteen omalla sivulla.
+    Osoite, alkukatselmuksen tila ja järjestys haetaan kerralla
+    (`listTenancyRows`). Osoite näkyy vain vuokranantajalle: vuokralainen ei
+    omista asuntoa, ja hän näkee osoitteen vuokrasuhteen omalla sivulla.
   */
-  const rows = await Promise.all(
-    tenancies.map(async (tenancy) => ({
-      tenancy,
-      property: await getProperty(user.id, tenancy.propertyId),
-    })),
-  );
+  const rows = await listTenancyRows(user.id);
+  const deleted = (await searchParams).poistettu === "1";
 
   return (
     <AppShell>
@@ -57,30 +50,33 @@ export default async function TenanciesPage({
         </div>
       ) : (
         <ul className="mt-8 flex flex-col gap-3">
-          {rows.map(({ tenancy, property }) => (
-            <li key={tenancy.id}>
-              <Link
-                href={`/vuokrasuhteet/${tenancy.id}`}
-                className="flex min-h-[var(--size-touch)] flex-col rounded-[var(--radius-panel)] border border-line bg-paper p-4"
-              >
-                <span className="font-medium">
-                  {property ? formatAddress(property) : "Vuokrasuhde"}
-                </span>
-                <span className="mt-1 text-sm text-ink/60">
-                  {STATUS_LABEL[tenancy.status]}
-                  {tenancy.rentAmount ? ` · ${tenancy.rentAmount} €/kk` : ""}
-                </span>
-              </Link>
-            </li>
-          ))}
+          {rows.map(({ tenancy, address, actionRequired }) => {
+            // Coral vain, kun jokin vaatii toimia; muuten vaiheen väri.
+            const tone = actionRequired ? "coral" : TENANCY_GROUP_TONE[tenancyGroup(tenancy.status)];
+            return (
+              <li key={tenancy.id}>
+                <Link
+                  href={`/vuokrasuhteet/${tenancy.id}`}
+                  className={`flex min-h-[var(--size-touch)] flex-col rounded-[var(--radius-panel)] border border-line bg-paper p-4 ${CARD_ACCENT[tone]}`}
+                >
+                  <span className="font-medium">{address ?? "Vuokrasuhde"}</span>
+                  <span className="mt-2 flex flex-wrap items-center gap-2">
+                    {actionRequired ? (
+                      <StatusBadge tone="coral">{ACTION_REQUIRED_LABEL}</StatusBadge>
+                    ) : null}
+                    <StatusBadge tone={TENANCY_GROUP_TONE[tenancyGroup(tenancy.status)]}>
+                      {STATUS_LABEL[tenancy.status]}
+                    </StatusBadge>
+                    {tenancy.rentAmount ? (
+                      <span className="text-sm text-ink/60">{tenancy.rentAmount} €/kk</span>
+                    ) : null}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
-
-      <p className="mt-10 text-sm">
-        <Link href="/" className="underline underline-offset-4">
-          {fi.common.back}
-        </Link>
-      </p>
     </AppShell>
   );
 }
