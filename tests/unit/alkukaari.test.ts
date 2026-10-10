@@ -21,8 +21,11 @@ import { NotAuthorizedError } from "@/lib/db/access";
 import { stripImageMetadata } from "@/lib/photos/strip-metadata";
 import { savePartyDetails, listPartyDetails } from "@/lib/tenancy/party-details";
 import { startTenancyCheckout } from "@/lib/billing/checkout";
-import { sendForSigning } from "@/lib/tenancy/signing";
-import { handleRoundCompleted } from "@/lib/tenancy/round-completed";
+import { sendForSigning, sendInspectionForSigning } from "@/lib/tenancy/signing";
+import {
+  handleInspectionRoundCompleted,
+  handleRoundCompleted,
+} from "@/lib/tenancy/round-completed";
 import { generateEncryptionKey } from "@/lib/identity/crypto";
 import { resetEsinettiClientForTests } from "@/lib/esinetti";
 import type { WebhookEvent } from "@/lib/esinetti";
@@ -33,6 +36,10 @@ import { hasInspectionRooms } from "../migration-probe";
  * asunto → vuokrasuhde → kutsu → liittyminen → molemmat kuvaavat → valmis →
  * lukitus → maksu (ilmainen ensimmäinen) → allekirjoituskierros → valmis
  * kierros → vuokrasuhde käynnissä. Lopuksi ulkopuolinen ei näe mitään.
+ *
+ * Toinen kaari (Jukan päätös 10.10.2026): sopimus allekirjoitetaan ensin,
+ * vuokrasuhde alkaa, ja alkukatselmus tehdään ja allekirjoitetaan sen
+ * jälkeen omana kierroksenaan.
  *
  * ===========================================================================
  * MIKSI TÄMÄ ON OLEMASSA, KUN OSAT ON JO TESTATTU
@@ -327,4 +334,115 @@ describe.skipIf(!RUN)("alkukaari mockia vasten", () => {
       NotAuthorizedError,
     );
   }, 30_000);
+});
+
+
+/*
+  Sopimus ensin, katselmus erikseen (Jukan päätös 10.10.2026).
+
+  Tavallisin järjestys: sopimus tehdään ennen muuttoa, ja asunto kuvataan
+  vasta muuttaessa. Oma vuokranantaja, jotta ilmainen ensimmäinen
+  vuokrasuhde on käytettävissä.
+*/
+const toinen = { landlord: "", tenant: "", tenancyId: "", token: "" };
+const TENANT2_EMAIL = `${PREFIX}-tenant2@example.invalid`;
+
+function signedEvent(roundId: string, tenancyId: string, phase: "alku" | "katselmus"): WebhookEvent {
+  const now = new Date().toISOString();
+  return {
+    id: `evt_${roundId}`,
+    event: "round.completed",
+    createdAt: now,
+    roundId,
+    externalRef: `tenancy:${tenancyId}:${phase}`,
+    status: "completed",
+    signers: [],
+    documents: [],
+  };
+}
+
+describe.skipIf(!RUN)("sopimus ensin, katselmus erikseen", () => {
+  it("sopimus allekirjoitetaan ennen katselmusta, ja vuokrasuhde alkaa", async () => {
+    toinen.landlord = await createUser("landlord2");
+    const property = await createProperty(toinen.landlord, {
+      name: null,
+      street: "Testikatu 2",
+      postalCode: "00100",
+      city: "Helsinki",
+      propertyType: "kerrostalo",
+      rooms: 1,
+      areaM2: 30,
+      housingCompany: null,
+      tenure: "osake",
+    });
+    created.properties.push(property.id);
+
+    const { tenancy, invites } = await createTenancy(toinen.landlord, {
+      propertyId: property.id,
+      startDate: "2026-10-01",
+      endDate: null,
+      rentAmount: 700,
+      rentDueDay: 5,
+      depositAmount: 1400,
+      tenants: [{ name: "Liisa Laine", email: TENANT2_EMAIL }],
+    });
+    created.tenancies.push(tenancy.id);
+    toinen.tenancyId = tenancy.id;
+
+    toinen.tenant = await createUser("tenant2", TENANT2_EMAIL);
+    expect((await acceptInvite(invites[0].token, toinen.tenant, TENANT2_EMAIL)).ok).toBe(true);
+
+    for (const party of await listPartyDetails(toinen.landlord, toinen.tenancyId)) {
+      await savePartyDetails(toinen.landlord, toinen.tenancyId, party.partyId, {
+        name: party.role === "landlord" ? "Matti Virtanen" : "Liisa Laine",
+        partyType: "henkilo",
+        personalId: party.role === "landlord" ? "131052-308T" : "010594Y123W",
+        businessId: null,
+        signatoryName: null,
+        phone: null,
+        email: party.role === "landlord" ? `${PREFIX}-landlord2@example.invalid` : TENANT2_EMAIL,
+        bankAccount: party.role === "landlord" ? "FI21 1234 5600 0007 85" : null,
+        clearPersonalId: false,
+      });
+    }
+
+    expect(
+      await startTenancyCheckout({
+        userId: toinen.landlord,
+        tenancyId: toinen.tenancyId,
+        consentGiven: true,
+        appUrl: "http://127.0.0.1:3100",
+      }),
+    ).toMatchObject({ ok: true, paid: true });
+
+    const sent = await sendForSigning(toinen.landlord, toinen.tenancyId);
+    expect(sent.message ?? "ei virhettä").toBe("ei virhettä");
+    expect(sent.round?.documents.map((doc) => doc.name)).toEqual(["Vuokrasopimus.pdf"]);
+
+    await handleRoundCompleted(signedEvent(sent.round!.id, toinen.tenancyId, "alku"), toinen.tenancyId);
+    expect((await getTenancy(toinen.tenant, toinen.tenancyId))?.status).toBe("active");
+  }, 120_000);
+
+  it("muuton jälkeen kuvataan, lukitaan ja pöytäkirja allekirjoitetaan erikseen", async () => {
+    await photograph(toinen.landlord, toinen.tenancyId, "Keittiö", "keittiö");
+    await photograph(toinen.tenant, toinen.tenancyId, "Kylpyhuone", "kylpyhuone");
+
+    await getInspectionOverview(toinen.tenant, toinen.tenancyId);
+    await markTenantReady(toinen.tenant, toinen.tenancyId);
+    expect(await lockInspection(toinen.landlord, toinen.tenancyId)).toEqual({ allowed: true });
+
+    const sent = await sendInspectionForSigning(toinen.landlord, toinen.tenancyId);
+    expect(sent.message ?? "ei virhettä").toBe("ei virhettä");
+    expect(sent.round?.documents.map((doc) => doc.name)).toEqual(["Alkukatselmus.pdf"]);
+
+    expect(
+      await handleInspectionRoundCompleted(
+        signedEvent(sent.round!.id, toinen.tenancyId, "katselmus"),
+        toinen.tenancyId,
+      ),
+    ).toEqual({ handled: true, alreadyDone: false });
+
+    expect((await getOrCreateInspection(toinen.tenant, toinen.tenancyId)).status).toBe("signed");
+    expect((await getTenancy(toinen.tenant, toinen.tenancyId))?.status).toBe("active");
+  }, 120_000);
 });

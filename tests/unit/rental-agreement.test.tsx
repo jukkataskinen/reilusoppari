@@ -99,6 +99,12 @@ describe("sopimusehdot", () => {
     expect(arvio?.body).toContain("yllätyksenä");
   });
 
+  it("alkukatselmuksen pöytäkirja tehdään erikseen 14 päivän kuluessa", () => {
+    // Jukan päätös 10.10.2026: sopimus allekirjoitetaan ennen katselmusta.
+    const kunto = buildTerms(DATA).find((t) => t.title === "Asunnon kunto");
+    expect(kunto?.body).toContain("allekirjoitetaan erikseen viimeistään 14 päivän kuluessa");
+  });
+
   it("kielto ja lupa kirjoitetaan kumpikin kokonaisina lauseina", () => {
     const kaytto = buildTerms(DATA).find((t) => t.title === "Asunnon käyttö");
     expect(kaytto?.body).toContain("Tupakointi sisätiloissa ei ole sallittu");

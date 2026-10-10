@@ -147,6 +147,11 @@ describe("external_ref sitoo kierroksen vuokrasuhteeseen", () => {
       tenancyId,
       phase: "loppu",
     });
+    // Alkukatselmuksen pöytäkirja omana kierroksenaan (10.10.2026).
+    expect(parseExternalRef(buildExternalRef(tenancyId, "katselmus"))).toEqual({
+      tenancyId,
+      phase: "katselmus",
+    });
   });
 
   it("tuntematon muoto on null eikä arvaus", () => {

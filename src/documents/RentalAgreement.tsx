@@ -224,8 +224,10 @@ export function buildTerms(data: RentalAgreementData): Term[] {
     title: "Asunnon kunto",
     body:
       "Asunnon kunto todetaan yhdessä alkukatselmuksessa, ja siitä tehdään " +
-      "erillinen pöytäkirja kuvineen. Sama lista käydään läpi vuokrasuhteen " +
-      "päättyessä, joten kummankaan ei tarvitse muistaa mitään ulkoa.",
+      "erillinen pöytäkirja kuvineen. Pöytäkirja laaditaan ja allekirjoitetaan " +
+      "erikseen viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta. Sama " +
+      "lista käydään läpi vuokrasuhteen päättyessä, joten kummankaan ei tarvitse " +
+      "muistaa mitään ulkoa.",
   });
 
   terms.push({

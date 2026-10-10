@@ -2183,3 +2183,12 @@ osoitteeseen. Lokiin `tenancy.invite.self_join_cleared`.
 ## 2026-10-10 — Sopimus ja alkukatselmus allekirjoitetaan erikseen (Jukka)
 
 Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut viat vasta muuttaessaan. Siksi sopimus allekirjoitetaan heti, kun tiedot ovat valmiit, ja alkukatselmuksen pöytäkirja omana kierroksenaan viimeistään 14 päivän kuluessa vuokrasuhteen alkamisesta. Jos katselmus on lukittu jo sopimusta lähetettäessä, molemmat allekirjoitetaan yhdessä. Maksu veloitetaan sopimuksen lähetyksessä; toinen kierros kasvattaa eSinetin tunnistuskulua. Korvaa CLAUDE.md:n aiemman säännön "yhdellä tunnistautumisella".
+
+## 2026-10-10 — Sopimus ja alkukatselmus erikseen: toteutus
+
+- **Kierrokset.** Sopimuksen kierros (`externalRef` `tenancy:<id>:alku`) ottaa pöytäkirjan mukaan vain, jos katselmus on lukittu eikä sillä ole omaa kierrosta (`signing-plan.ts`). Muuten pöytäkirjalla on oma kierros `tenancy:<id>:katselmus`, jonka voi lähettää vasta, kun sopimus on lähetetty — muuten sopimuksen lähetys ottaisi sen mukaan itse. Kantamuutosta ei tarvittu: kummallakin rivillä on jo oma `esinetti_round_id`, ja sama tunniste kummallakin tarkoittaa yhteistä kierrosta.
+- **Webhook.** Sopimuksen kierros merkitsee pöytäkirjan allekirjoitetuksi vain, jos pöytäkirjan rivillä on saman kierroksen tunniste. Pöytäkirjan oma kierros ei muuta vuokrasuhteen tilaa eikä luo vuokrakausia.
+- **Lähetetty sopimus lukittuu.** `saveContractTerms` hylkää muutoksen jo lähetyksestä, ei vasta allekirjoituksesta: sopimus lähtee nyt aiemmin, ja allekirjoitus voi kestää päiviä.
+- **Määräaika ja muistutukset.** 14 päivää alkupäivästä (UTC-päivämäärinä kuten vuokramuistutuksissa). Muistutukset 7 ja 14 päivän kohdalla molemmille, seitsemän päivän ikkunalla, samassa päivittäisessä cron-ajossa kuin vuokramuistutukset ja `dedupe_key`-estolla. Tilat `draft`, `inspection`, `signing`, `active`.
+- **Vertailukuvat ja todistus.** Loppukatselmus näyttää alkukuvat vain, jos alkukatselmus lukittiin (`initialPhotosForComparison`, ei luo alkukatselmusta). Todistuksen tilastoihin `initialInspectionDone`; rivi "Alkukatselmus: Ei tehty" näkyy molempien todistuksissa. Vanhoissa todistuksissa kenttää ei ole, eikä riviä silloin näytetä.
+- **Sopimuspohja.** "Asunnon kunto" -ehtoon lause pöytäkirjasta 14 päivän kuluessa. Juridinen tarkistus Jukalla kuten muukin pohjan teksti.

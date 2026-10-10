@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy, getTenancyProperty } from "@/lib/db/tenancies";
-import { getInspectionOverview } from "@/lib/db/inspections";
+import { getInspectionOverview, initialPhotosForComparison } from "@/lib/db/inspections";
 import { inspectionRooms, mergeRooms, PHOTO_GUIDANCE, roomSlug } from "@/lib/inspection/rooms";
 import { lockAvailableAt } from "@/lib/inspection/lock";
 import { AppShell } from "@/components/AppShell";
@@ -43,7 +43,7 @@ export default async function FinalInspectionPage({
 
   const [final, initial, property] = await Promise.all([
     getInspectionOverview(user.id, id, "final"),
-    getInspectionOverview(user.id, id, "initial"),
+    initialPhotosForComparison(user.id, id),
     getTenancyProperty(user.id, id),
   ]);
 
@@ -88,6 +88,13 @@ export default async function FinalInspectionPage({
             kuvat, joten kuntoa voi verrata suoraan. Tavanomainen kuluminen ei ole vahinko — se
             on osa asumista.
           </p>
+          {initial.available ? null : (
+            <p className="mt-3 text-sm text-ink/70">
+              Alkukatselmusta ei lukittu vuokrasuhteen alussa, joten vertailukuvia ei ole.
+              Loppukatselmus tehdään silti samalla tavalla, ja vuokratodistuksessa kerrotaan,
+              ettei alkukatselmusta tehty.
+            </p>
+          )}
         </div>
       )}
 

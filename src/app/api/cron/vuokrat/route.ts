@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { dispatchDueReminders } from "@/lib/rent/dispatch";
+import { dispatchInspectionReminders } from "@/lib/inspection/reminders";
 
 /**
- * Päivittäinen vuokramuistutusajo (CLAUDE.md 5.5).
+ * Päivittäinen vuokramuistutusajo (CLAUDE.md 5.5) ja alkukatselmuksen
+ * muistutukset (10.10.2026).
  *
  * ===========================================================================
  * TIETOTURVAKATSELMUS (esinetti CLAUDE.md 0.1)
@@ -36,7 +38,21 @@ export async function GET(request: Request) {
   try {
     const sent = await dispatchDueReminders();
     console.log(`[vuokrat] muistutusajo valmis, lähetettiin ${sent} ilmoitusta.`);
-    return NextResponse.json({ ok: true, sent });
+
+    /*
+      Alkukatselmuksen muistutukset samassa ajossa (Jukan päätös 10.10.2026).
+      Oma virheenkäsittely: vuokramuistutukset on jo lähetetty, eikä niiden
+      ajoa raportoida epäonnistuneeksi katselmuksen takia.
+    */
+    let inspections = 0;
+    try {
+      inspections = await dispatchInspectionReminders();
+      console.log(`[katselmus] muistutusajo valmis, lähetettiin ${inspections} ilmoitusta.`);
+    } catch (err) {
+      console.error("[katselmus] muistutusajo epäonnistui:", err instanceof Error ? err.message : err);
+    }
+
+    return NextResponse.json({ ok: true, sent, inspections });
   } catch (err) {
     console.error("[vuokrat] muistutusajo epäonnistui:", err instanceof Error ? err.message : err);
     return new NextResponse("Ajo epäonnistui.", { status: 500 });

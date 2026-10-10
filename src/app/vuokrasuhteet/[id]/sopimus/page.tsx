@@ -41,7 +41,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
       <h1 className="text-2xl">Vuokrasopimus</h1>
       <p className="mt-2 text-ink/70">
         {isLandlord
-          ? "Täytä ehdot ja katso esikatselu. Sopimus allekirjoitetaan vasta alkukatselmuksen jälkeen."
+          ? "Täytä ehdot ja katso esikatselu. Sopimuksen voi lähettää allekirjoitettavaksi heti, kun osapuolten tiedot ovat valmiit. Alkukatselmus tehdään muuton yhteydessä."
           : "Tämä on sopimusluonnos. Voit lukea sen ennen allekirjoitusta."}
       </p>
 

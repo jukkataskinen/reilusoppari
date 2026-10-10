@@ -62,6 +62,12 @@ export interface CertificateStats {
   defectsResolved?: number;
   defectsReported?: number;
   depositReturnedFull?: boolean;
+  /**
+   * Lukittiinko alkukatselmus. Sopimus ei odota katselmusta (10.10.2026),
+   * joten se voi jäädä tekemättä; silloin loppukatselmuksessa ei ollut
+   * vertailukuvia, ja todistus kertoo sen. Puuttuu vanhoista todistuksista.
+   */
+  initialInspectionDone?: boolean;
 }
 
 export interface CertificateData {
@@ -182,6 +188,18 @@ export function buildStatRows(data: CertificateData): StatRow[] {
       label: "Vakuus",
       value: stats.depositReturnedFull ? "Palautettu kokonaan" : "Palautettu osittain",
     });
+  }
+
+  if (stats.initialInspectionDone !== undefined) {
+    rows.push(
+      stats.initialInspectionDone
+        ? { label: "Alkukatselmus", value: "Tehty vuokrasuhteen alussa" }
+        : {
+            label: "Alkukatselmus",
+            value: "Ei tehty",
+            detail: "Loppukatselmuksessa ei ollut vertailukuvia",
+          },
+    );
   }
 
   return rows;

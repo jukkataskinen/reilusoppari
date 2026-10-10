@@ -7,6 +7,7 @@ import {
 } from "@/lib/esinetti";
 import {
   handleFinalRoundCompleted,
+  handleInspectionRoundCompleted,
   handleRoundCompleted,
 } from "@/lib/tenancy/round-completed";
 
@@ -74,7 +75,9 @@ export async function POST(request: Request) {
     const outcome =
       ref.phase === "alku"
         ? await handleRoundCompleted(event, ref.tenancyId)
-        : await handleFinalRoundCompleted(event, ref.tenancyId);
+        : ref.phase === "katselmus"
+          ? await handleInspectionRoundCompleted(event, ref.tenancyId)
+          : await handleFinalRoundCompleted(event, ref.tenancyId);
 
     return NextResponse.json({ ok: true, ...outcome });
   } catch (err) {
