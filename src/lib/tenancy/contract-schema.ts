@@ -22,6 +22,7 @@
  */
 
 import { z } from "zod";
+import { requiredNumber } from "@/lib/forms/schema";
 
 const optionalNumber = (max: number) =>
   z.coerce.number().min(0).max(max).nullable().optional().default(null);
@@ -36,12 +37,20 @@ export const contractTermsSchema = z.object({
    * Laki asettaa vähimmäisajat (AHVL 481/1995): vuokralaiselle yksi kuukausi,
    * vuokranantajalle kolme ja yli vuoden kestäneessä vuokrasuhteessa kuusi.
    * Asiakirja kertoo ne joka tapauksessa.
+   *
+   * `requiredNumber`, ei `z.coerce.number()`: tyhjä kenttä (selaimen
+   * pakollisuustarkistus ohitettuna) ei saa hiljaa tallentua nollaksi, koska
+   * nolla kuukautta on itsessään kelvollinen mutta harhaanjohtava arvo
+   * allekirjoitettavassa asiakirjassa (Jukan havainto 2026-10-10).
    */
-  noticePeriodMonths: z.coerce
-    .number()
-    .int("Irtisanomisaika on kokonaisluku")
-    .min(0, "Irtisanomisaika ei voi olla negatiivinen")
-    .max(12, "Tarkista irtisanomisaika"),
+  noticePeriodMonths: requiredNumber(
+    "Irtisanomisaika puuttuu",
+    z
+      .number()
+      .int("Irtisanomisaika on kokonaisluku")
+      .min(0, "Irtisanomisaika ei voi olla negatiivinen")
+      .max(12, "Tarkista irtisanomisaika"),
+  ),
 
   /**
    * Määräaika, jonka kuluessa sopimusta ei voi irtisanoa.
@@ -168,7 +177,9 @@ export function contractFormToInput(form: FormData): Record<string, unknown> {
 
   return {
     furnished: checkbox("furnished"),
-    noticePeriodMonths: text("noticePeriodMonths") || "0",
+    // Ei `|| "0"`: tyhjä kenttä menee sellaisenaan `requiredNumber`-tarkistukseen,
+    // joka antaa oman "Irtisanomisaika puuttuu" -viestin sen vieressä.
+    noticePeriodMonths: text("noticePeriodMonths"),
     // Kuukausimäärä luetaan vain jos rajoitus on rastitettu. Muuten kenttään
     // jäänyt luku jäisi voimaan vaikka rasti poistettiin.
     minimumTermMonths: checkbox("hasMinimumTerm") ? blankToNull("minimumTermMonths") : null,

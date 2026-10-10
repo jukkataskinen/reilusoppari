@@ -79,7 +79,9 @@ describe("lomakkeen luku", () => {
 
   it("tyhjä vapaa kenttä on null eikä tyhjä merkkijono", () => {
     const parsed = contractTermsSchema.safeParse(
-      contractFormToInput(form({ landlordName: "Matti", otherTerms: "   " })),
+      contractFormToInput(
+        form({ landlordName: "Matti", noticePeriodMonths: "1", otherTerms: "   " }),
+      ),
     );
     expect(parsed.success && parsed.data.otherTerms).toBeNull();
     expect(parsed.success && parsed.data.rentIncreaseTerm).toBeNull();
@@ -87,9 +89,26 @@ describe("lomakkeen luku", () => {
 
   it("hylkää liian pitkän vapaan tekstin", () => {
     const parsed = contractTermsSchema.safeParse(
-      contractFormToInput(form({ landlordName: "Matti", otherTerms: "x".repeat(2001) })),
+      contractFormToInput(
+        form({ landlordName: "Matti", noticePeriodMonths: "1", otherTerms: "x".repeat(2001) }),
+      ),
     );
     expect(parsed.success).toBe(false);
+  });
+
+  it("puuttuva irtisanomisaika ei tallennu nollana vaan antaa omat viestinsä", () => {
+    // Selaimen pakollisuustarkistus (`required`) voidaan ohittaa, ja tyhjä
+    // kenttä ei saa silloin hiljaa muuttua nollaksi kuukaudeksi: nolla on
+    // itsessään kelvollinen mutta harhaanjohtava arvo allekirjoitettavassa
+    // sopimuksessa (Jukan havainto 2026-10-10).
+    const parsed = contractTermsSchema.safeParse(
+      contractFormToInput(form({ landlordName: "Matti" })),
+    );
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(parsed.error.issues.find((issue) => issue.path[0] === "noticePeriodMonths")?.message).toBe(
+      "Irtisanomisaika puuttuu",
+    );
   });
 });
 
