@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy } from "@/lib/db/tenancies";
 import { getInspectionOverview } from "@/lib/db/inspections";
 import { AppShell } from "@/components/AppShell";
+import { PdfLink } from "@/components/PdfLink";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -64,15 +65,9 @@ export default async function ProtocolPage({ params }: { params: Promise<{ id: s
         >
           {fi.common.back}
         </Link>
-        <a
-          href={pdf}
-          download="alkukatselmus.pdf"
-          target="_blank"
-          rel="noopener"
-          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
-        >
+        <PdfLink href={pdf} filename="alkukatselmus.pdf">
           Tallenna PDF
-        </a>
+        </PdfLink>
       </div>
 
       <object

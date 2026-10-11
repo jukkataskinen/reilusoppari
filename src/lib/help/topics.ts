@@ -607,7 +607,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: "Allekirjoitetut asiakirjat",
         steps: [
           "Kun kaikki ovat allekirjoittaneet, asiakirjat tulevat Reilusopparin kohtaan Allekirjoitetut asiakirjat. Kohta on vuokrasuhteen sivulla ja Allekirjoitus-sivulla.",
-          "Valitse asiakirjan kohdalta Avaa PDF. Asiakirja avautuu omaan ikkunaansa.",
+          "Valitse asiakirjan kohdalta Avaa PDF. Asiakirja avautuu omaan ikkunaansa, tai puhelimen jakovalikko tarjoaa tallennusta, jos sovellus on lisätty kotivalikkoon.",
           "eSinettiin ei tarvitse mennä. Sama asiakirja näkyy sekä vuokranantajalle että vuokralaiselle.",
           "Jos asiakirja ei ole tullut, vuokranantaja näkee napin Hae allekirjoitetut asiakirjat. Paina sitä, niin asiakirjat haetaan.",
         ],

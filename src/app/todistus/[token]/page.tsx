@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { PdfLink } from "@/components/PdfLink";
 import { findCertificateByShare } from "@/lib/db/certificates";
 import { resolveShare } from "@/lib/db/certificate-contact";
 import { AppShell } from "@/components/AppShell";
@@ -87,15 +88,9 @@ export default async function SharedCertificatePage({
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <a
-          href={`/todistus/${token}/pdf`}
-          download="vuokratodistus.pdf"
-          target="_blank"
-          rel="noopener"
-          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
-        >
+        <PdfLink href={`/todistus/${token}/pdf`} filename="vuokratodistus.pdf">
           Tallenna PDF
-        </a>
+        </PdfLink>
 
         {/*
           "Kysy lisää" näkyy vain, jos todistuksen ANTAJA on sallinut sen.

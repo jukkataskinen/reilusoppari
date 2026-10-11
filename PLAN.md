@@ -384,7 +384,7 @@ Ensimmäinen oikea allekirjoitus 10.10.2026 onnistui, mutta vuokranantaja, joka 
 
 Kotinäytön sovelluksessa (iPhone) sekä `target="_blank"` (11.9.: näkymä ilman sulkemisnappia) että samaan ikkunaan avautuva lataus (10.10.: ei paluuta) johtavat umpikujaan. Esikatselu sivun sisällä toimii 10.10.2026 alkaen (CSP `object-src 'self'`, PDF-reiteille `frame-ancestors 'self'`).
 
-- [ ] Tallennus ilman siirtymää: puhelimessa "Tallenna PDF" hakee tiedoston (`fetch` → `Blob` → `File`) ja avaa jakovalikon `navigator.share({ files })` (iPhonessa "Tallenna tiedostoihin"), muuten tavallinen lataus. Ei uutta ikkunaa eikä siirtymää kotinäytön sovelluksessa (`display-mode: standalone`). Koskee kaikkia PDF-linkkejä (esikatselut, pöytäkirjat, todistukset, Allekirjoitetut asiakirjat, verolaskelma); yksi yhteinen komponentti. Testi `tests/unit/pdf-linkit.test.ts` päivitetään vaatimaan komponentin käyttöä. Ohje.
+- [x] **Tallennus ilman siirtymää.** Tehty (yötyö), ks. DECISIONS.md. Yhteinen komponentti `src/components/PdfLink.tsx`: kotinäytön sovelluksessa (`display-mode: standalone`) nappi hakee tiedoston (`fetch` → `Blob` → `File`) ja avaa puhelimen jakovalikon (`navigator.share`), muuten tavallinen `target="_blank"`-lataus kuten ennen. Kaikki seitsemän PDF-linkkiä (sopimuksen esikatselu, molemmat pöytäkirjat, todistukset kahdessa paikassa, verolaskelma kahdessa muodossa, Allekirjoitetut asiakirjat) käyttävät samaa komponenttia. Testi `tests/unit/pdf-linkit.test.ts` kaatuu, jos joku lisää suoran `<a download>`-linkin ohi komponentin. Ohje päivitetty.
 
 ## Vaihe 7 — Sovelluskaupat (VALINNAINEN, ei lanseerauksen edellytys)
 
