@@ -366,8 +366,8 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
 - [x] Vuokranantaja ei voi antaa omaa osoitettaan vuokralaisen osoitteeksi
       eikä liittyä omaan vuokrasuhteeseensa vuokralaisena; jo syntyneen tilan
       voi korjata vuokrasuhteen sivulla (Korjaa sähköposti / Poista kutsu)
-- [ ] Vuokralaisen lisääminen jälkikäteen (esim. kutsun poiston jälkeen).
-      Nyt vuokrasuhteen voi poistaa ja luoda uudelleen.
+- [x] Vuokralaisen lisääminen jälkikäteen (esim. kutsun poiston jälkeen),
+      ks. DECISIONS.md (yötyö).
 
 ## Vuokranantaja allekirjoittaa heti Reilusopparissa — Jukan havainto 2026-10-10 (lanseerauksen edellytys)
 
