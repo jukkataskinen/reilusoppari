@@ -40,12 +40,12 @@ tai RATKAISTU-merkinnällä. Auki olevat:
 |---|---|---|
 | Migraatiot `0016` (linkkien kutsuraja), `0017` (anon-oikeudet pois), `0020` (kehitysehdotusten tilat) ja `0021` (kehitystoiveen kuvakaappaus) live-Supabaseen. `0018` ja `FEATURE_REQUEST_ADMIN_EMAILS` tehty 27.9.2026 | Jukka | PLAN.md |
 | Vahva tunnistautuminen ilman allekirjoitusta (eSinetin päätepiste) | eSinetti | luku lopussa |
-| Stripe test -avaimet, VAPID Verceliin | Jukka | kohta 4 |
+| ~~Stripe test -avaimet~~ tehty 10.10.2026 (testimaksu ja webhook todennettu 11.10.). Auki: Stripen live-tili ennen lanseerausta, VAPID-avaimet (tarkista) | Jukka | kohta 4 |
 | Sopimuksen, pöytäkirjojen ja todistusten juridinen tarkistus | Jukka | kohta 4 |
 | Tietosuojaseloste, käyttöehdot ja käsittelysopimus: luonnokset `docs/` | Jukka | kohta 4 |
 | E2e-alkukaari: tarvitsee erillisen testikannan ja kirjautumisen ohituksen | Jukka | luku lopussa |
 | Kehitysehdotukset: `GITHUB_ISSUES_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `KEHITYS_KOODAAJA_EMAIL` ja webhook GitHubin repoasetuksiin | Jukka | luku lopussa |
-| "Allekirjoita nyt": eSinetin allekirjoituslinkin päätepiste, sallittu domain eSinetin asetuksiin, sitten `ESINETTI_SIGNING_LINKS=1` | eSinetti, Jukka | luku lopussa |
+| ~~"Allekirjoita nyt"~~ RATKAISTU 10.10.2026: eSinetin päätepiste (eSinetti PR #25, migraatio 0021 ajettu), sallittu domain lisätty ja `ESINETTI_SIGNING_LINKS=1` tuotannossa (Jukka); allekirjoitus todennettu | – | – |
 
 `CLAUDE.md` kopioitiin Downloads-kansiosta 2026-09-10. ~~Hakemisto ei ole
 git-repo~~ — vanhentunut: repo luotiin 2026-09-11.
@@ -538,6 +538,8 @@ muu ei esty.
 Reilusopparin osa on valmis mutta pois päältä (`src/lib/esinetti/signing-link.ts`,
 `src/lib/tenancy/sign-now.ts`, `src/components/SignNow.tsx`). Nappia
 "Allekirjoita nyt" ei näytetä, ennen kuin kaikki kolme alla olevaa on tehty.
+
+**RATKAISTU 10.10.2026, kaikki kolme kohtaa tehty ja allekirjoitus todennettu tuotannossa.**
 
 1. **eSinetti: päätepiste allekirjoittajan linkille** (kirjattu eSinetin
    BLOCKERS.md:hen 10.10.2026). eSinetti tallentaa linkistä vain tiivisteen,
