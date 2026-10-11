@@ -8,6 +8,27 @@ Stripe-tili (Adepta Tilat Oy, sandbox) avattu. Vercelin tuotannossa `STRIPE_SECR
 
 Kaksi oikeaa allekirjoitusta tuotannossa: (1) Yhdystie 4, sopimus ja alkukatselmus samassa kierroksessa (eSinetti: Valmis 2/2), (2) toinen testivuokrasuhde uudella kululla: sopimus erikseen, vuokranantaja "Allekirjoita nyt" -napista (eSinetin upotuslinkki, migraatio 0021 ajettu eSinettiin 10.10.2026), vuokralainen sähköpostin linkistä. Maksu ohitettiin suositteluedulla, koska Stripeä ei ole (5 etua Jukan tunnukselle SQL:llä 10.10.2026, testikäyttöön). Lanseerauksen edellytyksistä jäljellä: Stripe-tili ja avaimet (maksut), PDF:n tallennus puhelimessa jakovalikolla (PLAN).
 
+## Kutsun sähköposti ei lähtenyt 10.10.2026: lokitus parannettu, syy vaatii Jukkaa
+
+**Estää:** vuokralaisen kutsu (ja muut varakanavan sähköpostit) ei mene
+perille, jos Resend hylkää lähetyksen — sovellus näyttää silti kutsun
+lähetetyksi eikä käyttäjä saa syytä.
+
+`src/lib/notifications/email.ts` lokitti aiemmin vain HTTP-statuksen. Nyt
+(2026-10-10) se lukee myös Resendin vastauksen `name`-kentän (esim.
+`"validation_error"`) ja kirjoittaa sen lokiin — vastaanottajaa ei koskaan
+lokiteta, koska se on henkilötietoa. Testattu `tests/unit/email.test.ts`:ssä.
+
+**Mitä Jukka tarvitsee tehdä:** tarkistaa Resendin loki (Resend → Logs,
+10.10.2026 klo 9–10, josta näkee alkuperäisen virheen) ja Vercelin
+ympäristömuuttujat `RESEND_API_KEY` ja `EMAIL_FROM` (Reilusopparin projekti,
+Production). Todennäköinen syy: `RESEND_API_KEY` on rajattu toiseen
+verkkotunnukseen kuin `reilusoppari.fi` (joka on vahvistettu Resendissä
+eu-west-1, DNS tarkistettu 10.10.2026), tai `EMAIL_FROM` ei täsmää
+vahvistettuun verkkotunnukseen. Kun avain tai `EMAIL_FROM` on korjattu,
+seuraava epäonnistunut lähetys näyttää nyt Vercelin lokissa virheen nimen
+suoraan, joten syy selviää yhdellä katsomisella.
+
 ## Tila 2026-09-26: avoimet esteet lyhyesti
 
 Repo on GitHubissa (<https://github.com/jukkataskinen/reilusoppari>), tuotanto
