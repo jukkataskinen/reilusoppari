@@ -34,6 +34,7 @@ import { formatFinnishDate } from "@/lib/inspection/deadline";
 import { SignedDocuments } from "@/components/SignedDocuments";
 import { EndOfTenancyNotice } from "@/components/EndOfTenancyNotice";
 import { InviteRow } from "./InviteRow";
+import { AddTenant } from "./AddTenant";
 import { DeleteTenancy } from "./DeleteTenancy";
 import { AppShell } from "@/components/AppShell";
 import { fi } from "@/i18n/fi";
@@ -357,6 +358,9 @@ export default async function TenancyPage({
               )}
             </div>
           ))}
+          {isLandlord && invitesEditable && tenants.length < 2 ? (
+            <AddTenant tenancyId={tenancy.id} />
+          ) : null}
         </div>
       </section>
 

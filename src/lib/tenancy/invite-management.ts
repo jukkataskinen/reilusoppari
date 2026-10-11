@@ -164,6 +164,51 @@ export const PENDING_PARTY_MESSAGES: Record<
 };
 
 /* -------------------------------------------------------------------------
+   Vuokralaisen lisääminen jälkikäteen
+   ------------------------------------------------------------------------- */
+
+export type AddTenantBlocker = "not_landlord" | "status" | "full" | "duplicate";
+
+export interface AddTenantFacts {
+  userId: string;
+  tenancy: { landlordUserId: string; status: TenancyStatus } | null;
+  /** Vuokrasuhteen nykyiset vuokralaisten sähköpostit, myös liittyneiden. */
+  existingTenantEmails: string[];
+  newEmail: string;
+}
+
+/**
+ * Saako käyttäjä lisätä uuden vuokralaisen vuokrasuhteeseen? `null` = saa.
+ *
+ * Paikka voi olla vapautunut kutsun poiston myötä (`removeInvite` poistaa
+ * rivin kokonaan) — tähän asti ainoa keino täyttää se uudelleen oli poistaa
+ * koko vuokrasuhde ja luoda se uudelleen (Jukan havainto 10.10.2026).
+ *
+ * Enimmäismäärä on 1–2 vuokralaista (CLAUDE.md kohta 3, `tenancySchema`).
+ * Raja lasketaan kaikista nykyisistä riveistä, myös liittyneistä: liittynyttä
+ * ei voi poistaa, mutta kolmatta vuokralaista ei saa lisätä silti.
+ */
+export function addTenantBlocker(facts: AddTenantFacts): AddTenantBlocker | null {
+  const { tenancy } = facts;
+  if (!tenancy || tenancy.landlordUserId !== facts.userId) return "not_landlord";
+  if (!EDITABLE_STATUSES.includes(tenancy.status)) return "status";
+  if (facts.existingTenantEmails.length >= 2) return "full";
+  const normalized = normalizeEmail(facts.newEmail);
+  if (facts.existingTenantEmails.some((email) => normalizeEmail(email) === normalized)) {
+    return "duplicate";
+  }
+  return null;
+}
+
+export const ADD_TENANT_MESSAGES: Record<AddTenantBlocker, string> = {
+  not_landlord: "Vain vuokranantaja voi lisätä vuokralaisen.",
+  status:
+    "Sopimus on jo lähetetty allekirjoitettavaksi, joten uutta vuokralaista ei voi enää lisätä.",
+  full: "Vuokrasuhteessa on jo enimmäismäärä vuokralaisia.",
+  duplicate: PENDING_PARTY_MESSAGES.duplicate,
+};
+
+/* -------------------------------------------------------------------------
    Vuokrasuhteen poisto
    ------------------------------------------------------------------------- */
 

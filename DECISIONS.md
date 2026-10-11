@@ -5,6 +5,36 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Vuokralaisen lisääminen jälkikäteen (2026-10-11, yötyö)
+
+PLAN.md:n rivi ("Kutsun korjaus") toteutettu. Ennen tätä ainoa keino täyttää
+kutsun poiston jälkeen vapautunut vuokralaisen paikka oli poistaa koko
+vuokrasuhde ja luoda se uudelleen — poisto itsessään oli juuri korjattu
+samassa "Kutsun korjaus" -luvussa 10.10.2026, mutta lisäystä ei ollut.
+
+**Sääntö on puhdas funktio** `addTenantBlocker` (`lib/tenancy/invite-management.ts`),
+rinnakkain `pendingPartyBlocker`:in ja `tenancyDeletionBlocker`:in kanssa:
+vain vuokranantaja saa lisätä, vain ennen allekirjoitusta (`draft`/`inspection`,
+sama `EDITABLE_STATUSES` kuin kutsun korjauksessa), enintään kaksi
+vuokralaista (CLAUDE.md kohta 3) myös liittyneet mukaan lukien, eikä
+samaa sähköpostia kahdesti.
+
+**Datakerros** `addTenantInvite` (`lib/db/tenancies.ts`) laskee seuraavan
+`position`-arvon nykyisistä vuokralaisriveistä (`unique (tenancy_id, role,
+position)`): poisto siirtää jäljelle jäävät alaspäin, niin uusi rivi jatkaa
+niiden perästä törmäämättä rajoitteeseen. Muuten rivi luodaan samalla
+kaavalla kuin vuokrasuhteen luonnissa (`createTenancy`): uusi kutsutunniste,
+sähköposti lähtee samalla kutsurajalla (`KUTSUSAHKOPOSTIRAJA`) kuin muukin
+kutsuliikenne.
+
+**Käyttöliittymä:** "Lisää vuokralainen" -nappi vuokrasuhteen sivun
+Osapuolet-osiossa, näkyvissä vain vuokranantajalle ja vain kun vuokralaisia
+on alle kaksi ja sopimusta ei ole lähetetty allekirjoitettavaksi — sama
+ehto kuin `InviteRow`:n muokkausnapeilla. Ohje päivitetty
+(`src/lib/help/topics.ts`, aihe "vuokrasuhde").
+
+---
+
 ## Pienten lomakkeiden kenttäkohtaiset virheet (2026-10-10, yötyö)
 
 PLAN.md:n rivi ("Lomakkeet säilyttävät tiedot" -luku) toteutettu: kuittauksen,

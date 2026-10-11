@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptInviteBlocker,
+  ADD_TENANT_MESSAGES,
+  addTenantBlocker,
   inviteEmailSchema,
   isOwnEmail,
   isSelfJoined,
@@ -8,6 +10,7 @@ import {
   pendingPartyBlocker,
   tenancyDeletionBlocker,
   TENANCY_DELETION_MESSAGES,
+  type AddTenantFacts,
   type PendingPartyFacts,
   type TenancyDeletionFacts,
 } from "@/lib/tenancy/invite-management";
@@ -204,6 +207,58 @@ function deletion(overrides: Partial<TenancyDeletionFacts> = {}): TenancyDeletio
     ...overrides,
   };
 }
+
+function addFacts(overrides: Partial<AddTenantFacts> = {}): AddTenantFacts {
+  return {
+    userId: LANDLORD,
+    tenancy: { landlordUserId: LANDLORD, status: "draft" },
+    existingTenantEmails: ["maija@example.fi"],
+    newEmail: "matti@example.fi",
+    ...overrides,
+  };
+}
+
+describe("vuokralaisen lisääminen jälkikäteen", () => {
+  it("vuokranantaja saa lisätä, kun tilaa on", () => {
+    expect(addTenantBlocker(addFacts())).toBeNull();
+  });
+
+  it("vain vuokranantaja saa lisätä", () => {
+    expect(addTenantBlocker(addFacts({ userId: "ulkopuolinen" }))).toBe("not_landlord");
+    expect(addTenantBlocker(addFacts({ tenancy: null }))).toBe("not_landlord");
+  });
+
+  it("allekirjoituksen alettua lisäys ei onnistu", () => {
+    for (const status of ["signing", "active", "ending", "ended", "certified"] as const) {
+      expect(
+        addTenantBlocker(addFacts({ tenancy: { landlordUserId: LANDLORD, status } })),
+      ).toBe("status");
+    }
+  });
+
+  it("katselmusvaiheessa lisäys on yhä mahdollinen", () => {
+    expect(
+      addTenantBlocker(addFacts({ tenancy: { landlordUserId: LANDLORD, status: "inspection" } })),
+    ).toBeNull();
+  });
+
+  it("kaksi vuokralaista on enimmäismäärä, myös liittyneet lasketaan", () => {
+    expect(
+      addTenantBlocker(addFacts({ existingTenantEmails: ["maija@example.fi", "liittynyt@example.fi"] })),
+    ).toBe("full");
+  });
+
+  it("samaa osoitetta ei voi lisätä kahdesti, kirjainkoosta riippumatta", () => {
+    expect(
+      addTenantBlocker(addFacts({ existingTenantEmails: ["Matti@Example.FI"], newEmail: "matti@example.fi" })),
+    ).toBe("duplicate");
+  });
+
+  it("viestit kertovat mitä tehdä", () => {
+    expect(ADD_TENANT_MESSAGES.full).toContain("enimmäismäärä");
+    expect(ADD_TENANT_MESSAGES.duplicate).toBe("Toisella vuokralaisella on jo tämä sähköpostiosoite.");
+  });
+});
 
 describe("vuokrasuhteen poisto", () => {
   it("luonnoksen voi poistaa", () => {

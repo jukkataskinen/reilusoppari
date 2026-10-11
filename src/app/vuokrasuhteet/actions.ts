@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
+  addTenantInvite,
   changeInviteEmail,
   createTenancy,
   deleteTenancy,
@@ -14,9 +15,15 @@ import {
   type InviteChangeResult,
 } from "@/lib/db/tenancies";
 import { fieldErrors } from "@/lib/forms/schema";
-import { tenancyFieldName, tenancyFormToInput, tenancySchema } from "@/lib/tenancy/schema";
+import {
+  tenancyFieldName,
+  tenancyFormToInput,
+  tenancySchema,
+  tenantSchema,
+} from "@/lib/tenancy/schema";
 import { inviteUrl } from "@/lib/tenancy/invite";
 import {
+  ADD_TENANT_MESSAGES,
   inviteEmailSchema,
   isOwnEmail,
   OWN_EMAIL_MESSAGE,
@@ -257,6 +264,42 @@ export async function removeInviteAction(
 
   revalidatePath(`/vuokrasuhteet/${tenancyId}`);
   return { removed: true };
+}
+
+/**
+ * Lisää vuokralaisen vuokrasuhteeseen, jossa on vielä tilaa — esimerkiksi
+ * kutsun poiston jälkeen vapautuneelle paikalle. Ennen tätä ainoa keino oli
+ * poistaa koko vuokrasuhde ja luoda se uudelleen (Jukan havainto 10.10.2026,
+ * PLAN.md "Kutsun korjaus").
+ */
+export async function addTenantAction(
+  _previous: InviteRowState,
+  formData: FormData,
+): Promise<InviteRowState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/auth/login");
+
+  const parsed = tenantSchema.safeParse({
+    name: formData.get("name") ?? "",
+    email: formData.get("email") ?? "",
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  if (isOwnEmail(parsed.data.email, user.email)) return { errors: { email: OWN_EMAIL_MESSAGE } };
+
+  if (!(await inviteEmailAllowed(user.id))) return { message: KUTSUSAHKOPOSTIRAJA_VIESTI };
+
+  const tenancyId = String(formData.get("tenancyId") ?? "");
+  const result = await addTenantInvite(user.id, tenancyId, parsed.data);
+  if (!result.ok) {
+    if (result.reason === "duplicate") {
+      return { errors: { email: ADD_TENANT_MESSAGES.duplicate } };
+    }
+    const message =
+      result.reason === "failed" ? PENDING_PARTY_MESSAGES.failed : ADD_TENANT_MESSAGES[result.reason];
+    return { message };
+  }
+
+  return issuedState(user.id, tenancyId, result);
 }
 
 export interface DeleteTenancyState {

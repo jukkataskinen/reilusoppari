@@ -258,6 +258,18 @@ export const HELP_TOPICS: HelpTopic[] = [
         ],
       },
       {
+        title: "Vuokralaisen lisääminen jälkikäteen",
+        steps: [
+          "Avaa vuokrasuhde.",
+          "Valitse Lisää vuokralainen.",
+          "Kirjoita vuokralaisen nimi ja sähköposti ja valitse Lähetä kutsu.",
+        ],
+        bullets: [
+          "Näkyy, kun vuokrasuhteessa on alle kaksi vuokralaista — esimerkiksi kutsun poiston jälkeen.",
+          "Toimii vain ennen kuin sopimus on lähetetty allekirjoitettavaksi.",
+        ],
+      },
+      {
         title: "Vuokrasuhteen poisto",
         steps: [
           "Avaa vuokrasuhde.",

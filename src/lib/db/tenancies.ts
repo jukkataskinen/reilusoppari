@@ -41,9 +41,11 @@ import {
 import type { TenancyInput } from "../tenancy/schema";
 import {
   acceptInviteBlocker,
+  addTenantBlocker,
   isSelfJoined,
   pendingPartyBlocker,
   type AcceptInviteBlocker,
+  type AddTenantBlocker,
   tenancyDeletionBlocker,
   type PendingPartyAction,
   type PendingPartyBlocker,
@@ -948,6 +950,78 @@ export async function removeInvite(
     await audit(userId, tenancyId, "tenancy.invite.self_join_cleared", "tenancy_party", partyId);
   }
   return { ok: true };
+}
+
+/** Lisäyksen tulos. Syy kerrotaan käyttäjälle (`ADD_TENANT_MESSAGES`). */
+export type AddTenantResult =
+  | { ok: true; invite: IssuedInvite }
+  | { ok: false; reason: AddTenantBlocker | "failed" };
+
+/**
+ * Lisää vuokralaisen vuokrasuhteeseen, jossa on vielä tilaa (CLAUDE.md kohta
+ * 3: 1–2 vuokralaista) — esimerkiksi kutsun poiston jälkeen vapautuneelle
+ * paikalle. Ennen tätä ainoa keino oli poistaa koko vuokrasuhde ja luoda se
+ * uudelleen (Jukan havainto 10.10.2026).
+ *
+ * Seuraava `position` lasketaan nykyisistä vuokralaisriveistä: poisto siirtää
+ * jäljelle jäävät alaspäin (`removeInvite`), joten uusi rivi jatkaa niiden
+ * perästä eikä törmää `unique (tenancy_id, role, position)` -rajoitteeseen.
+ */
+export async function addTenantInvite(
+  userId: string,
+  tenancyId: string,
+  input: { name: string; email: string },
+): Promise<AddTenantResult> {
+  const tenancy = await getTenancy(userId, tenancyId);
+
+  const { data, error } = await getServiceClient()
+    .from("rs_tenancy_parties")
+    .select("invite_email, position")
+    .eq("tenancy_id", tenancyId)
+    .eq("role", "tenant");
+  if (error) {
+    console.error("[tenancies] osapuolten haku epäonnistui:", error.message);
+    return { ok: false, reason: "failed" };
+  }
+  const tenants = (data ?? []) as Array<{ invite_email: string | null; position: number }>;
+
+  const blocker = addTenantBlocker({
+    userId,
+    tenancy: tenancy ? { landlordUserId: tenancy.landlordUserId, status: tenancy.status } : null,
+    existingTenantEmails: tenants.map((t) => t.invite_email ?? ""),
+    newEmail: input.email,
+  });
+  if (blocker) return { ok: false, reason: blocker };
+
+  const nextPosition =
+    tenants.length === 0 ? 0 : Math.max(...tenants.map((t) => t.position)) + 1;
+  const invite = createInvite();
+
+  const { error: insertError } = await getServiceClient().from("rs_tenancy_parties").insert({
+    tenancy_id: tenancyId,
+    role: "tenant",
+    position: nextPosition,
+    user_id: null,
+    invite_email: input.email,
+    invite_token_hash: invite.tokenHash,
+    invite_expires_at: invite.expiresAt,
+    party_name: input.name,
+    contact_email: input.email,
+    party_type: "henkilo",
+    party_id_encrypted: null,
+    business_id: null,
+    signatory_name: null,
+    phone: null,
+    bank_account: null,
+    joined_at: null,
+  });
+  if (insertError) {
+    console.error("[tenancies] vuokralaisen lisäys epäonnistui:", insertError.message);
+    return { ok: false, reason: "failed" };
+  }
+
+  await audit(userId, tenancyId, "tenancy.invite.added", "tenancy_party", tenancyId);
+  return { ok: true, invite: { email: input.email, name: input.name, token: invite.token } };
 }
 
 /**
