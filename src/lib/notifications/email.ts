@@ -128,8 +128,14 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
     });
 
     if (!response.ok) {
-      // Vastaanottajaa ei lokiteta: sähköpostiosoite on henkilötietoa.
-      console.error("[sähköposti] lähetys epäonnistui, status", response.status);
+      // Vastaanottajaa (ja Resendin virheviestiä, joka voi sisältää sen) ei
+      // lokiteta: sähköpostiosoite on henkilötietoa. Virhekoodi ja Resendin
+      // oma virheen nimi (esim. "validation_error") riittävät syyn
+      // selvittämiseen (Jukan havainto 2026-10-10, BLOCKERS.md).
+      const body: unknown = await response.json().catch(() => null);
+      const name =
+        body && typeof body === "object" && "name" in body ? String(body.name) : "(ei nimeä)";
+      console.error("[sähköposti] lähetys epäonnistui, status", response.status, "nimi", name);
       return false;
     }
 

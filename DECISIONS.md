@@ -5,6 +5,36 @@ muuttavat sitä. Uusin ensin.
 
 ---
 
+## Vuokralaisen lisääminen jälkikäteen (2026-10-11, yötyö)
+
+PLAN.md:n rivi ("Kutsun korjaus") toteutettu. Ennen tätä ainoa keino täyttää
+kutsun poiston jälkeen vapautunut vuokralaisen paikka oli poistaa koko
+vuokrasuhde ja luoda se uudelleen — poisto itsessään oli juuri korjattu
+samassa "Kutsun korjaus" -luvussa 10.10.2026, mutta lisäystä ei ollut.
+
+**Sääntö on puhdas funktio** `addTenantBlocker` (`lib/tenancy/invite-management.ts`),
+rinnakkain `pendingPartyBlocker`:in ja `tenancyDeletionBlocker`:in kanssa:
+vain vuokranantaja saa lisätä, vain ennen allekirjoitusta (`draft`/`inspection`,
+sama `EDITABLE_STATUSES` kuin kutsun korjauksessa), enintään kaksi
+vuokralaista (CLAUDE.md kohta 3) myös liittyneet mukaan lukien, eikä
+samaa sähköpostia kahdesti.
+
+**Datakerros** `addTenantInvite` (`lib/db/tenancies.ts`) laskee seuraavan
+`position`-arvon nykyisistä vuokralaisriveistä (`unique (tenancy_id, role,
+position)`): poisto siirtää jäljelle jäävät alaspäin, niin uusi rivi jatkaa
+niiden perästä törmäämättä rajoitteeseen. Muuten rivi luodaan samalla
+kaavalla kuin vuokrasuhteen luonnissa (`createTenancy`): uusi kutsutunniste,
+sähköposti lähtee samalla kutsurajalla (`KUTSUSAHKOPOSTIRAJA`) kuin muukin
+kutsuliikenne.
+
+**Käyttöliittymä:** "Lisää vuokralainen" -nappi vuokrasuhteen sivun
+Osapuolet-osiossa, näkyvissä vain vuokranantajalle ja vain kun vuokralaisia
+on alle kaksi ja sopimusta ei ole lähetetty allekirjoitettavaksi — sama
+ehto kuin `InviteRow`:n muokkausnapeilla. Ohje päivitetty
+(`src/lib/help/topics.ts`, aihe "vuokrasuhde").
+
+---
+
 ## Pienten lomakkeiden kenttäkohtaiset virheet (2026-10-10, yötyö)
 
 PLAN.md:n rivi ("Lomakkeet säilyttävät tiedot" -luku) toteutettu: kuittauksen,
@@ -2238,3 +2268,8 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 
 - **`requiredNumber` eikä `z.coerce.number()`.** Lomakkeen kenttä on pakollinen (`required`), mutta tarkistuksen ohittaminen (esim. devtoolsista tai suoralla lähetyksellä) lähetti tyhjän kentän, ja `z.coerce.number()` muutti sen hiljaa nollaksi — eikä nolla kuukautta irtisanomisaikaa ole tunnistettavissa puuttuvasta tiedosta, koska se on itsessään kelvollinen arvo välillä 0–12. `src/lib/tenancy/contract-schema.ts`:n `noticePeriodMonths` käyttää nyt samaa `requiredNumber`-apufunktiota (`lib/forms/schema.ts`) kuin vuokra ja eräpäivä, ja antaa oman viestin "Irtisanomisaika puuttuu" kentän vierelle.
 - **`contractFormToInput` ei enää korvaa tyhjää arvoa `"0"`:lla** — tyhjä merkkijono menee sellaisenaan skeemalle, joka tunnistaa sen puuttuvaksi. Testit (`tests/unit/contract.test.ts`) päivitetty: aiemmin kaksi testiä nojasi vahingossa tähän oletukseen antamatta irtisanomisaikaa lainkaan, ja uusi testi varmistaa, ettei puuttuva kenttä enää tallennu nollana.
+
+## 2026-10-10 — Sähköpostin epäonnistumisen lokitus kertoo Resendin virheen nimen
+
+- **Vain virhekoodi ja Resendin `name`-kenttä, ei viestiä eikä vastaanottajaa.** `src/lib/notifications/email.ts` lokitti ennen vain HTTP-statuksen (BLOCKERS.md, Jukan havainto 10.10.2026: kutsun sähköposti ei lähtenyt eikä syytä näkynyt mistään). Resendin virheviesti (`message`) voi toistaa pyynnön kentän arvon, joten se jätetään lokittamatta; `name` (esim. `"validation_error"`) riittää syyn päättelyyn ilman riskiä. Vastaanottajaa ei lokiteta kuten ennenkään.
+- **Itse syytä ei voitu selvittää tästä ympäristöstä** — se vaatii Resendin ja Vercelin hallintapaneelit, jotka ovat Jukan tehtävä (BLOCKERS.md). Tämä PR tekee vain sen, että seuraava epäonnistuminen näkyy Vercelin lokissa suoraan virheen nimellä.

@@ -16,6 +16,7 @@ process.env.NEXT_PUBLIC_APP_URL = "https://app.example";
 const changeInviteEmail = vi.fn();
 const resendInvite = vi.fn();
 const removeInvite = vi.fn();
+const addTenantInvite = vi.fn();
 const deleteTenancy = vi.fn();
 const sendInviteEmail = vi.fn(async () => true);
 const checkRateLimit = vi.fn(async () => ({ allowed: true, count: 1 }));
@@ -34,6 +35,7 @@ vi.mock("@/lib/db/tenancies", () => ({
   changeInviteEmail,
   resendInvite,
   removeInvite,
+  addTenantInvite,
   deleteTenancy,
   getTenancyProperty: vi.fn(async () => ({
     street: "Testikatu 1",
@@ -45,6 +47,7 @@ vi.mock("@/lib/notifications/invite-email", () => ({ sendInviteEmail }));
 vi.mock("@/lib/security/rate-limit", () => ({ checkRateLimit }));
 
 const {
+  addTenantAction,
   changeInviteEmailAction,
   createTenancyAction,
   deleteTenancyAction,
@@ -194,6 +197,79 @@ describe("kutsun poisto", () => {
     const state = await removeInviteAction({}, form({ ...IDS, confirm: "yes" }));
     expect(state.removed).toBeUndefined();
     expect(state.message).toMatch(/jo liittynyt/);
+  });
+});
+
+describe("vuokralaisen lisäys jälkikäteen", () => {
+  it("virheellinen syöte ei koske kantaan eikä lähetä mitään", async () => {
+    const state = await addTenantAction(
+      {},
+      form({ tenancyId: IDS.tenancyId, name: "", email: "ei-osoite" }),
+    );
+    expect(state.errors?.name).toBeTruthy();
+    expect(state.errors?.email).toBeTruthy();
+    expect(addTenantInvite).not.toHaveBeenCalled();
+    expect(sendInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it("oma osoite hylätään kentän virheenä ennen kantaa", async () => {
+    const state = await addTenantAction(
+      {},
+      form({ tenancyId: IDS.tenancyId, name: "Minä", email: " V@Example.invalid " }),
+    );
+    expect(state.errors?.email).toBe("Tämä on oma sähköpostiosoitteesi. Anna vuokralaisen osoite.");
+    expect(addTenantInvite).not.toHaveBeenCalled();
+    expect(checkRateLimit).not.toHaveBeenCalled();
+  });
+
+  it("lisää vuokralaisen ja lähettää kutsun", async () => {
+    addTenantInvite.mockResolvedValue({
+      ok: true,
+      invite: { email: "maija@example.invalid", name: "Maija", token: TOKEN },
+    });
+
+    const state = await addTenantAction(
+      {},
+      form({ tenancyId: IDS.tenancyId, name: "Maija", email: "Maija@Example.invalid" }),
+    );
+
+    expect(addTenantInvite).toHaveBeenCalledWith("vuokranantaja-1", IDS.tenancyId, {
+      name: "Maija",
+      email: "maija@example.invalid",
+    });
+    expect(sendInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "maija@example.invalid" }),
+    );
+    expect(state.issued?.emailSent).toBe(true);
+  });
+
+  it("täyden vuokrasuhteen virhe näkyy yleisenä viestinä", async () => {
+    addTenantInvite.mockResolvedValue({ ok: false, reason: "full" });
+    const state = await addTenantAction(
+      {},
+      form({ tenancyId: IDS.tenancyId, name: "Matti", email: "matti@example.invalid" }),
+    );
+    expect(state.message).toMatch(/enimmäismäärä/);
+    expect(sendInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it("toisen vuokralaisen osoite näkyy kentän virheenä", async () => {
+    addTenantInvite.mockResolvedValue({ ok: false, reason: "duplicate" });
+    const state = await addTenantAction(
+      {},
+      form({ tenancyId: IDS.tenancyId, name: "Matti", email: "matti@example.invalid" }),
+    );
+    expect(state.errors?.email).toMatch(/Toisella vuokralaisella/);
+  });
+
+  it("rajan ylittyessä kutsua ei lähetetä", async () => {
+    checkRateLimit.mockResolvedValue({ allowed: false, count: 11 });
+    const state = await addTenantAction(
+      {},
+      form({ tenancyId: IDS.tenancyId, name: "Matti", email: "matti@example.invalid" }),
+    );
+    expect(state.message).toMatch(/paljon lyhyessä ajassa/);
+    expect(addTenantInvite).not.toHaveBeenCalled();
   });
 });
 

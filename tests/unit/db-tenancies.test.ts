@@ -3,6 +3,7 @@ import { getServiceClient, hasSupabaseCredentials } from "@/lib/db/supabase";
 import { createProperty } from "@/lib/db/properties";
 import {
   acceptInvite,
+  addTenantInvite,
   createRentPeriods,
   createTenancy,
   findTenancyByInvite,
@@ -381,6 +382,63 @@ describe.skipIf(!RUN)("kutsun korjaus ja vuokrasuhteen poisto (integraatio, live
     expect(await findTenancyByInvite(invites[0].token)).toBeNull();
     const parties = await listParties(landlord, tenancy.id);
     expect(parties.filter((p) => p.role === "tenant")).toHaveLength(0);
+  });
+
+  it("vuokralaisen voi lisätä jälkikäteen kutsun poiston jälkeen vapautuneelle paikalle", async () => {
+    const { landlord, tenancy, tenantParty } = await setup("c8");
+    expect(await removeInvite(landlord, tenancy.id, tenantParty.id)).toEqual({ ok: true });
+
+    const uusi = `${PREFIX}-c8-uusi@example.invalid`;
+    const result = await addTenantInvite(landlord, tenancy.id, { name: "Uusi vuokralainen", email: uusi });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const preview = await findTenancyByInvite(result.invite.token);
+    expect(preview?.inviteEmail).toBe(uusi);
+    const parties = await listParties(landlord, tenancy.id);
+    const tenants = parties.filter((p) => p.role === "tenant");
+    expect(tenants).toHaveLength(1);
+    expect(tenants[0].position).toBe(0);
+  });
+
+  it("toisen vuokralaisen voi lisätä, mutta kolmannelle ei ole tilaa", async () => {
+    const { landlord, tenancy } = await setup("c9");
+
+    const toinen = await addTenantInvite(landlord, tenancy.id, {
+      name: "Toinen vuokralainen",
+      email: `${PREFIX}-c9-toinen@example.invalid`,
+    });
+    expect(toinen.ok).toBe(true);
+
+    const kolmas = await addTenantInvite(landlord, tenancy.id, {
+      name: "Kolmas vuokralainen",
+      email: `${PREFIX}-c9-kolmas@example.invalid`,
+    });
+    expect(kolmas).toEqual({ ok: false, reason: "full" });
+
+    const parties = await listParties(landlord, tenancy.id);
+    expect(parties.filter((p) => p.role === "tenant")).toHaveLength(2);
+  });
+
+  it("ulkopuolinen ei voi lisätä vuokralaista", async () => {
+    const { tenancy } = await setup("c10");
+    const outsider = await createUser("x-c10");
+    const result = await addTenantInvite(outsider, tenancy.id, {
+      name: "Hyökkääjä",
+      email: `${PREFIX}-c10-x@example.invalid`,
+    });
+    expect(result).toEqual({ ok: false, reason: "not_landlord" });
+  });
+
+  it("allekirjoituksen alettua uutta vuokralaista ei voi lisätä", async () => {
+    const { landlord, tenancy } = await setup("c11");
+    await getServiceClient().from("rs_tenancies").update({ status: "signing" }).eq("id", tenancy.id);
+
+    const result = await addTenantInvite(landlord, tenancy.id, {
+      name: "Myöhässä",
+      email: `${PREFIX}-c11-x@example.invalid`,
+    });
+    expect(result).toEqual({ ok: false, reason: "status" });
   });
 
   it("vuokranantaja ei voi liittyä omaan vuokrasuhteeseensa, eikä kutsu kulu", async () => {
