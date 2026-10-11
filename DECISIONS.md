@@ -2264,6 +2264,11 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 - **Webhook:** Plus kirjataan jo `checkout.session.completed`-tapahtumasta (tilausmuoto, maksettu), `customer.subscription.created` käsitellään kuten `updated`, ja tilausolion tila ratkaisee (`incomplete` ei anna oikeutta, `past_due` kirjataan erääntyneeksi). Aiemmin kaikki kirjattiin `active`ksi ja vain `updated`ista.
 - **Vuokrasuhteen maksun paluu Allekirjoitus-sivulle**, jossa maksu aloitettiin. Vanhat paluuosoitteet ohjataan sinne.
 
+## 2026-10-10 — Sopimuksen irtisanomisaika: tyhjä kenttä ei enää tallennu nollana
+
+- **`requiredNumber` eikä `z.coerce.number()`.** Lomakkeen kenttä on pakollinen (`required`), mutta tarkistuksen ohittaminen (esim. devtoolsista tai suoralla lähetyksellä) lähetti tyhjän kentän, ja `z.coerce.number()` muutti sen hiljaa nollaksi — eikä nolla kuukautta irtisanomisaikaa ole tunnistettavissa puuttuvasta tiedosta, koska se on itsessään kelvollinen arvo välillä 0–12. `src/lib/tenancy/contract-schema.ts`:n `noticePeriodMonths` käyttää nyt samaa `requiredNumber`-apufunktiota (`lib/forms/schema.ts`) kuin vuokra ja eräpäivä, ja antaa oman viestin "Irtisanomisaika puuttuu" kentän vierelle.
+- **`contractFormToInput` ei enää korvaa tyhjää arvoa `"0"`:lla** — tyhjä merkkijono menee sellaisenaan skeemalle, joka tunnistaa sen puuttuvaksi. Testit (`tests/unit/contract.test.ts`) päivitetty: aiemmin kaksi testiä nojasi vahingossa tähän oletukseen antamatta irtisanomisaikaa lainkaan, ja uusi testi varmistaa, ettei puuttuva kenttä enää tallennu nollana.
+
 ## 2026-10-10 — Sähköpostin epäonnistumisen lokitus kertoo Resendin virheen nimen
 
 - **Vain virhekoodi ja Resendin `name`-kenttä, ei viestiä eikä vastaanottajaa.** `src/lib/notifications/email.ts` lokitti ennen vain HTTP-statuksen (BLOCKERS.md, Jukan havainto 10.10.2026: kutsun sähköposti ei lähtenyt eikä syytä näkynyt mistään). Resendin virheviesti (`message`) voi toistaa pyynnön kentän arvon, joten se jätetään lokittamatta; `name` (esim. `"validation_error"`) riittää syyn päättelyyn ilman riskiä. Vastaanottajaa ei lokiteta kuten ennenkään.

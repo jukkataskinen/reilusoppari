@@ -351,9 +351,10 @@ DECISIONS.md 2026-10-09. Laajentaa nykyiset kehitystoiveet
 - [x] Pienten lomakkeiden (kommentit, kuittaus, huoltokirjan merkinnät,
       kulut) palvelinvirheet näkyvät nyt oikean kentän vierellä, ks.
       DECISIONS.md 2026-10-10
-- [ ] Sopimuksen irtisanomisaika: tyhjä kenttä tallentuu yhä nollana, jos
+- [x] Sopimuksen irtisanomisaika: tyhjä kenttä tallentuu yhä nollana, jos
       selaimen tarkistus ohitetaan. Harkitse palvelimelle oma "puuttuu"-viesti
-      (vaatii testin `contract.test.ts` päivityksen)
+      (vaatii testin `contract.test.ts` päivityksen) — tehty 2026-10-10, ks.
+      DECISIONS.md
 
 ## Kutsun korjaus — Jukan havainto 2026-10-10
 
