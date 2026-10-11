@@ -1,5 +1,9 @@
 # BLOCKERS — reilusoppari (sovellus)
 
+## Stripe testitilassa tuotannossa 10.–11.10.2026 (Jukka)
+
+Stripe-tili (Adepta Tilat Oy, sandbox) avattu. Vercelin tuotannossa `STRIPE_SECRET_KEY` (sk_test), `STRIPE_WEBHOOK_SECRET` ja `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (Config). Webhook `https://app.reilusoppari.fi/api/stripe/webhook`, Snapshot, tapahtumat checkout.session.completed ja customer.subscription.updated/deleted (lisättävä customer.subscription.created). Testimaksu Plus-tilauksella onnistui (webhook 200) ja verolaskelma sinetöitiin 11.10.2026. **Ennen lanseerausta:** Stripen live-tilin aktivointi (yrityksen tiedot, edustajan tunnistus, tilitystili), live-avaimet ja live-webhook Verceliin, Redeploy; poista Satispay ja harkitse Klarnaa (Settings → Payment methods), MobilePay päälle.
+
 ## Todennettu 10.10.2026: allekirjoitus ja sinetöinti tuotannossa (Jukka)
 
 Kaksi oikeaa allekirjoitusta tuotannossa: (1) Yhdystie 4, sopimus ja alkukatselmus samassa kierroksessa (eSinetti: Valmis 2/2), (2) toinen testivuokrasuhde uudella kululla: sopimus erikseen, vuokranantaja "Allekirjoita nyt" -napista (eSinetin upotuslinkki, migraatio 0021 ajettu eSinettiin 10.10.2026), vuokralainen sähköpostin linkistä. Maksu ohitettiin suositteluedulla, koska Stripeä ei ole (5 etua Jukan tunnukselle SQL:llä 10.10.2026, testikäyttöön). Lanseerauksen edellytyksistä jäljellä: Stripe-tili ja avaimet (maksut), PDF:n tallennus puhelimessa jakovalikolla (PLAN).
