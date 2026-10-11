@@ -2273,3 +2273,11 @@ Vuokrasopimus tehdään yleensä ennen muuttoa, ja vuokralainen kuvaa havaitut v
 
 - **Vain virhekoodi ja Resendin `name`-kenttä, ei viestiä eikä vastaanottajaa.** `src/lib/notifications/email.ts` lokitti ennen vain HTTP-statuksen (BLOCKERS.md, Jukan havainto 10.10.2026: kutsun sähköposti ei lähtenyt eikä syytä näkynyt mistään). Resendin virheviesti (`message`) voi toistaa pyynnön kentän arvon, joten se jätetään lokittamatta; `name` (esim. `"validation_error"`) riittää syyn päättelyyn ilman riskiä. Vastaanottajaa ei lokiteta kuten ennenkään.
 - **Itse syytä ei voitu selvittää tästä ympäristöstä** — se vaatii Resendin ja Vercelin hallintapaneelit, jotka ovat Jukan tehtävä (BLOCKERS.md). Tämä PR tekee vain sen, että seuraava epäonnistuminen näkyy Vercelin lokissa suoraan virheen nimellä.
+
+## 2026-10-11 — PDF-tallennus kotinäytön sovelluksessa jakovalikolla (yötyö)
+
+- **Yksi komponentti, `src/components/PdfLink.tsx`, kaikille seitsemälle PDF-linkille.** Ongelma (PLAN.md, Jukan havainnot 11.9. ja 10.10.2026): kotinäytön sovelluksessa (`display-mode: standalone`) ei ole selaimen takaisin-nappia, joten `target="_blank"` jättää näkymän, josta ei pääse pois kuin sulkemalla koko sovellus, ja samaan ikkunaan avautuva lataus vie näkymän pois sieltä mihin käyttäjä jäi.
+- **Standalone-tilassa nappi hakee tiedoston itse ja antaa sen `navigator.share({ files })`:lle**, joka ei vaihda näkymää lainkaan (iPhonessa jakovalikossa "Tallenna tiedostoihin"). Muualla (selain, työpöytä) linkki toimii kuten ennen: `target="_blank"` ja `download`. Jos jakaminen ei onnistu (ei tuettu, käyttäjä peruu, verkkovirhe), pudotaan samaan `window.open(href, "_blank")`-käytökseen kuin ennen tätä muutosta — ei koskaan huonompi kuin lähtötilanne.
+- **Ei uutta tiedostonkäsittelyreittiä eikä kantamuutosta.** Komponentti kutsuu samaa `href`-osoitetta kuin ennen (`fetch`), joten palvelimen pääsytarkistukset (osapuolirajaus) pätevät sellaisinaan.
+- **Testi `tests/unit/pdf-linkit.test.ts` uusittu**: se kaatuu, jos jokin `.tsx`-tiedosto sisältää suoran `<a download>`-linkin `PdfLink.tsx`:n ulkopuolella, jottei joku lisää uutta PDF-linkkiä komponentin ohi vahingossa.
+- **Ohje päivitetty** (`src/lib/help/topics.ts`, "Allekirjoitetut asiakirjat"): rivi, joka kuvasi PDF:n aukeavan "omaan ikkunaansa", kertoo nyt myös jakovalikosta kotinäytön sovelluksessa.

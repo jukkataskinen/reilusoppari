@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getTenancy } from "@/lib/db/tenancies";
 import { AppShell } from "@/components/AppShell";
 import { listSignedDocuments } from "@/lib/tenancy/signed-documents";
+import { PdfLink } from "@/components/PdfLink";
 import { fi } from "@/i18n/fi";
 
 export const metadata: Metadata = {
@@ -63,25 +64,12 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
         >
           {fi.common.back}
         </Link>
-        {/*
-          Lataus, ei avaus uuteen välilehteen.
-
-          `target="_blank"` avasi kotinäytölle asennetussa sovelluksessa
-          näkymän, jossa ei ole sulkemispainiketta lainkaan — vain
-          sivunumerointi (Jukan havainto 2026-09-11). Siitä ei päässyt pois
-          kuin sulkemalla koko sovellus. Lataus ei korvaa näkymää, joten
-          umpikujaa ei synny: asiakirja menee laitteen tiedostoihin ja
-          sovellus jää auki siihen mihin se jäi.
-        */}
-        <a
+        <PdfLink
           href={pdf}
-          download={signed ? "vuokrasopimus-allekirjoitettu.pdf" : "vuokrasopimus-luonnos.pdf"}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+          filename={signed ? "vuokrasopimus-allekirjoitettu.pdf" : "vuokrasopimus-luonnos.pdf"}
         >
           Tallenna PDF
-        </a>
+        </PdfLink>
       </div>
 
       {/*

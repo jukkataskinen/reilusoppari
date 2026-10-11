@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { sealTaxReportAction, type TaxActionState } from "@/app/asunnot/tax-actions";
 import { formatPrice, requiresPlusPayment, type PlusPriceDecision } from "@/lib/billing/pricing";
 import { Form } from "@/components/Form";
+import { PdfLink } from "@/components/PdfLink";
 
 const initialState: TaxActionState = {};
 
@@ -61,26 +62,20 @@ export function SealTaxReport({
       <h2 className="font-medium">Laskelma paperille</h2>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <a
+        <PdfLink
           href={`/asunnot/${propertyId}/verolaskelma/pdf?vuosi=${year}`}
-          download={`verolaskelma-${year}.pdf`}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+          filename={`verolaskelma-${year}.pdf`}
         >
           Tallenna PDF
-        </a>
+        </PdfLink>
 
         {sealedAt ? (
-          <a
+          <PdfLink
             href={`/asunnot/${propertyId}/verolaskelma/pdf?vuosi=${year}&sinetoity=1`}
-            download={`verolaskelma-${year}-sinetoity.pdf`}
-            target="_blank"
-            rel="noopener"
-            className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+            filename={`verolaskelma-${year}-sinetoity.pdf`}
           >
             Tallenna sinetöity
-          </a>
+          </PdfLink>
         ) : null}
       </div>
 

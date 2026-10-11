@@ -1,5 +1,6 @@
 import type { SignedDocument } from "@/lib/tenancy/signed-documents";
 import { FetchSignedDocuments } from "@/components/FetchSignedDocuments";
+import { PdfLink } from "@/components/PdfLink";
 
 function formatTimestamp(value: string): string {
   return new Intl.DateTimeFormat("fi-FI", {
@@ -57,15 +58,12 @@ export function SignedDocuments({
                 </span>
               </span>
               {document.available ? (
-                <a
+                <PdfLink
                   href={`/vuokrasuhteet/${tenancyId}/asiakirjat/${document.kind}`}
-                  download
-                  target="_blank"
-                  rel="noopener"
-                  className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
+                  filename={`${document.kind}.pdf`}
                 >
                   Avaa PDF
-                </a>
+                </PdfLink>
               ) : (
                 <span className="text-sm text-ink/60">Asiakirja ei ole vielä tallessa</span>
               )}

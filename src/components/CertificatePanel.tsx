@@ -11,6 +11,7 @@ import {
 } from "@/app/vuokrasuhteet/certificate-actions";
 import type { CertificateRow, ShareRow } from "@/lib/db/certificates";
 import { Form } from "@/components/Form";
+import { PdfLink } from "@/components/PdfLink";
 
 const initialState: CertificateActionState = {};
 
@@ -242,15 +243,9 @@ export function CertificatePanel({
 
       {certificate.isMine && certificate.sealedAt ? (
         <div className="mt-5">
-          <a
-            href={`/vuokrasuhteet/${tenancyId}/todistukset/pdf`}
-            download="vuokratodistus.pdf"
-            target="_blank"
-            rel="noopener"
-            className="inline-flex min-h-[var(--size-touch)] items-center rounded-full border border-line px-5 text-sm"
-          >
+          <PdfLink href={`/vuokrasuhteet/${tenancyId}/todistukset/pdf`} filename="vuokratodistus.pdf">
             Tallenna todistus
-          </a>
+          </PdfLink>
 
           <Form action={share} className="mt-5">
             <input type="hidden" name="tenancyId" value={tenancyId} />
