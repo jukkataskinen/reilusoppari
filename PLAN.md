@@ -25,7 +25,7 @@ polut: `docs/kriittiset-polut.md`. Jukan tehtävät: BLOCKERS.md "Laatuportit".
 - [ ] **L5 riippuvuusvahti pakolliseksi** L4:n yhdistämisen jälkeen (BLOCKERS kohta D).
 - [ ] **L6 Savutesti päälle tuotannossa:** salaisuudet (BLOCKERS kohta B).
 - [ ] **L7 Kantaa vaativat testit ajoon CI:ssä** testiprojektilla (BLOCKERS kohta E), sen jälkeen koko kaaren e2e.
-- [ ] **L8 reilusoppari-webin pr.mjs** samaan pääversiosääntöön (oma PR).
+- [x] **L8 reilusoppari-webin pr.mjs** samaan pääversiosääntöön. Tehty 14.10.2026 (reilusoppari-web PR #4).
 
 ---
 
