@@ -1,0 +1,34 @@
+name: Riippuvuusvahti
+
+# Riippuvuuden pääversion nosto ei yhdisty ilman Jukan tarkistusta (Jukka 14.10.2026).
+# WeasyPrint 63 → 70 yhdistyi 8.10.2026 automaattisesti ja rikkoi logolliset sopimukset.
+# Tarkistus epäonnistuu, jos PR nostaa jonkin riippuvuuden pääversiota eikä PR:ssä ole
+# tunnistetta riippuvuus-major-hyvaksytty. Jukka lisää tunnisteen kokeiltuaan muutoksen,
+# jolloin tarkistus ajetaan uudelleen (labeled) ja menee vihreäksi.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: riippuvuusvahti-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  riippuvuusvahti:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Pääversion nostot
+        env:
+          POHJA: ${{ github.event.pull_request.base.sha }}
+          HYVAKSYTTY: ${{ contains(github.event.pull_request.labels.*.name, 'riippuvuus-major-hyvaksytty') }}
+        run: node scripts/riippuvuudet.mjs --tarkista --pohja "$POHJA"

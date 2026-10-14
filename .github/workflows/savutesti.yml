@@ -1,0 +1,84 @@
+name: Tuotannon savutesti
+
+# Joka aamu (Jukka 14.10.2026): kutsuu tuotannon /api/savutesti-reittiä, joka
+# renderöi jokaisen järjestelmäpohjan tuotannon sealerilla, sinetöi, kirjoittaa ja
+# poistaa testiorganisaation rivin ja tiedoston sekä tarkistaa tunnistuksen.
+# Epäonnistuminen kaataa ajon (GitHub lähettää sähköpostin) ja avaa tai päivittää
+# issuen tunnisteella tuotantovika. Onnistunut ajo sulkee avoimen issuen.
+#
+# 03:00 UTC = 06:00 Suomen kesäaikaan, 05:00 talviaikaan.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: savutesti
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  savutesti:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Kutsu savutestiä
+        id: kutsu
+        env:
+          SAVUTESTI_URL: ${{ secrets.SAVUTESTI_URL }}
+          SAVUTESTI_SECRET: ${{ secrets.SAVUTESTI_SECRET }}
+        run: |
+          if [ -z "$SAVUTESTI_URL" ] || [ -z "$SAVUTESTI_SECRET" ]; then
+            echo "SAVUTESTI_URL tai SAVUTESTI_SECRET puuttuu repon salaisuuksista (BLOCKERS.md, Tuotannon savutesti)."
+            echo "yhteenveto=Savutestin salaisuudet puuttuvat GitHubista." >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          status=$(curl -sS -o vastaus.json -w '%{http_code}' --max-time 180 \
+            -H "Authorization: Bearer $SAVUTESTI_SECRET" "$SAVUTESTI_URL" || echo "000")
+          echo "HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "yhteenveto=Savutesti vastasi HTTP $status." >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          # Vain askeleiden nimet, tila ja koodi. Vastauksessa ei ole henkilötietoja.
+          jq -r '.vaiheet[] | "\(if .ok then "OK  " else "VIKA" end) \(.nimi) \(.ms) ms \(.koodi // "")"' vastaus.json | tee vaiheet.txt
+          if [ "$(jq -r '.ok' vastaus.json)" != "true" ]; then
+            {
+              echo "yhteenveto<<LOPPU"
+              grep '^VIKA' vaiheet.txt
+              echo "LOPPU"
+            } >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Avaa tai päivitä tuotantovika-issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          YHTEENVETO: ${{ steps.kutsu.outputs.yhteenveto }}
+          AJO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create tuotantovika --color b60205 --description "Tuotannon savutesti epäonnistui" 2>/dev/null || true
+          runko=$(printf 'Tuotannon savutesti epäonnistui %s.\n\n%s\n\nAjo: %s\n\nKorjaa vika ja aja savutesti uudelleen (Actions → Tuotannon savutesti → Run workflow). Onnistunut ajo sulkee tämän issuen.' \
+            "$(TZ=Europe/Helsinki date '+%-d.%-m.%Y klo %H.%M')" "${YHTEENVETO:-Katso ajon loki.}" "$AJO")
+          numero=$(gh issue list --label tuotantovika --state open --json number --jq '.[0].number')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body "$runko"
+          else
+            gh issue create --title "Tuotannon savutesti epäonnistui" --label tuotantovika --body "$runko"
+          fi
+
+      - name: Sulje korjautunut tuotantovika-issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for numero in $(gh issue list --label tuotantovika --state open --json number,title \
+              --jq '.[] | select(.title == "Tuotannon savutesti epäonnistui") | .number'); do
+            gh issue close "$numero" --comment "Savutesti onnistui $(TZ=Europe/Helsinki date '+%-d.%-m.%Y klo %H.%M'). Suljetaan."
+          done
