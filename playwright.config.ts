@@ -16,6 +16,10 @@ if (!process.env.CI && existsSync(".env.local") && process.env.E2E_SALLI_ENV_LOC
   );
 }
 
+// Savutestin reitti (`/api/savutesti`) on kiinni ilman salaisuutta. E2e antaa
+// sille testiarvon, jonka sekä palvelin että testi näkevät. Ei oikea salaisuus.
+process.env.SAVUTESTI_SECRET ??= "e2e-savutesti-testiarvo-ei-oikea-salaisuus";
+
 /**
  * E2E-testit (CLAUDE.md kohta 7).
  *

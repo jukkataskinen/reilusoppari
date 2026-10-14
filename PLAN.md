@@ -13,6 +13,22 @@ tekstit muutetaan silloin — laajuutta ei karsita etukäteen.
 
 ---
 
+## Laatuportit (Jukan päätös 14.10.2026)
+
+eSinetin WeasyPrint-virhe oli tuotannossa kuusi päivää huomaamatta. Kriittiset
+polut: `docs/kriittiset-polut.md`. Jukan tehtävät: BLOCKERS.md "Laatuportit".
+
+- [x] **L1 Pääversion nostot Jukalle.** `scripts/riippuvuudet.mjs` + `scripts/pr.mjs`. Tehty 14.10.2026.
+- [x] **L2 Savutesti-reitti** `/api/savutesti` ja e2e tuotantokäännöksessä. Tehty 14.10.2026.
+- [x] **L3 e2e pakolliseksi tarkistukseksi** (gh api). Tehty 14.10.2026.
+- [ ] **L4 Työnkulut** `riippuvuusvahti.yml` ja `savutesti.yml` (`.github/`, Jukka hyväksyy).
+- [ ] **L5 riippuvuusvahti pakolliseksi** L4:n yhdistämisen jälkeen (BLOCKERS kohta D).
+- [ ] **L6 Savutesti päälle tuotannossa:** salaisuudet (BLOCKERS kohta B).
+- [ ] **L7 Kantaa vaativat testit ajoon CI:ssä** testiprojektilla (BLOCKERS kohta E), sen jälkeen koko kaaren e2e.
+- [ ] **L8 reilusoppari-webin pr.mjs** samaan pääversiosääntöön (oma PR).
+
+---
+
 ## Riippuvuudet muualta
 
 | Mitä | Tila | Estää |
