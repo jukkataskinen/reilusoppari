@@ -1,5 +1,42 @@
 # BLOCKERS — reilusoppari (sovellus)
 
+## Laatuportit: savutesti, hälytykset ja pakolliset tarkistukset — kirjattu 14.10.2026
+
+Taustalla eSinetin WeasyPrint-virhe, joka oli tuotannossa kuusi päivää huomaamatta. Koodi on valmis; nämä kohdat tarvitsevat sinua. Kaikki on tehtävissä selaimessa.
+
+**A. Hyväksy työnkulkujen PR.** GitHubissa avoin PR "Laatuportit: savutesti ja riippuvuusvahti (työnkulut)". Se muuttaa kansiota `.github/`, joten se odottaa sinua. Avaa PR → **Merge pull request** → **Confirm**.
+
+**B. Tuotannon savutesti joka aamu.**
+
+1. Keksi pitkä satunnainen salaisuus salasanageneraattorilla, vähintään 40 merkkiä (vain kirjaimia ja numeroita).
+2. Vercel → projekti reilusoppari → Settings → Environment Variables → Add: nimi `SAVUTESTI_SECRET`, arvo kohdan 1 salaisuus, ympäristö **Production**. Tallenna.
+3. Vercel → Deployments → **Production/Current**-rivin kolme pistettä → **Redeploy** (ei ylin rivi).
+4. GitHub → repo `jukkataskinen/reilusoppari` → Settings → Secrets and variables → Actions → **New repository secret**:
+   - `SAVUTESTI_SECRET` = sama salaisuus kuin kohdassa 1
+   - `SAVUTESTI_URL` = `https://app.reilusoppari.fi/api/savutesti`
+5. GitHub → Actions → **Tuotannon savutesti** → **Run workflow**. Vihreä = kaikki kunnossa. Punainen ajo lähettää sinulle sähköpostin ja avaa issuen tunnisteella `tuotantovika`; seuraava onnistunut ajo sulkee sen.
+
+Testiorganisaatiota ei tarvitse luoda: savutesti tekee ensimmäisellä ajolla itselleen käyttäjän "Savutesti (keksitty)" (sähköposti `savutesti@reilusoppari.invalid`, ei voi kirjautua) ja luo ja poistaa sille asunnon joka aamu.
+
+**C. Sentryn hälytykset** (Sentry on tuotannossa käytössä: selaimen DSN näkyy app.reilusoppari.fi:n CSP:ssä).
+
+1. sentry.io → Reilusopparin projekti → **Alerts** → **Create Alert** → **Issues** → Next.
+2. Ehto (WHEN): **A new issue is created**. Toiminto (THEN): **Send a notification to** → **Member** → sinä (sähköposti). Nimi: "Uusi virhe". **Save Rule**.
+3. Toinen sääntö samaan tapaan: **Create Alert** → **Issues**. Ehto: **The issue is seen more than 20 times in 1 hour**. Toiminto sama. Nimi: "Virhepiikki". **Save Rule**.
+4. Tarkista, että Sentry → User Settings → Notifications → **Issue Alerts** on päällä.
+
+**D. Kun A on yhdistetty:** sano Claudelle "lisää riippuvuusvahti pakolliseksi". Claude ajaa
+`gh api -X POST repos/jukkataskinen/reilusoppari/branches/main/protection/required_status_checks/contexts -f "contexts[]=riippuvuusvahti"`.
+Ennen yhdistämistä sitä ei voi lisätä, koska se pysäyttäisi kaikki muut PR:t.
+
+**E. Valinnainen: kantaa vaativat testit oikeasti ajoon CI:ssä.** Ne ohittuvat nyt, koska GitHubissa ei ole testikannan avaimia.
+
+1. supabase.com → **New project**, nimi esim. `reilusoppari-testi`, alue EU. Ei tuotantoprojekti.
+2. Sano Claudelle "aja migraatiot testiprojektiin", ja anna osoite ja avaimet Clauden kysyessä.
+3. GitHub → Settings → Secrets and variables → Actions: `TEST_SUPABASE_URL`, `TEST_SUPABASE_ANON_KEY` ja `TEST_SUPABASE_SERVICE_ROLE_KEY` testiprojektista.
+
+**Riippuvuuksien pääversiot:** PR, jossa riippuvuuden pääversio nousee, saa tunnisteen `riippuvuus-major` eikä yhdisty itsestään. Kokeile esikatselussa docs/kriittiset-polut.md:n polut, lisää tunniste `riippuvuus-major-hyvaksytty` ja yhdistä.
+
 ## Stripe testitilassa tuotannossa 10.–11.10.2026 (Jukka)
 
 Stripe-tili (Adepta Tilat Oy, sandbox) avattu. Vercelin tuotannossa `STRIPE_SECRET_KEY` (sk_test), `STRIPE_WEBHOOK_SECRET` ja `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (Config). Webhook `https://app.reilusoppari.fi/api/stripe/webhook`, Snapshot, tapahtumat checkout.session.completed ja customer.subscription.updated/deleted (lisättävä customer.subscription.created). Testimaksu Plus-tilauksella onnistui (webhook 200) ja verolaskelma sinetöitiin 11.10.2026. **Ennen lanseerausta:** Stripen live-tilin aktivointi (yrityksen tiedot, edustajan tunnistus, tilitystili), live-avaimet ja live-webhook Verceliin, Redeploy; poista Satispay ja harkitse Klarnaa (Settings → Payment methods), MobilePay päälle.
