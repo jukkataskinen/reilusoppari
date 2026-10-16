@@ -21,8 +21,11 @@ polut: `docs/kriittiset-polut.md`. Jukan tehtävät: BLOCKERS.md "Laatuportit".
 - [x] **L1 Pääversion nostot Jukalle.** `scripts/riippuvuudet.mjs` + `scripts/pr.mjs`. Tehty 14.10.2026.
 - [x] **L2 Savutesti-reitti** `/api/savutesti` ja e2e tuotantokäännöksessä. Tehty 14.10.2026.
 - [x] **L3 e2e pakolliseksi tarkistukseksi** (gh api). Tehty 14.10.2026.
-- [ ] **L4 Työnkulut** `riippuvuusvahti.yml` ja `savutesti.yml` (`.github/`, Jukka hyväksyy).
+- [x] **L4 Työnkulut** `riippuvuusvahti.yml` ja `savutesti.yml` (`.github/`, Jukka hyväksyy).
+      Yhdistetty 16.10.2026, Jukka hyväksyi PR #37 itse.
 - [ ] **L5 riippuvuusvahti pakolliseksi** L4:n yhdistämisen jälkeen (BLOCKERS kohta D).
+      L4 on nyt yhdistetty — tämä odottaa yhä sinun sanaasi (BLOCKERS kohta D),
+      koska se muuttaa haarasuojausta eikä yötyö tee sitä omin päin.
 - [ ] **L6 Savutesti päälle tuotannossa:** salaisuudet (BLOCKERS kohta B).
 - [ ] **L7 Kantaa vaativat testit ajoon CI:ssä** testiprojektilla (BLOCKERS kohta E), sen jälkeen koko kaaren e2e.
 - [x] **L8 reilusoppari-webin pr.mjs** samaan pääversiosääntöön. Tehty 14.10.2026 (reilusoppari-web PR #4).
@@ -227,7 +230,7 @@ Polku 5.7. DoD: laskelma vuodelle testidatasta, sinetöity, kuitit liitteenä.
 - [x] Vuosilaskelma OmaVeron kenttien järjestyksessä
 - [x] Sinetöinti (mockia vasten), uudelleensinetöinti korvaa vanhan
 - [x] Ohjetekstit luokan vieressä; jokaisessa "ei veroneuvontaa"
-- [ ] Kuitit liitteenä — **toteutettu toisin**: kuitit säilyvät sovelluksessa
+- [x] Kuitit liitteenä — **toteutettu toisin**: kuitit säilyvät sovelluksessa
       ja laskelmassa kerrotaan niiden määrä (DECISIONS.md 2026-09-12)
 - [x] Ensimmäinen tulostus laukaisee Plus-maksun Stripe Checkoutissa
       (mockia vasten; ks. DECISIONS.md 2026-10-07). Plus on asunnon tilaus,

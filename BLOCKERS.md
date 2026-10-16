@@ -4,7 +4,7 @@
 
 Taustalla eSinetin WeasyPrint-virhe, joka oli tuotannossa kuusi päivää huomaamatta. Koodi on valmis; nämä kohdat tarvitsevat sinua. Kaikki on tehtävissä selaimessa.
 
-**A. Hyväksy työnkulkujen PR.** GitHubissa avoin PR "Laatuportit: savutesti ja riippuvuusvahti (työnkulut)". Se muuttaa kansiota `.github/`, joten se odottaa sinua. Avaa PR → **Merge pull request** → **Confirm**.
+**A. Hyväksy työnkulkujen PR.** **VALMIS 16.10.2026:** yhdistit PR #37 itse. `riippuvuusvahti.yml` ja `savutesti.yml` ovat nyt `main`-haarassa.
 
 **B. Tuotannon savutesti joka aamu.**
 
@@ -28,6 +28,8 @@ Testiorganisaatiota ei tarvitse luoda: savutesti tekee ensimmäisellä ajolla it
 **D. Kun A on yhdistetty:** sano Claudelle "lisää riippuvuusvahti pakolliseksi". Claude ajaa
 `gh api -X POST repos/jukkataskinen/reilusoppari/branches/main/protection/required_status_checks/contexts -f "contexts[]=riippuvuusvahti"`.
 Ennen yhdistämistä sitä ei voi lisätä, koska se pysäyttäisi kaikki muut PR:t.
+A on nyt valmis (16.10.2026) — tämä kohta odottaa enää sanaasi. Yötyö ei tee
+tätä omin päin, koska se muuttaa haarasuojausta.
 
 **E. Valinnainen: kantaa vaativat testit oikeasti ajoon CI:ssä.** Ne ohittuvat nyt, koska GitHubissa ei ole testikannan avaimia.
 
